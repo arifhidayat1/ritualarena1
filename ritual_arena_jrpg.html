@@ -958,7 +958,7 @@ function showQRModal(uri) {
 
 function renderQR(uri) {
   const container = document.getElementById('qr-container');
-  container.innerHTML = '';
+  if(container) container.innerHTML = '';
   new QRCode(container, {
     text: uri,
     width: 220,
@@ -1139,7 +1139,7 @@ function fakeTx(){return '0x'+Array.from({length:16},()=>rnd(0,15).toString(16))
 function fakeBlock(){S.block+=rnd(1,5);return '#'+S.block;}
 
 function renderCharList(){
-  document.getElementById('char-list').innerHTML=CHARS.map((c,i)=>`
+  var cl=document.getElementById('char-list'); if(cl) cl.innerHTML=CHARS.map((c,i)=>`
     <div class="char-card ${i===0?'selected':''}" id="cc${i}" onclick="selectChar(${i})">
       <div class="char-icon-box">${c.icon}</div>
       <div style="flex:1"><div class="char-name">${c.name}</div><div class="char-meta">${c.cls} · HP ${c.hp} · ATK ${c.atk} · DEF ${c.def}</div></div>
@@ -1159,7 +1159,7 @@ function startGame(){
   const c=JSON.parse(JSON.stringify(CHARS[S.selectedChar]));
   c.xp=0;c.level=1;c.xpNext=100;
   S.char=c;S.defending=false;S.isPlayerTurn=true;S.busy=false;
-  document.getElementById('battle-log').innerHTML='';
+  var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
   pickEnemy();renderBattle();showScreen('battle');setTurnUI(true);
   addLog('⚔️ Pertarungan dimulai di Ritual Testnet!','sys');
   addLog('Musuh muncul: '+S.enemy.icon+' '+S.enemy.name,'sys');
@@ -1176,7 +1176,7 @@ function pickEnemy(){
 function renderBattle(){
   const p=S.char,e=S.enemy;
   document.getElementById('p-name').textContent=p.name;
-  document.getElementById('p-class').textContent=p.cls;
+  var pcEl=document.getElementById('p-class'); if(pcEl) pcEl.textContent=p.cls;
   document.getElementById('e-icon').textContent=e.icon;
   document.getElementById('e-name').textContent=e.name;
   document.getElementById('e-type').textContent=e.type;
@@ -1215,7 +1215,7 @@ function updateBars(){
 
 function renderSkills(){
   const p=S.char;
-  document.getElementById('skill-list').innerHTML=p.skills.map(s=>`
+  var sl=document.getElementById('skill-list'); if(sl) sl.innerHTML=p.skills.map(s=>`
     <button class="skill-btn" onclick="useSkill('${s.id}')" ${!S.isPlayerTurn||S.busy||p.mp<s.mpCost?'disabled':''}>
       <div class="sk-name">${s.name}</div><div class="sk-desc">${s.desc}</div>
       <div class="sk-cost">${s.mpCost>0?'Mana: '+s.mpCost:'Gratis'}</div>
@@ -1229,8 +1229,9 @@ function setButtonsDisabled(v){
 function setTurnUI(isPlayer){
   S.isPlayerTurn=isPlayer;
   const banner=document.getElementById('turn-banner');
-  document.getElementById('turn-text').textContent=isPlayer?'Giliran kamu — pilih aksi!':S.enemy.name+' sedang menyerang...';
-  banner.className='turn-banner '+(isPlayer?'player-turn':'enemy-turn');
+  const turnText=document.getElementById('turn-text');
+  if(turnText) turnText.textContent=isPlayer?'Giliran kamu — pilih aksi!':S.enemy.name+' sedang menyerang...';
+  if(banner) banner.className='turn-banner '+(isPlayer?'player-turn':'enemy-turn');
   setButtonsDisabled(!isPlayer);
   if(isPlayer&&S.char&&S.char.mp<20)document.getElementById('btn-heal').disabled=true;
   renderSkills();
@@ -1315,7 +1316,7 @@ function confirmFlee(){
   if(!S.isPlayerTurn||S.busy)return;
   if(!confirm('Kabur dari pertarungan ini? Musuh baru akan muncul.'))return;
   S.defending=false;S.busy=false;pickEnemy();renderBattle();
-  document.getElementById('battle-log').innerHTML='';setTurnUI(true);
+  var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';setTurnUI(true);
   addLog('🏃 Kabur! Musuh baru: '+S.enemy.icon+' '+S.enemy.name,'sys');
 }
 
@@ -1346,7 +1347,7 @@ function victory(){
 
 function nextBattle(){
   S.defending=false;S.busy=false;pickEnemy();renderBattle();showScreen('battle');
-  document.getElementById('battle-log').innerHTML='';setTurnUI(true);
+  var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';setTurnUI(true);
   addLog('⚔️ Battle baru! Musuh: '+S.enemy.icon+' '+S.enemy.name,'sys');addLog('Giliran kamu!','sys');
 }
 
@@ -1357,7 +1358,7 @@ function revive(){
   addLog('💊 Revive! HP & Mana 50% pulih','heal');
 }
 
-function goMenu(){S.char=null;S.enemy=null;S.busy=false;S.defending=false;document.getElementById('battle-log').innerHTML='';showScreen('menu');}
+function goMenu(){S.char=null;S.enemy=null;S.busy=false;S.defending=false;var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';showScreen('menu');}
 
 function switchTab(name,el){
   ['skills','log'].forEach(t=>document.getElementById('tab-'+t).style.display=t===name?'':'none');
@@ -1665,14 +1666,15 @@ async function loadLeaderboard() {
         const myBox = document.getElementById('my-score-box');
         if (myIdx >= 0 && myBox) {
           myBox.style.display = 'block';
-          document.getElementById('my-score-val').textContent = scores[myIdx].toString() + ' pts';
-          document.getElementById('my-score-addr').textContent = addrs[myIdx].slice(0,6)+'...'+addrs[myIdx].slice(-4);
-          document.getElementById('my-score-rank').textContent = '#' + (myIdx+1) + ' dari ' + addrs.length;
-          document.getElementById('my-score-char').textContent = (CHAR_ICONS[charNames[myIdx]]||'⚔️') + ' ' + charNames[myIdx] + ' Lv' + levels[myIdx];
+          var sv=document.getElementById('my-score-val'); if(sv) sv.textContent = scores[myIdx].toString() + ' pts';
+          var sa=document.getElementById('my-score-addr'); if(sa) sa.textContent = addrs[myIdx].slice(0,6)+'...'+addrs[myIdx].slice(-4);
+          var sr=document.getElementById('my-score-rank'); if(sr) sr.textContent = '#' + (myIdx+1) + ' dari ' + addrs.length;
+          var sc2=document.getElementById('my-score-char'); if(sc2) sc2.textContent = (CHAR_ICONS[charNames[myIdx]]||'⚔️') + ' ' + charNames[myIdx] + ' Lv' + levels[myIdx];
         } else if(myBox) { myBox.style.display = 'none'; }
       }
 
-      lbEl.innerHTML = addrs.map((addr, i) => {
+      if(!lbEl) return;
+  lbEl.innerHTML = addrs.map((addr, i) => {
         const isMe = myAddr && addr.toLowerCase() === myAddr;
         const rankLabel = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
         const rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
@@ -1702,18 +1704,19 @@ async function loadLeaderboard() {
 function renderLocalLeaderboard(myAddr) {
   const lb = getLocalLeaderboard();
   const lbEl = document.getElementById('lb-list');
+  if (!lbEl) return;
 
   if (myAddr) {
     const myEntry = lb.find(x => x.address.toLowerCase() === myAddr);
     const myBox = document.getElementById('my-score-box');
-    if (myEntry) {
+    if (myEntry && myBox) {
       myBox.style.display = 'block';
-      document.getElementById('my-score-val').textContent = myEntry.score.toLocaleString() + ' pts';
-      document.getElementById('my-score-addr').textContent = myEntry.address.slice(0,6)+'...'+myEntry.address.slice(-4);
+      var sv2=document.getElementById('my-score-val'); if(sv2) sv2.textContent = myEntry.score.toLocaleString() + ' pts';
+      var sa2=document.getElementById('my-score-addr'); if(sa2) sa2.textContent = myEntry.address.slice(0,6)+'...'+myEntry.address.slice(-4);
       const rank = lb.findIndex(x => x.address.toLowerCase() === myAddr) + 1;
-      document.getElementById('my-score-rank').textContent = '#' + rank + ' dari ' + lb.length;
-      document.getElementById('my-score-char').textContent = (myEntry.charIcon||'⚔️') + ' ' + myEntry.charName + ' Lv' + myEntry.level;
-    } else { myBox.style.display = 'none'; }
+      var sr2=document.getElementById('my-score-rank'); if(sr2) sr2.textContent = '#' + rank + ' dari ' + lb.length;
+      var sc3=document.getElementById('my-score-char'); if(sc3) sc3.textContent = (myEntry.charIcon||'⚔️') + ' ' + myEntry.charName + ' Lv' + myEntry.level;
+    } else if(myBox) { myBox.style.display = 'none'; }
   }
 
   if (!lb.length) {
