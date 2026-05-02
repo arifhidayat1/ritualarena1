@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
 <style>
 
+
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --pixel:'Press Start 2P',monospace;
@@ -42,11 +43,11 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 
 /* ===== GLOBAL BG SCREENS ===== */
 .bg-menu{
-  background:url('bg_menu.webp') center center / cover no-repeat fixed;
+  background:url('bg_menu.png') center center / cover no-repeat fixed;
   min-height:100vh;
 }
 .bg-battle{
-  background:url('bg_battle.webp') center center / cover no-repeat fixed;
+  background:url('bg_battle.png') center center / cover no-repeat fixed;
   min-height:100vh;
 }
 
@@ -443,9 +444,11 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
   100%{background-position:0 4px}
 }
 
+
 </style>
 </head>
 <body>
+
 
 <!-- ===== PIXEL SCANLINE OVERLAY ===== -->
 <div style="position:fixed;inset:0;pointer-events:none;z-index:9990;background:repeating-linear-gradient(0deg,rgba(0,0,0,0.03) 0px,rgba(0,0,0,0.03) 1px,transparent 1px,transparent 4px);"></div>
@@ -747,6 +750,7 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
   </div>
 </div>
 
+
 <script>
 
 // ============================================================
@@ -1001,7 +1005,7 @@ function onConnected() {
   } else {
     showScreen('menu');
     setDot('green');
-    document.getElementById('ritual-bal').style.display = 'block';
+    const rb=document.getElementById('ritual-bal'); if(rb) rb.style.display = 'block';
     showToast('✅ Wallet terhubung!' + (wallet.isDemo ? ' (Demo)' : ''));
   }
 }
@@ -1028,7 +1032,7 @@ function disconnectWallet() {
   wallet = { connected: false, address: null, chainId: null, isDemo: false, provider: null, wcProvider: null };
   updateHeader();
   setDot('red');
-  document.getElementById('ritual-bal').style.display = 'none';
+  const rb2=document.getElementById('ritual-bal'); if(rb2) rb2.style.display = 'none';
   showScreen('connect');
   showToast('🔌 Wallet terputus');
 }
@@ -1043,13 +1047,13 @@ function updateHeader() {
   const mnEl = document.getElementById('menu-net');
   if (wallet.address) {
     const short = wallet.address.slice(0,6)+'...'+wallet.address.slice(-4);
-    wEl.textContent = short;
-    nEl.textContent = wallet.isDemo ? 'Demo Mode' : 'Ritual Testnet';
-    mEl.textContent = short + (wallet.isDemo ? ' (Demo)' : '');
-    mnEl.textContent = wallet.isDemo ? 'Demo Mode' : 'Ritual Testnet';
+    if(wEl) wEl.textContent = short;
+    if(nEl) nEl.textContent = wallet.isDemo ? 'Demo Mode' : 'Ritual Testnet';
+    if(mEl) mEl.textContent = short + (wallet.isDemo ? ' (Demo)' : '');
+    if(mnEl) mnEl.textContent = wallet.isDemo ? 'Demo Mode' : 'Ritual Testnet';
   } else {
-    wEl.textContent = '—';
-    nEl.textContent = 'Tidak terhubung';
+    if(wEl) wEl.textContent = '—';
+    if(nEl) nEl.textContent = 'Tidak terhubung';
   }
 }
 
@@ -1079,7 +1083,19 @@ function showScreen(id) {
 }
 
 // Cek wallet tersedia saat load — delay 600ms biar extension sempat inject
-
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const allProviders = (window.ethereum && window.ethereum.providers) || [];
+    const hasRabby = !!window.rabby || !!(window.ethereum && window.ethereum.isRabby) || allProviders.some(p => p.isRabby);
+    const hasMM = !!(window.ethereum && window.ethereum.isMetaMask && !window.ethereum.isRabby) || allProviders.some(p => p.isMetaMask && !p.isRabby) || (!hasRabby && !!window.ethereum);
+    const mmEl = document.getElementById('mm-status');
+    if(mmEl){mmEl.textContent = hasMM ? '✓' : '✗'; mmEl.style.color = hasMM ? '#5DCAA5' : '#f09595';}
+    const rabbyEl = document.getElementById('rabby-status');
+    if(rabbyEl){rabbyEl.textContent = hasRabby ? '✓' : '✗'; rabbyEl.style.color = hasRabby ? '#5DCAA5' : '#f09595';}
+  }, 600);
+  // Only load leaderboard if element exists
+  if(document.getElementById('lb-list')) loadLeaderboard();
+});
 
 // ============================================================
 // GAME DATA
@@ -1167,6 +1183,13 @@ function renderBattle(){
   document.getElementById('e-reward').textContent='+'+e.xp+' XP';
   document.getElementById('heal-amt').textContent=p.healPow;
   updateBars();renderSkills();
+  // JRPG sync
+  var nt=document.getElementById('e-name-tag'); if(nt) nt.textContent=e.name;
+  var ps=document.getElementById('p-sprite'); if(ps) ps.textContent=p.icon;
+  var pn2=document.getElementById('p-name2'); if(pn2) pn2.textContent=p.name;
+  var pl2=document.getElementById('p-level2'); if(pl2) pl2.textContent=p.level;
+  var bw=document.getElementById('battle-wallet'); if(bw) bw.textContent=wallet.address?wallet.address.slice(0,6)+'...'+wallet.address.slice(-4):'—';
+  var bn=document.getElementById('battle-net'); if(bn) bn.textContent=wallet.isDemo?'Demo':'Ritual';
 }
 
 function updateBars(){
@@ -1181,6 +1204,13 @@ function updateBars(){
   document.getElementById('e-hp-txt').textContent=Math.max(0,e.hp)+'/'+e.maxhp;
   document.getElementById('e-hp-bar').style.width=(Math.max(0,e.hp)/e.maxhp*100)+'%';
   document.getElementById('def-badge').style.display=S.defending?'block':'none';
+  // JRPG extra bars
+  var b2=document.getElementById('p-hp-bar2'); if(b2) b2.style.width=(Math.max(0,p.hp)/p.maxhp*100)+'%';
+  var t2=document.getElementById('p-hp-txt2'); if(t2) t2.textContent=p.hp+'/'+p.maxhp;
+  var l2=document.getElementById('p-level2'); if(l2) l2.textContent=p.level;
+  var pb=document.getElementById('p-hp-bar'),p2b=document.getElementById('p-hp-bar2'),eb=document.getElementById('e-hp-bar');
+  if(pb&&p2b){if(p.hp/p.maxhp<0.25){pb.classList.add('low');p2b.classList.add('low');}else{pb.classList.remove('low');p2b.classList.remove('low');}}
+  if(eb){if(Math.max(0,e.hp)/e.maxhp<0.25)eb.classList.add('low');else eb.classList.remove('low');}
 }
 
 function renderSkills(){
@@ -1204,10 +1234,17 @@ function setTurnUI(isPlayer){
   setButtonsDisabled(!isPlayer);
   if(isPlayer&&S.char&&S.char.mp<20)document.getElementById('btn-heal').disabled=true;
   renderSkills();
+  // JRPG turn indicator
+  var arrow=document.getElementById('turn-arrow'),label=document.getElementById('turn-label');
+  if(arrow&&label){
+    if(isPlayer){arrow.textContent='⚔';arrow.style.color='var(--gold)';label.textContent='YOUR TURN';label.style.color='var(--gold)';label.style.animation='';}
+    else{arrow.textContent='!';arrow.style.color='var(--red)';label.textContent='ENEMY';label.style.color='var(--red)';label.style.animation='blink 0.8s infinite';}
+  }
 }
 
 function addLog(msg,type){
   const el=document.getElementById('battle-log');
+  if(!el) return;
   const d=document.createElement('div');
   d.className='log-line log-'+(type||'');
   d.textContent='› '+msg;
@@ -1215,7 +1252,10 @@ function addLog(msg,type){
 }
 
 function shakeEl(id){
-  const el=document.getElementById(id);if(!el)return;
+  var target=id;
+  if(id==='e-icon') target='enemy-sprite';
+  else if(id==='player-card'){var strip=document.querySelector('.player-sprite-row');if(strip){strip.classList.remove('shake');void strip.offsetWidth;strip.classList.add('shake');setTimeout(function(){strip.classList.remove('shake');},400);}return;}
+  const el=document.getElementById(target);if(!el)return;
   el.classList.remove('shake');void el.offsetWidth;
   el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),400);
 }
@@ -1323,6 +1363,8 @@ function switchTab(name,el){
   ['skills','log'].forEach(t=>document.getElementById('tab-'+t).style.display=t===name?'':'none');
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
 }
+
+renderCharList();
 
 // ============================================================
 // SCORE & LEADERBOARD (localStorage sebagai simulasi on-chain)
@@ -1605,7 +1647,8 @@ async function loadLeaderboard() {
 
   // Coba baca dari contract dulu
   if (isContractDeployed() && wallet.connected && !wallet.isDemo) {
-    lbEl.innerHTML = `<div style="text-align:center;padding:20px;color:#a8a0d0"><span class="spinner"></span> Membaca dari blockchain...</div>`;
+    if(!lbEl) return;
+  lbEl.innerHTML = `<div style="text-align:center;padding:20px;color:#a8a0d0"><span class="spinner"></span> Membaca dari blockchain...</div>`;
     try {
       const provider = new ethers.providers.Web3Provider(wallet.provider);
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
@@ -1620,13 +1663,13 @@ async function loadLeaderboard() {
       if (myAddr) {
         const myIdx = addrs.findIndex(a => a.toLowerCase() === myAddr);
         const myBox = document.getElementById('my-score-box');
-        if (myIdx >= 0) {
+        if (myIdx >= 0 && myBox) {
           myBox.style.display = 'block';
           document.getElementById('my-score-val').textContent = scores[myIdx].toString() + ' pts';
           document.getElementById('my-score-addr').textContent = addrs[myIdx].slice(0,6)+'...'+addrs[myIdx].slice(-4);
           document.getElementById('my-score-rank').textContent = '#' + (myIdx+1) + ' dari ' + addrs.length;
           document.getElementById('my-score-char').textContent = (CHAR_ICONS[charNames[myIdx]]||'⚔️') + ' ' + charNames[myIdx] + ' Lv' + levels[myIdx];
-        } else { myBox.style.display = 'none'; }
+        } else if(myBox) { myBox.style.display = 'none'; }
       }
 
       lbEl.innerHTML = addrs.map((addr, i) => {
@@ -1714,98 +1757,6 @@ function timeAgo(ts) {
 
 
 
-
-renderCharList();
-
-
-// ===== JRPG UI SYNC =====
-// Use named standalone functions (no closures over originals) to avoid stack overflow
-
-// Store originals ONCE at definition time
-var _origUpdateBars = updateBars;
-var _origSetTurnUI = setTurnUI;
-var _origRenderBattle = renderBattle;
-var _origShakeEl = shakeEl;
-
-function updateBars() {
-  _origUpdateBars();
-  var p = S.char, e = S.enemy;
-  if (!p || !e) return;
-  var bar2 = document.getElementById('p-hp-bar2');
-  if (bar2) bar2.style.width = (Math.max(0,p.hp)/p.maxhp*100)+'%';
-  var txt2 = document.getElementById('p-hp-txt2');
-  if (txt2) txt2.textContent = p.hp+'/'+p.maxhp;
-  var lvl2 = document.getElementById('p-level2');
-  if (lvl2) lvl2.textContent = p.level;
-  var pBar = document.getElementById('p-hp-bar');
-  var p2Bar = document.getElementById('p-hp-bar2');
-  var eBar = document.getElementById('e-hp-bar');
-  if (pBar && p2Bar) {
-    if (p.hp/p.maxhp < 0.25) { pBar.classList.add('low'); p2Bar.classList.add('low'); }
-    else { pBar.classList.remove('low'); p2Bar.classList.remove('low'); }
-  }
-  if (eBar) {
-    if (Math.max(0,e.hp)/e.maxhp < 0.25) eBar.classList.add('low');
-    else eBar.classList.remove('low');
-  }
-}
-
-function setTurnUI(isPlayer) {
-  _origSetTurnUI(isPlayer);
-  var arrow = document.getElementById('turn-arrow');
-  var label = document.getElementById('turn-label');
-  if (!arrow || !label) return;
-  if (isPlayer) {
-    arrow.textContent = '⚔'; arrow.style.color = 'var(--gold)';
-    label.textContent = 'YOUR TURN'; label.style.color = 'var(--gold)';
-    label.style.animation = '';
-  } else {
-    arrow.textContent = '!'; arrow.style.color = 'var(--red)';
-    label.textContent = 'ENEMY'; label.style.color = 'var(--red)';
-    label.style.animation = 'blink 0.8s infinite';
-  }
-}
-
-function renderBattle() {
-  _origRenderBattle();
-  var p = S.char, e = S.enemy;
-  if (!p || !e) return;
-  var nt = document.getElementById('e-name-tag'); if (nt) nt.textContent = e.name;
-  var pn2 = document.getElementById('p-name2'); if (pn2) pn2.textContent = p.name;
-  var ps = document.getElementById('p-sprite'); if (ps) ps.textContent = p.icon;
-  var pl2 = document.getElementById('p-level2'); if (pl2) pl2.textContent = p.level;
-  var bw = document.getElementById('battle-wallet');
-  if (bw) bw.textContent = wallet.address ? wallet.address.slice(0,6)+'...'+wallet.address.slice(-4) : '—';
-  var bn = document.getElementById('battle-net');
-  if (bn) bn.textContent = wallet.isDemo ? 'Demo' : 'Ritual';
-}
-
-function shakeEl(id) {
-  if (id === 'e-icon') {
-    var sprite = document.getElementById('enemy-sprite');
-    if (sprite) { sprite.classList.remove('shake'); void sprite.offsetWidth; sprite.classList.add('shake'); setTimeout(function(){sprite.classList.remove('shake');},400); }
-    return;
-  }
-  if (id === 'player-card') {
-    var strip = document.querySelector('.player-sprite-row');
-    if (strip) { strip.classList.remove('shake'); void strip.offsetWidth; strip.classList.add('shake'); setTimeout(function(){strip.classList.remove('shake');},400); }
-    return;
-  }
-  _origShakeEl(id);
-}
-
-window.addEventListener('load', function() {
-  setTimeout(function() {
-    var allProviders = (window.ethereum && window.ethereum.providers) || [];
-    var hasRabby = !!window.rabby || !!(window.ethereum && window.ethereum.isRabby) || allProviders.some(function(p){return p.isRabby;});
-    var hasMM = !!(window.ethereum && window.ethereum.isMetaMask && !window.ethereum.isRabby) || allProviders.some(function(p){return p.isMetaMask && !p.isRabby;}) || (!hasRabby && !!window.ethereum);
-    var mmEl = document.getElementById('mm-status');
-    if (mmEl) { mmEl.textContent = hasMM ? '✓' : '✗'; mmEl.style.color = hasMM ? '#5DCAA5' : '#f09595'; }
-    var rabbyEl = document.getElementById('rabby-status');
-    if (rabbyEl) { rabbyEl.textContent = hasRabby ? '✓' : '✗'; rabbyEl.style.color = hasRabby ? '#5DCAA5' : '#f09595'; }
-  }, 600);
-  loadLeaderboard();
-});
 
 </script>
 </body>
