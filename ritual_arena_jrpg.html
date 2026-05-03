@@ -223,41 +223,29 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
   position:relative;
 }
 
-/* BATTLE TOP — enemy+player status bars JRPG style */
-.battle-status-bar{
-  background:rgba(4,4,20,0.9);
-  border-bottom:2px solid var(--gold);
-  padding:8px 12px;
-  display:grid;grid-template-columns:1fr auto 1fr;
-  align-items:start;gap:8px;
-}
-.status-block{padding:2px;}
-.status-block.enemy-block{text-align:right}
-.status-name{font-size:7px;color:var(--gold);margin-bottom:4px}
-.status-hp-row{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
-.status-block.enemy-block .status-hp-row{flex-direction:row-reverse}
+/* BATTLE TOP — hidden, semua dipindah ke bawah */
+.battle-status-bar{ display:none; }
+
+/* bars tetap tersedia untuk updateBars() JS */
 .stat-label{font-size:6px;color:#6060a0;width:16px;flex-shrink:0;font-family:var(--vt);font-size:11px}
-.hp-bar-wrap{flex:1;height:8px;background:#0a0a1a;border:1px solid rgba(255,255,255,0.1);overflow:hidden;image-rendering:pixelated}
+.hp-bar-wrap{flex:1;height:7px;background:#0a0a1a;border:1px solid rgba(255,255,255,0.1);overflow:hidden;image-rendering:pixelated}
 .hp-bar-fill{height:100%;transition:width 0.3s;background:linear-gradient(90deg,#10a040,#40d040);image-rendering:pixelated}
 .hp-bar-fill.low{background:linear-gradient(90deg,#a04010,#ff6020)}
 .mp-bar-fill{height:100%;transition:width 0.3s;background:linear-gradient(90deg,#1030a0,#4060ff)}
-.stat-val{font-family:var(--vt);font-size:13px;color:#c0c0e0;width:50px;flex-shrink:0}
-.status-block.enemy-block .stat-val{text-align:right}
+.stat-val{font-family:var(--vt);font-size:13px;color:#c0c0e0;width:46px;flex-shrink:0}
 
-.turn-indicator{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  font-size:7px;padding:4px;
-}
+/* TURN indicator — dipakai di bawah */
+.turn-indicator{display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:7px;padding:4px;}
 .turn-arrow{font-size:14px;animation:bounce 0.8s infinite}
 @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 .turn-label{font-size:6px;color:#8080b0;margin-top:2px;font-family:var(--vt);font-size:12px}
 
-/* BATTLEFIELD — enemy sprite area */
+/* BATTLEFIELD — full visible height tanpa status bar di atas */
 .battlefield{
   flex:1;
   display:flex;align-items:center;justify-content:center;
   position:relative;
-  min-height:160px;
+  min-height:240px;
 }
 .enemy-sprite{
   text-align:center;
@@ -283,33 +271,48 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
   margin-top:4px;display:block;
 }
 
-/* BATTLE BOTTOM PANEL — JRPG style command window */
+/* BATTLE BOTTOM PANEL */
 .battle-bottom{
   background:rgba(4,4,20,0.97);
   border-top:2px solid var(--gold);
 }
 
-.player-sprite-row{
-  display:flex;align-items:center;gap:12px;
-  padding:8px 12px;
-  border-bottom:1px solid rgba(240,192,64,0.15);
+/* STATUS BAWAH — player kiri, turn tengah, enemy kanan */
+.bottom-status-bar{
+  display:grid;grid-template-columns:1fr auto 1fr;
+  align-items:center;gap:6px;
+  padding:6px 10px;
+  border-bottom:1px solid rgba(240,192,64,0.2);
   background:rgba(0,0,10,0.5);
 }
-.player-sprite-emoji{font-size:32px}
-.player-info{flex:1}
-.player-name-row{display:flex;align-items:center;gap:8px;margin-bottom:3px}
-.player-char-name{font-size:8px;color:var(--gold)}
-.player-level{font-family:var(--vt);font-size:14px;color:var(--cyan);background:rgba(0,80,120,0.4);border:1px solid rgba(0,150,200,0.4);padding:1px 6px}
-.def-badge{font-family:var(--vt);font-size:13px;color:#40d0a0;background:rgba(0,80,60,0.5);border:1px solid rgba(0,200,120,0.4);padding:1px 8px;display:none}
+.bstat-player{flex:1}
+.bstat-enemy{flex:1;text-align:right}
+.bstat-name{font-size:7px;color:var(--gold);margin-bottom:3px}
+.bstat-name.enemy{color:var(--red)}
+.bstat-row{display:flex;align-items:center;gap:4px;margin-bottom:2px}
+.bstat-enemy .bstat-row{flex-direction:row-reverse}
+.bstat-lbl{font-family:var(--vt);font-size:11px;color:#5050a0;width:14px;flex-shrink:0}
+.bstat-val{font-family:var(--vt);font-size:11px;color:#b0b0d0;width:44px;flex-shrink:0;text-align:right}
+.bstat-enemy .bstat-val{text-align:left}
+.bstat-icon{font-size:18px;margin-right:4px;flex-shrink:0}
+.bstat-enemy-icon{font-size:18px;margin-left:4px;flex-shrink:0}
+
+/* turn badge tengah */
+.turn-badge{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:0 6px;
+}
+.turn-badge-arrow{font-size:12px;animation:bounce 0.8s infinite}
+.turn-badge-lbl{font-family:var(--vt);font-size:11px;color:#8080b0}
 
 /* COMMAND WINDOW */
-.command-window{padding:10px 12px}
-.command-title{font-size:7px;color:var(--gold);margin-bottom:8px;border-bottom:1px solid rgba(240,192,64,0.2);padding-bottom:6px}
-.command-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.command-window{padding:6px 10px 4px}
+.command-title{font-size:6px;color:var(--gold);margin-bottom:5px;border-bottom:1px solid rgba(240,192,64,0.2);padding-bottom:4px}
+.command-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:6px}
 .cmd-btn{
-  font-family:var(--pixel);font-size:7px;
+  font-family:var(--pixel);font-size:6px;
   border:0;cursor:pointer;
-  padding:9px 8px;
+  padding:7px 4px 5px;
   background:rgba(20,20,60,0.9);
   border-top:2px solid rgba(120,120,200,0.4);
   border-left:2px solid rgba(120,120,200,0.4);
@@ -317,47 +320,42 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
   border-right:2px solid rgba(20,20,60,0.9);
   color:var(--text);
   transition:all 0.1s;
-  text-align:left;
-  line-height:1.5;
+  text-align:center;
+  line-height:1.4;
   position:relative;
 }
-.cmd-btn::before{
-  content:'►';font-size:7px;color:var(--gold);
-  position:absolute;left:6px;top:50%;transform:translateY(-50%);
-  opacity:0;transition:opacity 0.1s;
-}
-.cmd-btn:hover:not(:disabled)::before{opacity:1}
+.cmd-btn::before{display:none}
 .cmd-btn:hover:not(:disabled){
   border-top-color:var(--gold);border-left-color:var(--gold);
   border-bottom-color:rgba(120,100,0,0.8);border-right-color:rgba(120,100,0,0.8);
   background:rgba(40,35,5,0.9);
-  padding-left:18px;
 }
 .cmd-btn:active:not(:disabled){transform:translate(1px,1px)}
 .cmd-btn:disabled{opacity:0.3;cursor:not-allowed}
-.cmd-icon{font-size:16px;display:block;margin-bottom:2px}
-.cmd-name{color:var(--gold);font-size:7px}
-.cmd-sub{font-family:var(--vt);font-size:12px;color:#6060a0;margin-top:1px}
+.cmd-icon{font-size:14px;display:block;margin-bottom:1px}
+.cmd-name{color:var(--gold);font-size:6px}
+.cmd-sub{display:none}
 .cmd-btn.atk:hover:not(:disabled){background:rgba(30,20,60,0.95)}
 .cmd-btn.def:hover:not(:disabled){background:rgba(10,40,20,0.95)}
 .cmd-btn.heal-btn:hover:not(:disabled){background:rgba(10,40,30,0.95)}
 .cmd-btn.flee:hover:not(:disabled){background:rgba(50,10,10,0.95)}
 
-/* SKILLS PANEL */
-.skills-panel{padding:0 12px 10px}
-.skill-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+/* SKILLS PANEL — compact 4 kolom */
+.skills-panel{padding:0 10px 8px}
+.skill-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
 .skill-btn{
-  font-family:var(--pixel);font-size:6px;
+  font-family:var(--pixel);font-size:5px;
   background:rgba(10,10,40,0.9);
   border:1px solid rgba(60,60,150,0.5);
-  color:var(--text);padding:8px 8px;
-  cursor:pointer;text-align:left;transition:all 0.1s;
-  line-height:1.6;
+  color:var(--text);padding:5px 4px;
+  cursor:pointer;text-align:center;transition:all 0.1s;
+  line-height:1.4;
 }
 .skill-btn:hover:not(:disabled){border-color:var(--cyan);background:rgba(10,20,60,0.95)}
 .skill-btn:disabled{opacity:0.3;cursor:not-allowed}
-.sk-name{color:var(--cyan);font-size:7px;display:block}
-.sk-cost{color:var(--gold);font-family:var(--vt);font-size:13px;margin-top:2px}
+.sk-name{color:var(--cyan);font-size:6px;display:block}
+.sk-desc{display:none}
+.sk-cost{color:var(--gold);font-family:var(--vt);font-size:11px;margin-top:1px}
 
 /* ===== SCREEN OVERLAYS ===== */
 .victory-overlay, .dead-overlay, .leaderboard-overlay, .wrongnet-overlay{
@@ -570,44 +568,6 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
   <div class="battle-layout" style="padding-top:44px">
     <!-- STATUS BARS TOP -->
     <div class="battle-status-bar">
-      <!-- Player stats -->
-      <div class="status-block">
-        <div class="status-name" id="p-name">—</div>
-        <div class="status-hp-row">
-          <div class="stat-label">HP</div>
-          <div class="hp-bar-wrap"><div class="hp-bar-fill" id="p-hp-bar" style="width:100%"></div></div>
-          <div class="stat-val" id="p-hp-txt">—</div>
-        </div>
-        <div class="status-hp-row">
-          <div class="stat-label">MP</div>
-          <div class="hp-bar-wrap"><div class="mp-bar-fill" id="p-mp-bar" style="width:100%"></div></div>
-          <div class="stat-val" id="p-mp-txt">—</div>
-        </div>
-        <div class="status-hp-row" style="margin-top:2px">
-          <div class="stat-label" style="font-size:9px">Lv</div>
-          <div style="font-family:var(--vt);font-size:13px;color:var(--cyan)" id="p-level">1</div>
-          <div style="flex:1;margin-left:6px">
-            <div class="hp-bar-wrap" style="height:4px"><div style="height:100%;background:linear-gradient(90deg,#806000,#ffd040);transition:width 0.3s" id="p-xp-bar"></div></div>
-          </div>
-          <div class="stat-val" style="font-size:10px;color:#a08000" id="p-xp-txt">0/100</div>
-        </div>
-      </div>
-      <!-- TURN indicator center -->
-      <div class="turn-indicator">
-        <div class="turn-arrow" id="turn-arrow" style="color:var(--gold)">⚔</div>
-        <div class="turn-label" id="turn-label">YOUR TURN</div>
-      </div>
-      <!-- Enemy stats -->
-      <div class="status-block enemy-block">
-        <div class="status-name" id="e-name" style="color:var(--red)">—</div>
-        <div class="status-hp-row">
-          <div class="stat-val" id="e-hp-txt" style="text-align:right">—</div>
-          <div class="hp-bar-wrap"><div class="hp-bar-fill" id="e-hp-bar" style="width:100%"></div></div>
-          <div class="stat-label">HP</div>
-        </div>
-        <div style="font-family:var(--vt);font-size:13px;color:#a08080;text-align:right;margin-top:2px" id="e-type">—</div>
-        <div style="font-family:var(--vt);font-size:13px;color:#a06020;text-align:right;margin-top:2px" id="e-reward">—</div>
-      </div>
     </div>
 
     <!-- BATTLEFIELD -->
@@ -620,20 +580,58 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 
     <!-- BATTLE BOTTOM PANEL -->
     <div class="battle-bottom">
-      <!-- Player status strip -->
-      <div class="player-sprite-row">
-        <div class="player-sprite-emoji" id="p-sprite">⚙️</div>
-        <div class="player-info">
-          <div class="player-name-row">
-            <span class="player-char-name" id="p-name2">—</span>
-            <span class="player-level">Lv <span id="p-level2">1</span></span>
-            <span class="def-badge" id="def-badge">🛡️ DEFEND</span>
+      <!-- Status bawah: player | turn | enemy -->
+      <div class="bottom-status-bar">
+        <!-- Player -->
+        <div class="bstat-player">
+          <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+            <span class="bstat-icon" id="p-sprite">⚙️</span>
+            <div>
+              <div class="bstat-name" id="p-name">—</div>
+              <div style="display:flex;align-items:center;gap:4px">
+                <span style="font-family:var(--vt);font-size:11px;color:var(--cyan);background:rgba(0,80,120,0.4);border:1px solid rgba(0,150,200,0.4);padding:0 4px">Lv <span id="p-level">1</span></span>
+                <span class="def-badge" id="def-badge">🛡️</span>
+              </div>
+            </div>
           </div>
-          <div class="player-hp-row" style="display:flex;align-items:center;gap:6px">
-            <span style="font-size:6px;color:#6060a0;font-family:var(--vt);font-size:11px">HP</span>
-            <div class="hp-bar-wrap" style="flex:1"><div class="hp-bar-fill" id="p-hp-bar2" style="width:100%"></div></div>
-            <span style="font-family:var(--vt);font-size:13px;color:#c0c0e0" id="p-hp-txt2">—</span>
+          <div class="bstat-row">
+            <span class="bstat-lbl">HP</span>
+            <div class="hp-bar-wrap"><div class="hp-bar-fill" id="p-hp-bar" style="width:100%"></div></div>
+            <span class="bstat-val" id="p-hp-txt">—</span>
           </div>
+          <div class="bstat-row">
+            <span class="bstat-lbl">MP</span>
+            <div class="hp-bar-wrap"><div class="mp-bar-fill" id="p-mp-bar" style="width:100%"></div></div>
+            <span class="bstat-val" id="p-mp-txt">—</span>
+          </div>
+          <div class="bstat-row" style="margin-top:1px">
+            <span class="bstat-lbl" style="font-size:9px">XP</span>
+            <div class="hp-bar-wrap" style="height:4px"><div style="height:100%;background:linear-gradient(90deg,#806000,#ffd040);transition:width 0.3s" id="p-xp-bar"></div></div>
+            <span class="bstat-val" style="font-size:10px;color:#a08000" id="p-xp-txt">0/100</span>
+          </div>
+        </div>
+
+        <!-- Turn indicator tengah -->
+        <div class="turn-badge">
+          <div class="turn-badge-arrow" id="turn-arrow" style="color:var(--gold)">⚔</div>
+          <div class="turn-badge-lbl" id="turn-label">YOUR TURN</div>
+        </div>
+
+        <!-- Enemy -->
+        <div class="bstat-enemy">
+          <div style="display:flex;align-items:center;justify-content:flex-end;gap:4px;margin-bottom:3px">
+            <div style="text-align:right">
+              <div class="bstat-name enemy" id="e-name">—</div>
+              <div style="font-family:var(--vt);font-size:11px;color:#a08080" id="e-type">—</div>
+            </div>
+            <span class="bstat-enemy-icon" id="e-icon-bottom">—</span>
+          </div>
+          <div class="bstat-row">
+            <span class="bstat-val" id="e-hp-txt" style="text-align:left">—</span>
+            <div class="hp-bar-wrap"><div class="hp-bar-fill" id="e-hp-bar" style="width:100%"></div></div>
+            <span class="bstat-lbl" style="text-align:right">HP</span>
+          </div>
+          <div style="font-family:var(--vt);font-size:11px;color:#a06020;text-align:right;margin-top:2px" id="e-reward">—</div>
         </div>
       </div>
 
@@ -644,27 +642,23 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
           <button class="cmd-btn atk" id="btn-atk" onclick="doAction('attack')">
             <span class="cmd-icon">⚔️</span>
             <span class="cmd-name">SERANG</span>
-            <div class="cmd-sub">Serangan normal</div>
           </button>
           <button class="cmd-btn def" id="btn-def" onclick="doAction('defend')">
             <span class="cmd-icon">🛡️</span>
             <span class="cmd-name">BERTAHAN</span>
-            <div class="cmd-sub">-60% damage</div>
           </button>
           <button class="cmd-btn heal-btn" id="btn-heal" onclick="doAction('heal')">
             <span class="cmd-icon">💊</span>
             <span class="cmd-name">HEAL</span>
-            <div class="cmd-sub">+<span id="heal-amt">—</span> HP · 20 MP</div>
           </button>
           <button class="cmd-btn flee" id="btn-flee" onclick="confirmFlee()">
             <span class="cmd-icon">🏃</span>
             <span class="cmd-name">KABUR</span>
-            <div class="cmd-sub">Ganti musuh</div>
           </button>
         </div>
         <!-- Skills -->
         <div class="skills-panel" style="padding:0">
-          <div style="font-size:6px;color:var(--cyan);margin-bottom:6px;border-bottom:1px solid rgba(64,208,255,0.2);padding-bottom:4px">── SKILLS ──</div>
+          <div style="font-size:6px;color:var(--cyan);margin-bottom:4px;border-bottom:1px solid rgba(64,208,255,0.2);padding-bottom:3px">── SKILLS ──</div>
           <div class="skill-grid" id="skill-list"></div>
         </div>
       </div>
@@ -1175,50 +1169,47 @@ function pickEnemy(){
 
 function renderBattle(){
   const p=S.char,e=S.enemy;
-  document.getElementById('p-name').textContent=p.name;
+  var pnEl=document.getElementById('p-name'); if(pnEl) pnEl.textContent=p.name;
   var pcEl=document.getElementById('p-class'); if(pcEl) pcEl.textContent=p.cls;
-  document.getElementById('e-icon').textContent=e.icon;
+  var eiEl=document.getElementById('e-icon'); if(eiEl) eiEl.textContent=e.icon;
+  var eibEl=document.getElementById('e-icon-bottom'); if(eibEl) eibEl.textContent=e.icon;
   document.getElementById('e-name').textContent=e.name;
   document.getElementById('e-type').textContent=e.type;
   document.getElementById('e-reward').textContent='+'+e.xp+' XP';
-  document.getElementById('heal-amt').textContent=p.healPow;
+  var haEl=document.getElementById('heal-amt'); if(haEl) haEl.textContent=p.healPow;
   updateBars();renderSkills();
-  // JRPG sync
+  // sync
   var nt=document.getElementById('e-name-tag'); if(nt) nt.textContent=e.name;
   var ps=document.getElementById('p-sprite'); if(ps) ps.textContent=p.icon;
-  var pn2=document.getElementById('p-name2'); if(pn2) pn2.textContent=p.name;
-  var pl2=document.getElementById('p-level2'); if(pl2) pl2.textContent=p.level;
+  var pn=document.getElementById('p-name'); if(pn) pn.textContent=p.name;
+  var pl=document.getElementById('p-level'); if(pl) pl.textContent=p.level;
   var bw=document.getElementById('battle-wallet'); if(bw) bw.textContent=wallet.address?wallet.address.slice(0,6)+'...'+wallet.address.slice(-4):'—';
   var bn=document.getElementById('battle-net'); if(bn) bn.textContent=wallet.isDemo?'Demo':'Ritual';
 }
 
 function updateBars(){
   const p=S.char,e=S.enemy;
-  document.getElementById('p-hp-txt').textContent=p.hp+'/'+p.maxhp;
-  document.getElementById('p-hp-bar').style.width=(Math.max(0,p.hp)/p.maxhp*100)+'%';
-  document.getElementById('p-mp-txt').textContent=p.mp+'/'+p.maxmp;
-  document.getElementById('p-mp-bar').style.width=(p.mp/p.maxmp*100)+'%';
-  document.getElementById('p-level').textContent=p.level;
-  document.getElementById('p-xp-txt').textContent=p.xp+'/'+p.xpNext;
-  document.getElementById('p-xp-bar').style.width=Math.min(100,p.xp/p.xpNext*100)+'%';
-  document.getElementById('e-hp-txt').textContent=Math.max(0,e.hp)+'/'+e.maxhp;
-  document.getElementById('e-hp-bar').style.width=(Math.max(0,e.hp)/e.maxhp*100)+'%';
-  document.getElementById('def-badge').style.display=S.defending?'block':'none';
-  // JRPG extra bars
-  var b2=document.getElementById('p-hp-bar2'); if(b2) b2.style.width=(Math.max(0,p.hp)/p.maxhp*100)+'%';
-  var t2=document.getElementById('p-hp-txt2'); if(t2) t2.textContent=p.hp+'/'+p.maxhp;
-  var l2=document.getElementById('p-level2'); if(l2) l2.textContent=p.level;
-  var pb=document.getElementById('p-hp-bar'),p2b=document.getElementById('p-hp-bar2'),eb=document.getElementById('e-hp-bar');
-  if(pb&&p2b){if(p.hp/p.maxhp<0.25){pb.classList.add('low');p2b.classList.add('low');}else{pb.classList.remove('low');p2b.classList.remove('low');}}
-  if(eb){if(Math.max(0,e.hp)/e.maxhp<0.25)eb.classList.add('low');else eb.classList.remove('low');}
+  // Player bars
+  var phb=document.getElementById('p-hp-bar'); if(phb){phb.style.width=(Math.max(0,p.hp)/p.maxhp*100)+'%';if(p.hp/p.maxhp<0.25)phb.classList.add('low');else phb.classList.remove('low');}
+  var pht=document.getElementById('p-hp-txt'); if(pht) pht.textContent=p.hp+'/'+p.maxhp;
+  var mpb=document.getElementById('p-mp-bar'); if(mpb) mpb.style.width=(p.mp/p.maxmp*100)+'%';
+  var mpt=document.getElementById('p-mp-txt'); if(mpt) mpt.textContent=p.mp+'/'+p.maxmp;
+  var xpb=document.getElementById('p-xp-bar'); if(xpb) xpb.style.width=Math.min(100,p.xp/p.xpNext*100)+'%';
+  var xpt=document.getElementById('p-xp-txt'); if(xpt) xpt.textContent=p.xp+'/'+p.xpNext;
+  var plv=document.getElementById('p-level'); if(plv) plv.textContent=p.level;
+  // Enemy bars
+  var ehb=document.getElementById('e-hp-bar'); if(ehb){ehb.style.width=(Math.max(0,e.hp)/e.maxhp*100)+'%';if(e.hp/e.maxhp<0.25)ehb.classList.add('low');else ehb.classList.remove('low');}
+  var eht=document.getElementById('e-hp-txt'); if(eht) eht.textContent=Math.max(0,e.hp)+'/'+e.maxhp;
+  // Defend badge
+  var db=document.getElementById('def-badge'); if(db) db.style.display=S.defending?'inline-block':'none';
 }
 
 function renderSkills(){
   const p=S.char;
   var sl=document.getElementById('skill-list'); if(sl) sl.innerHTML=p.skills.map(s=>`
     <button class="skill-btn" onclick="useSkill('${s.id}')" ${!S.isPlayerTurn||S.busy||p.mp<s.mpCost?'disabled':''}>
-      <div class="sk-name">${s.name}</div><div class="sk-desc">${s.desc}</div>
-      <div class="sk-cost">${s.mpCost>0?'Mana: '+s.mpCost:'Gratis'}</div>
+      <div class="sk-name">${s.name}</div>
+      <div class="sk-cost">${s.mpCost>0?'MP:'+s.mpCost:'Gratis'}</div>
     </button>`).join('');
 }
 
