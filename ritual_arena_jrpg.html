@@ -632,6 +632,7 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
       <!-- Player side -->
       <div class="player-sprite" id="player-sprite">
         <img src="jezzCharArena.gif" alt="Jezz" class="player-sprite-img" id="player-gif">
+        <img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/madCharArena.gif" alt="Mad Steel" class="player-sprite-img" id="mad-gif" style="display:none">
         <div class="player-name-tag" id="p-battle-name">JEZZ</div>
       </div>
 
@@ -1173,7 +1174,7 @@ const CHARS = [
     {id:'s3',name:'Regen Node',desc:'Heal HP dan isi mana sekaligus',heal:25,manaHeal:15,mpCost:0,type:'special'},
     {id:'s4',name:'Fork Network',desc:'Serang dua kali berturut-turut',dmg:22,mpCost:25,type:'multi'}
   ]},
-  {id:'val',name:'Mad Steel',cls:'Strong Guardian',hp:170,maxhp:170,mp:60,maxmp:60,atk:22,def:16,healPow:40,icon:'🛡️',
+  {id:'val',name:'Mad Steel',cls:'Strong Guardian',hp:170,maxhp:170,mp:60,maxmp:60,atk:22,def:16,healPow:40,icon:'<img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/madCharArena.gif" style="width:48px;height:48px;image-rendering:pixelated">',
    skills:[
     {id:'s1',name:'Slash TX',desc:'Hukum transaksi nakal musuh',dmg:32,mpCost:18,type:'dmg'},
     {id:'s2',name:'Consensus Blast',desc:'Ledakan kekuatan konsensus',dmg:55,mpCost:35,type:'dmg'},
@@ -1258,24 +1259,29 @@ function renderBattle(){
   var bn=document.getElementById('battle-net'); if(bn) bn.textContent=wallet.isDemo?'Demo':'Ritual';
   // Update player GIF name tag
   var pbn=document.getElementById('p-battle-name'); if(pbn) pbn.textContent=p.name;
-  // Show/hide GIF based on character (Jez Runner uses gif, others use emoji icon)
+  // Show/hide sprite based on character
   var gifEl=document.getElementById('player-gif');
+  var madGifEl=document.getElementById('mad-gif');
   var psSprite=document.getElementById('player-sprite');
-  if(gifEl && psSprite){
+  if(psSprite){
+    // Hide all first
+    if(gifEl) gifEl.style.display='none';
+    if(madGifEl) madGifEl.style.display='none';
+    var eo=document.getElementById('player-emoji-big'); if(eo) eo.remove();
     if(p.id==='node'){
-      // Jez Runner — tampilkan GIF
-      gifEl.style.display='block';
-      // hide any extra icon overlay
+      // Jez Runner — tampilkan jezzCharArena.gif
+      if(gifEl) gifEl.style.display='block';
+    } else if(p.id==='val'){
+      // Mad Steel — tampilkan madCharArena.gif
+      if(madGifEl) madGifEl.style.display='block';
     } else {
-      // Karakter lain — ganti gif dengan emoji besar
-      gifEl.style.display='none';
-      // buat/update overlay emoji
-      var emojiEl=document.getElementById('player-emoji-big');
-      if(!emojiEl){emojiEl=document.createElement('div');emojiEl.id='player-emoji-big';emojiEl.style.cssText='font-size:72px;line-height:1;filter:drop-shadow(0 0 14px rgba(80,160,255,0.5))';psSprite.insertBefore(emojiEl,pbn);}
-      emojiEl.textContent=p.id==='val'?'🛡️':'🧙';
+      // Flash Shadow — emoji besar
+      var emojiEl=document.createElement('div');
+      emojiEl.id='player-emoji-big';
+      emojiEl.style.cssText='font-size:72px;line-height:1;filter:drop-shadow(0 0 14px rgba(80,160,255,0.5))';
+      emojiEl.textContent='🧙';
+      psSprite.insertBefore(emojiEl, pbn);
     }
-    // If coming back to node, remove emoji overlay
-    if(p.id==='node'){var eo=document.getElementById('player-emoji-big');if(eo)eo.remove();}
   }
 }
 
@@ -1617,7 +1623,7 @@ contract RitualArenaScore {
 
 const LB_KEY = 'ritual_arena_leaderboard_v2';
 let totalWins = 0;
-const CHAR_ICONS = {'Node Runner':'⚙️','Validator':'🛡️','Dev Mage':'🧙'};
+const CHAR_ICONS = {'Jez Runner':'⚙️','Mad Steel':'🛡️','Flash Shadow':'🧙'};
 
 function getLocalLeaderboard() {
   try { return JSON.parse(localStorage.getItem(LB_KEY) || '[]'); } catch(e) { return []; }
