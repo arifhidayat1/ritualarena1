@@ -177,7 +177,7 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 }
 .char-card:hover{border-color:var(--gold);background:rgba(40,40,100,0.8)}
 .char-card.selected{border-color:var(--gold);background:rgba(60,50,20,0.6);box-shadow:0 0 0 1px rgba(240,192,64,0.3)}
-.char-icon-box{font-size:24px;width:36px;text-align:center;flex-shrink:0}
+.char-icon-box{font-size:24px;width:48px;height:48px;text-align:center;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .char-name{font-size:8px;color:var(--gold)}
 .char-meta{font-family:var(--vt);font-size:14px;color:#8080b0;margin-top:2px}
 .sel-badge{position:absolute;right:10px;font-size:7px;color:#000;background:var(--gold);padding:2px 8px}
@@ -1106,7 +1106,7 @@ window.addEventListener('load', () => {
 // GAME DATA
 // ============================================================
 const CHARS = [
-  {id:'node',name:'Jez Runner',cls:'Strong Fighter',hp:130,maxhp:130,mp:80,maxmp:80,atk:18,def:8,healPow:30,icon:'⚙️',
+  {id:'node',name:'Jez Runner',cls:'Strong Fighter',hp:130,maxhp:130,mp:80,maxmp:80,atk:18,def:8,healPow:30,icon:'<img src="jezzCharArena.gif" style="width:48px;height:48px;image-rendering:pixelated">',
    skills:[
     {id:'s1',name:'Infernet Strike',desc:'Serangan dari infernet node',dmg:28,mpCost:15,type:'dmg'},
     {id:'s2',name:'AI Compute',desc:'Panggil model AI — damage masif',dmg:50,mpCost:30,type:'dmg'},
@@ -1191,7 +1191,7 @@ function renderBattle(){
   updateBars();renderSkills();
   // sync
   var nt=document.getElementById('e-name-tag'); if(nt) nt.textContent=e.name;
-  var ps=document.getElementById('p-sprite'); if(ps) ps.textContent=p.icon;
+  var ps=document.getElementById('p-sprite'); if(ps) ps.innerHTML=p.icon;
   var pn=document.getElementById('p-name'); if(pn) pn.textContent=p.name;
   var pl=document.getElementById('p-level'); if(pl) pl.textContent=p.level;
   var bw=document.getElementById('battle-wallet'); if(bw) bw.textContent=wallet.address?wallet.address.slice(0,6)+'...'+wallet.address.slice(-4):'—';
