@@ -477,7 +477,18 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
   </div>
 </div>
 
-<!-- ===== SCREEN: CONNECT ===== -->
+<!-- ===== FLEE CONFIRM MODAL ===== -->
+<div class="modal-overlay" id="flee-modal">
+  <div class="modal-box" style="text-align:center">
+    <div style="font-size:28px;margin-bottom:8px">🏃</div>
+    <div class="modal-title">KABUR?</div>
+    <div class="modal-sub" style="margin-bottom:16px">Musuh baru akan muncul.<br>Progress battle ini hilang.</div>
+    <div style="display:flex;gap:8px;justify-content:center">
+      <button class="px-btn px-btn-gold" onclick="doFlee()">✔ Kabur</button>
+      <button class="px-btn px-btn-red px-btn-sm" onclick="closeFlee()">✕ Batal</button>
+    </div>
+  </div>
+</div>
 <div id="screen-connect" class="screen active bg-menu">
   <div class="overlay">
     <div class="game-title">RITUAL ARENA</div>
@@ -1095,21 +1106,21 @@ window.addEventListener('load', () => {
 // GAME DATA
 // ============================================================
 const CHARS = [
-  {id:'node',name:'Node Runner',cls:'Infernet Operator',hp:130,maxhp:130,mp:80,maxmp:80,atk:18,def:8,healPow:30,icon:'⚙️',
+  {id:'node',name:'Jez Runner',cls:'Strong Fighter',hp:130,maxhp:130,mp:80,maxmp:80,atk:18,def:8,healPow:30,icon:'⚙️',
    skills:[
     {id:'s1',name:'Infernet Strike',desc:'Serangan dari infernet node',dmg:28,mpCost:15,type:'dmg'},
     {id:'s2',name:'AI Compute',desc:'Panggil model AI — damage masif',dmg:50,mpCost:30,type:'dmg'},
     {id:'s3',name:'Regen Node',desc:'Heal HP dan isi mana sekaligus',heal:25,manaHeal:15,mpCost:0,type:'special'},
     {id:'s4',name:'Fork Network',desc:'Serang dua kali berturut-turut',dmg:22,mpCost:25,type:'multi'}
   ]},
-  {id:'val',name:'Validator',cls:'Consensus Guardian',hp:170,maxhp:170,mp:60,maxmp:60,atk:22,def:16,healPow:40,icon:'🛡️',
+  {id:'val',name:'Mad Steel',cls:'Strong Guardian',hp:170,maxhp:170,mp:60,maxmp:60,atk:22,def:16,healPow:40,icon:'🛡️',
    skills:[
     {id:'s1',name:'Slash TX',desc:'Hukum transaksi nakal musuh',dmg:32,mpCost:18,type:'dmg'},
     {id:'s2',name:'Consensus Blast',desc:'Ledakan kekuatan konsensus',dmg:55,mpCost:35,type:'dmg'},
-    {id:'s3',name:'Epoch Regen',desc:'Pulih besar setiap epoch',heal:50,mpCost:20,type:'heal'},
+    {id:'s3',name:'Epoch Regen',desc:'Pulih HP & Mana penuh, cooldown 12 turn',heal:50,manaHeal:40,mpCost:0,cooldown:12,type:'cooldown'},
     {id:'s4',name:'Finality Strike',desc:'Pasti kena, tidak meleset',dmg:38,mpCost:28,type:'sure'}
   ]},
-  {id:'mage',name:'Dev Mage',cls:'Smart Contract Caster',hp:95,maxhp:95,mp:130,maxmp:130,atk:29,def:5,healPow:20,icon:'🧙',
+  {id:'mage',name:'Flash Shadow',cls:'Strong Mage',hp:95,maxhp:95,mp:130,maxmp:130,atk:29,def:5,healPow:20,icon:'🧙',
    skills:[
     {id:'s1',name:'Deploy Contract',desc:'Lempar smart contract sebagai bom',dmg:22,mpCost:10,type:'dmg'},
     {id:'s2',name:'Reentrancy Bug',desc:'Eksploitasi celah — damage besar',dmg:65,mpCost:40,type:'dmg'},
@@ -1126,7 +1137,7 @@ const ENEMIES = [
   {name:'Flash Loan Bot',type:'DeFi Predator',hp:140,maxhp:140,atk:29,def:7,xp:70,icon:'🌊',moves:['Flash Loan','Arbitrage Strike','Price Manipulation']}
 ];
 
-let S = {char:null,enemy:null,totalXP:0,block:100234,defending:false,isPlayerTurn:true,busy:false,selectedChar:0};
+let S = {char:null,enemy:null,totalXP:0,block:100234,defending:false,isPlayerTurn:true,busy:false,selectedChar:0,skillCooldowns:{}};
 
 function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function fakeTx(){return '0x'+Array.from({length:16},()=>rnd(0,15).toString(16)).join('')+'...';}
@@ -1152,7 +1163,7 @@ function selectChar(i){
 function startGame(){
   const c=JSON.parse(JSON.stringify(CHARS[S.selectedChar]));
   c.xp=0;c.level=1;c.xpNext=100;
-  S.char=c;S.defending=false;S.isPlayerTurn=true;S.busy=false;
+  S.char=c;S.defending=false;S.isPlayerTurn=true;S.busy=false;S.skillCooldowns={};
   var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
   pickEnemy();renderBattle();showScreen('battle');setTurnUI(true);
   addLog('⚔️ Pertarungan dimulai di Ritual Testnet!','sys');
@@ -1206,11 +1217,22 @@ function updateBars(){
 
 function renderSkills(){
   const p=S.char;
-  var sl=document.getElementById('skill-list'); if(sl) sl.innerHTML=p.skills.map(s=>`
-    <button class="skill-btn" onclick="useSkill('${s.id}')" ${!S.isPlayerTurn||S.busy||p.mp<s.mpCost?'disabled':''}>
+  var sl=document.getElementById('skill-list'); if(!sl) return;
+  sl.innerHTML=p.skills.map(s=>{
+    const cd=S.skillCooldowns[s.id]||0;
+    const isCooldown=s.type==='cooldown';
+    const disabled=!S.isPlayerTurn||S.busy||(isCooldown?cd>0:p.mp<s.mpCost);
+    const costLabel=isCooldown
+      ? (cd>0?'⏳ '+cd+' turn':'Siap!')
+      : (s.mpCost>0?'MP:'+s.mpCost:'Gratis');
+    const costColor=isCooldown
+      ? (cd>0?'color:#ff8080':'color:#40ff80')
+      : 'color:var(--gold)';
+    return `<button class="skill-btn" onclick="useSkill('${s.id}')" ${disabled?'disabled':''}>
       <div class="sk-name">${s.name}</div>
-      <div class="sk-cost">${s.mpCost>0?'MP:'+s.mpCost:'Gratis'}</div>
-    </button>`).join('');
+      <div class="sk-cost" style="${costColor}">${costLabel}</div>
+    </button>`;
+  }).join('');
 }
 
 function setButtonsDisabled(v){
@@ -1252,7 +1274,7 @@ function shakeEl(id){
   el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),400);
 }
 
-function endPlayerTurn(){S.busy=false;setTurnUI(false);setTimeout(enemyTurn,800);}
+function endPlayerTurn(){S.busy=false;tickCooldowns();setTurnUI(false);setTimeout(enemyTurn,800);}
 
 function doAction(type){
   if(!S.isPlayerTurn||S.busy)return;
@@ -1274,17 +1296,35 @@ function doAction(type){
 function useSkill(id){
   if(!S.isPlayerTurn||S.busy)return;
   const p=S.char,e=S.enemy;const s=p.skills.find(x=>x.id===id);
-  if(!s||p.mp<s.mpCost)return;
-  S.busy=true;setButtonsDisabled(true);p.mp=Math.max(0,p.mp-s.mpCost);
+  if(!s)return;
+  // Cek cooldown
+  if(s.type==='cooldown'&&S.skillCooldowns[id]>0)return;
+  if(s.type!=='cooldown'&&p.mp<s.mpCost)return;
+  S.busy=true;setButtonsDisabled(true);
+  if(s.type!=='cooldown') p.mp=Math.max(0,p.mp-s.mpCost);
   if(s.type==='dmg'){let d=s.dmg+rnd(-5,10);const c=rnd(1,10)>9;if(c)d=Math.floor(d*1.5);e.hp=Math.max(0,e.hp-d);addLog('⚡ '+s.name+': -'+d+' HP'+(c?' CRITICAL!':''),'hit');shakeEl('e-icon');}
   else if(s.type==='heal'){const h=s.heal+rnd(0,6);p.hp=Math.min(p.maxhp,p.hp+h);addLog('💚 '+s.name+': +'+h+' HP','heal');}
   else if(s.type==='multi'){let d1=s.dmg+rnd(-3,6),d2=s.dmg+rnd(-3,6);e.hp=Math.max(0,e.hp-d1-d2);addLog('⚡ '+s.name+': -'+d1+' dan -'+d2+' HP','hit');shakeEl('e-icon');}
   else if(s.type==='sure'){e.hp=Math.max(0,e.hp-s.dmg);addLog('🎯 '+s.name+': -'+s.dmg+' HP (pasti kena!)','hit');shakeEl('e-icon');}
   else if(s.type==='drain'){let d=s.dmg+rnd(-5,6);const mg=s.manaHeal||0;e.hp=Math.max(0,e.hp-d);p.mp=Math.min(p.maxmp,p.mp+mg);addLog('🌀 '+s.name+': -'+d+' HP, +'+mg+' Mana','hit');shakeEl('e-icon');}
   else if(s.type==='special'){const h=s.heal+rnd(0,5);const mg=s.manaHeal||0;p.hp=Math.min(p.maxhp,p.hp+h);p.mp=Math.min(p.maxmp,p.mp+mg);addLog('✨ '+s.name+': +'+h+' HP, +'+mg+' Mana','heal');}
+  else if(s.type==='cooldown'){
+    const h=s.heal+rnd(0,8);const mg=s.manaHeal||0;
+    p.hp=Math.min(p.maxhp,p.hp+h);p.mp=Math.min(p.maxmp,p.mp+mg);
+    S.skillCooldowns[id]=s.cooldown;
+    addLog('🔄 '+s.name+': +'+h+' HP, +'+mg+' Mana — cooldown '+s.cooldown+' turn','heal');
+  }
   updateBars();
   if(e.hp<=0){setTimeout(victory,300);return;}
+  tickCooldowns();
+  renderSkills();
   setTimeout(endPlayerTurn,400);
+}
+
+function tickCooldowns(){
+  for(const key in S.skillCooldowns){
+    if(S.skillCooldowns[key]>0) S.skillCooldowns[key]--;
+  }
 }
 
 function enemyTurn(){
@@ -1300,14 +1340,24 @@ function enemyTurn(){
   if(e.hp<e.maxhp*0.3&&rnd(1,4)===1){const eh=rnd(10,22);e.hp=Math.min(e.maxhp,e.hp+eh);addLog('🔄 '+e.name+' pulih '+eh+' HP!','enemy');}
   updateBars();
   if(p.hp<=0){setTimeout(()=>showScreen('dead'),500);return;}
-  setTimeout(()=>{addLog('── Giliran kamu ──','sys');S.busy=false;setTurnUI(true);},600);
+  setTimeout(()=>{addLog('── Giliran kamu ──','sys');S.busy=false;setTurnUI(true);renderSkills();},600);
 }
 
 function confirmFlee(){
   if(!S.isPlayerTurn||S.busy)return;
-  if(!confirm('Kabur dari pertarungan ini? Musuh baru akan muncul.'))return;
-  S.defending=false;S.busy=false;pickEnemy();renderBattle();
-  var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';setTurnUI(true);
+  document.getElementById('flee-modal').classList.add('show');
+}
+
+function closeFlee(){
+  document.getElementById('flee-modal').classList.remove('show');
+}
+
+function doFlee(){
+  closeFlee();
+  S.defending=false;S.busy=false;S.skillCooldowns={};
+  pickEnemy();renderBattle();
+  var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
+  setTurnUI(true);
   addLog('🏃 Kabur! Musuh baru: '+S.enemy.icon+' '+S.enemy.name,'sys');
 }
 
