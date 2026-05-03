@@ -246,11 +246,57 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
   display:flex;align-items:center;justify-content:center;
   position:relative;
   min-height:240px;
+  gap:0;
 }
+
+/* Player side */
+.player-sprite{
+  text-align:center;
+  animation:playerFloat 3.5s ease-in-out infinite;
+  position:relative;
+  flex:1;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  padding-bottom:10px;
+}
+@keyframes playerFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.player-sprite-img{
+  width:90px;
+  height:auto;
+  image-rendering:pixelated;
+  filter:drop-shadow(0 0 14px rgba(80,160,255,0.55));
+  display:block;
+}
+.player-name-tag{
+  font-size:7px;color:var(--cyan);
+  background:rgba(0,0,0,0.8);border:1px solid var(--cyan);
+  padding:3px 10px;margin-top:6px;
+  display:inline-block;
+}
+
+/* VS badge */
+.vs-badge{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  flex-shrink:0;
+  padding:0 8px;
+}
+.vs-text{
+  font-family:var(--pixel);
+  font-size:clamp(14px,3vw,22px);
+  color:var(--gold);
+  text-shadow:0 0 12px var(--gold),2px 2px 0 #000;
+  letter-spacing:2px;
+  animation:vsPulse 1.5s ease-in-out infinite;
+}
+@keyframes vsPulse{0%,100%{opacity:1;text-shadow:0 0 12px var(--gold),2px 2px 0 #000}50%{opacity:0.7;text-shadow:0 0 24px var(--gold2),2px 2px 0 #000}}
+.vs-line{width:2px;height:30px;background:linear-gradient(to bottom,transparent,var(--gold),transparent);margin:4px auto}
+
 .enemy-sprite{
   text-align:center;
   animation:enemyFloat 3s ease-in-out infinite;
   position:relative;
+  flex:1;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  padding-bottom:10px;
 }
 @keyframes enemyFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 .enemy-emoji-big{
@@ -583,6 +629,20 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 
     <!-- BATTLEFIELD -->
     <div class="battlefield" id="battlefield">
+      <!-- Player side -->
+      <div class="player-sprite" id="player-sprite">
+        <img src="jezzCharArena.gif" alt="Jezz" class="player-sprite-img" id="player-gif">
+        <div class="player-name-tag" id="p-battle-name">JEZZ</div>
+      </div>
+
+      <!-- VS badge -->
+      <div class="vs-badge">
+        <div class="vs-line"></div>
+        <div class="vs-text">VS</div>
+        <div class="vs-line"></div>
+      </div>
+
+      <!-- Enemy side -->
       <div class="enemy-sprite" id="enemy-sprite">
         <span class="enemy-emoji-big" id="e-icon">🤖</span>
         <div class="enemy-name-tag" id="e-name-tag">—</div>
@@ -1196,6 +1256,27 @@ function renderBattle(){
   var pl=document.getElementById('p-level'); if(pl) pl.textContent=p.level;
   var bw=document.getElementById('battle-wallet'); if(bw) bw.textContent=wallet.address?wallet.address.slice(0,6)+'...'+wallet.address.slice(-4):'—';
   var bn=document.getElementById('battle-net'); if(bn) bn.textContent=wallet.isDemo?'Demo':'Ritual';
+  // Update player GIF name tag
+  var pbn=document.getElementById('p-battle-name'); if(pbn) pbn.textContent=p.name;
+  // Show/hide GIF based on character (Jez Runner uses gif, others use emoji icon)
+  var gifEl=document.getElementById('player-gif');
+  var psSprite=document.getElementById('player-sprite');
+  if(gifEl && psSprite){
+    if(p.id==='node'){
+      // Jez Runner — tampilkan GIF
+      gifEl.style.display='block';
+      // hide any extra icon overlay
+    } else {
+      // Karakter lain — ganti gif dengan emoji besar
+      gifEl.style.display='none';
+      // buat/update overlay emoji
+      var emojiEl=document.getElementById('player-emoji-big');
+      if(!emojiEl){emojiEl=document.createElement('div');emojiEl.id='player-emoji-big';emojiEl.style.cssText='font-size:72px;line-height:1;filter:drop-shadow(0 0 14px rgba(80,160,255,0.5))';psSprite.insertBefore(emojiEl,pbn);}
+      emojiEl.textContent=p.id==='val'?'🛡️':'🧙';
+    }
+    // If coming back to node, remove emoji overlay
+    if(p.id==='node'){var eo=document.getElementById('player-emoji-big');if(eo)eo.remove();}
+  }
 }
 
 function updateBars(){
@@ -1268,7 +1349,14 @@ function addLog(msg,type){
 function shakeEl(id){
   var target=id;
   if(id==='e-icon') target='enemy-sprite';
-  else if(id==='player-card'){var strip=document.querySelector('.player-sprite-row');if(strip){strip.classList.remove('shake');void strip.offsetWidth;strip.classList.add('shake');setTimeout(function(){strip.classList.remove('shake');},400);}return;}
+  else if(id==='player-card'){
+    // Shake the player sprite in the battlefield
+    var ps=document.getElementById('player-sprite');
+    if(ps){ps.classList.remove('shake');void ps.offsetWidth;ps.classList.add('shake');setTimeout(function(){ps.classList.remove('shake');},400);}
+    var strip=document.querySelector('.player-sprite-row');
+    if(strip){strip.classList.remove('shake');void strip.offsetWidth;strip.classList.add('shake');setTimeout(function(){strip.classList.remove('shake');},400);}
+    return;
+  }
   const el=document.getElementById(target);if(!el)return;
   el.classList.remove('shake');void el.offsetWidth;
   el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),400);
