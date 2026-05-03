@@ -260,10 +260,10 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 }
 @keyframes playerFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 .player-sprite-img{
-  width:90px;
+  width:150px;
   height:auto;
   image-rendering:pixelated;
-  filter:drop-shadow(0 0 14px rgba(80,160,255,0.55));
+  filter:drop-shadow(0 0 18px rgba(80,160,255,0.65));
   display:block;
 }
 .player-name-tag{
@@ -300,8 +300,8 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 }
 @keyframes enemyFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 .enemy-emoji-big{
-  font-size:72px;
-  filter:drop-shadow(0 0 20px rgba(255,80,80,0.5));
+  font-size:120px;
+  filter:drop-shadow(0 0 24px rgba(255,80,80,0.6));
   display:block;line-height:1;
 }
 .enemy-name-tag{
@@ -633,6 +633,7 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
       <div class="player-sprite" id="player-sprite">
         <img src="jezzCharArena.gif" alt="Jezz" class="player-sprite-img" id="player-gif">
         <img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/madCharArena.gif" alt="Mad Steel" class="player-sprite-img" id="mad-gif" style="display:none">
+        <img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/flashCharArena.gif" alt="Flash Shadow" class="player-sprite-img" id="flash-gif" style="display:none">
         <div class="player-name-tag" id="p-battle-name">JEZZ</div>
       </div>
 
@@ -1181,7 +1182,7 @@ const CHARS = [
     {id:'s3',name:'Epoch Regen',desc:'Pulih HP & Mana penuh, cooldown 12 turn',heal:50,manaHeal:40,mpCost:0,cooldown:12,type:'cooldown'},
     {id:'s4',name:'Finality Strike',desc:'Pasti kena, tidak meleset',dmg:38,mpCost:28,type:'sure'}
   ]},
-  {id:'mage',name:'Flash Shadow',cls:'Strong Mage',hp:95,maxhp:95,mp:130,maxmp:130,atk:29,def:5,healPow:20,icon:'🧙',
+  {id:'mage',name:'Flash Shadow',cls:'Strong Mage',hp:95,maxhp:95,mp:130,maxmp:130,atk:29,def:5,healPow:20,icon:'<img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/flashCharArena.gif" style="width:48px;height:48px;image-rendering:pixelated">',
    skills:[
     {id:'s1',name:'Deploy Contract',desc:'Lempar smart contract sebagai bom',dmg:22,mpCost:10,type:'dmg'},
     {id:'s2',name:'Reentrancy Bug',desc:'Eksploitasi celah — damage besar',dmg:65,mpCost:40,type:'dmg'},
@@ -1262,25 +1263,20 @@ function renderBattle(){
   // Show/hide sprite based on character
   var gifEl=document.getElementById('player-gif');
   var madGifEl=document.getElementById('mad-gif');
+  var flashGifEl=document.getElementById('flash-gif');
   var psSprite=document.getElementById('player-sprite');
   if(psSprite){
     // Hide all first
     if(gifEl) gifEl.style.display='none';
     if(madGifEl) madGifEl.style.display='none';
+    if(flashGifEl) flashGifEl.style.display='none';
     var eo=document.getElementById('player-emoji-big'); if(eo) eo.remove();
     if(p.id==='node'){
-      // Jez Runner — tampilkan jezzCharArena.gif
       if(gifEl) gifEl.style.display='block';
     } else if(p.id==='val'){
-      // Mad Steel — tampilkan madCharArena.gif
       if(madGifEl) madGifEl.style.display='block';
-    } else {
-      // Flash Shadow — emoji besar
-      var emojiEl=document.createElement('div');
-      emojiEl.id='player-emoji-big';
-      emojiEl.style.cssText='font-size:72px;line-height:1;filter:drop-shadow(0 0 14px rgba(80,160,255,0.5))';
-      emojiEl.textContent='🧙';
-      psSprite.insertBefore(emojiEl, pbn);
+    } else if(p.id==='mage'){
+      if(flashGifEl) flashGifEl.style.display='block';
     }
   }
 }
@@ -1623,7 +1619,7 @@ contract RitualArenaScore {
 
 const LB_KEY = 'ritual_arena_leaderboard_v2';
 let totalWins = 0;
-const CHAR_ICONS = {'Jez Runner':'⚙️','Mad Steel':'🛡️','Flash Shadow':'🧙'};
+const CHAR_ICONS = {'Jez Runner':'⚙️','Mad Steel':'🛡️','Flash Shadow':'⚡'};
 
 function getLocalLeaderboard() {
   try { return JSON.parse(localStorage.getItem(LB_KEY) || '[]'); } catch(e) { return []; }
