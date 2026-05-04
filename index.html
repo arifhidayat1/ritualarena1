@@ -273,8 +273,20 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
   display:inline-block;
 }
 
-/* VS badge */
-.vs-badge{
+/* Wave badge */
+.wave-badge{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  font-family:var(--pixel);font-size:8px;
+  color:var(--gold);
+  background:rgba(0,0,0,0.75);
+  border:1px solid var(--gold);
+  padding:4px 14px;
+  letter-spacing:2px;
+  text-shadow:0 0 8px var(--gold);
+  white-space:nowrap;
+  z-index:2;
+}
+.wave-badge .wave-stars{letter-spacing:1px;font-size:9px}
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   flex-shrink:0;
   padding:0 8px;
@@ -629,9 +641,11 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 
     <!-- BATTLEFIELD -->
     <div class="battlefield" id="battlefield">
+      <!-- Wave badge -->
+      <div class="wave-badge" id="wave-badge">WAVE 1 ⭐</div>
       <!-- Player side -->
       <div class="player-sprite" id="player-sprite">
-        <img src="jezzCharArena.gif" alt="Jezz" class="player-sprite-img" id="player-gif">
+        <img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/jezzCharArena.gif" alt="Jezz" class="player-sprite-img" id="player-gif">
         <img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/madCharArena.gif" alt="Mad Steel" class="player-sprite-img" id="mad-gif" style="display:none">
         <img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/flashCharArena.gif" alt="Flash Shadow" class="player-sprite-img" id="flash-gif" style="display:none">
         <div class="player-name-tag" id="p-battle-name">JEZZ</div>
@@ -748,6 +762,7 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
       <div class="result-sub" id="vic-msg">—</div>
       <div class="reward-table">
         <div style="font-size:6px;color:var(--gold);margin-bottom:8px;letter-spacing:1px">── HASIL BATTLE ──</div>
+        <div class="reward-row"><span>Wave Dicapai</span><span class="reward-val" id="vic-wave" style="color:var(--gold)">1</span></div>
         <div class="reward-row"><span>XP Didapat</span><span class="reward-val" id="vic-xp">+0</span></div>
         <div class="reward-row"><span>Total XP</span><span class="reward-val" id="vic-total-xp">0</span></div>
         <div class="reward-row"><span>Kemenangan</span><span class="reward-val" id="vic-wins">0</span></div>
@@ -1168,7 +1183,7 @@ window.addEventListener('load', () => {
 // GAME DATA
 // ============================================================
 const CHARS = [
-  {id:'node',name:'Jez Runner',cls:'Strong Fighter',hp:130,maxhp:130,mp:80,maxmp:80,atk:18,def:8,healPow:30,icon:'<img src="jezzCharArena.gif" style="width:48px;height:48px;image-rendering:pixelated">',
+  {id:'node',name:'Jez Runner',cls:'Strong Fighter',hp:130,maxhp:130,mp:80,maxmp:80,atk:18,def:8,healPow:30,icon:'<img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/jezzCharArena.gif" style="width:48px;height:48px;image-rendering:pixelated">',
    skills:[
     {id:'s1',name:'Infernet Strike',desc:'Serangan dari infernet node',dmg:28,mpCost:15,type:'dmg'},
     {id:'s2',name:'AI Compute',desc:'Panggil model AI — damage masif',dmg:50,mpCost:30,type:'dmg'},
@@ -1199,7 +1214,7 @@ const ENEMIES = [
   {name:'Flash Loan Bot',type:'DeFi Predator',hp:140,maxhp:140,atk:29,def:7,xp:70,icon:'🌊',moves:['Flash Loan','Arbitrage Strike','Price Manipulation']}
 ];
 
-let S = {char:null,enemy:null,totalXP:0,block:100234,defending:false,isPlayerTurn:true,busy:false,selectedChar:0,skillCooldowns:{}};
+let S = {char:null,enemy:null,totalXP:0,block:100234,defending:false,isPlayerTurn:true,busy:false,selectedChar:0,skillCooldowns:{},wave:1};
 
 function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function fakeTx(){return '0x'+Array.from({length:16},()=>rnd(0,15).toString(16)).join('')+'...';}
@@ -1225,7 +1240,7 @@ function selectChar(i){
 function startGame(){
   const c=JSON.parse(JSON.stringify(CHARS[S.selectedChar]));
   c.xp=0;c.level=1;c.xpNext=100;
-  S.char=c;S.defending=false;S.isPlayerTurn=true;S.busy=false;S.skillCooldowns={};
+  S.char=c;S.defending=false;S.isPlayerTurn=true;S.busy=false;S.skillCooldowns={};S.wave=1;
   var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
   pickEnemy();renderBattle();showScreen('battle');setTurnUI(true);
   addLog('⚔️ Pertarungan dimulai di Ritual Testnet!','sys');
@@ -1234,9 +1249,18 @@ function startGame(){
 }
 
 function pickEnemy(){
-  const lvl=S.char?S.char.level:1;
+  const wave=S.wave||1;
   const e=JSON.parse(JSON.stringify(ENEMIES[rnd(0,ENEMIES.length-1)]));
-  if(lvl>1){e.hp=Math.floor(e.hp*(1+(lvl-1)*0.25));e.maxhp=e.hp;e.atk=Math.floor(e.atk*(1+(lvl-1)*0.12));}
+  // Scale stats per wave: HP +20%, ATK +10%, DEF +8%, XP +25% per wave
+  if(wave>1){
+    const wm=wave-1;
+    e.hp  =Math.floor(e.hp  *(1+wm*0.20));
+    e.maxhp=e.hp;
+    e.atk =Math.floor(e.atk *(1+wm*0.10));
+    e.def =Math.floor(e.def *(1+wm*0.08));
+    e.xp  =Math.floor(e.xp  *(1+wm*0.25));
+  }
+  e.wave=wave;
   S.enemy=e;
 }
 
@@ -1258,7 +1282,14 @@ function renderBattle(){
   var pl=document.getElementById('p-level'); if(pl) pl.textContent=p.level;
   var bw=document.getElementById('battle-wallet'); if(bw) bw.textContent=wallet.address?wallet.address.slice(0,6)+'...'+wallet.address.slice(-4):'—';
   var bn=document.getElementById('battle-net'); if(bn) bn.textContent=wallet.isDemo?'Demo':'Ritual';
-  // Update player GIF name tag
+  // Update wave badge
+  var wb=document.getElementById('wave-badge');
+  if(wb){
+    var wave=S.wave||1;
+    var stars='⭐'.repeat(Math.min(wave,5))+(wave>5?'+'+(wave-5):'');
+    wb.innerHTML='WAVE '+wave+' <span class="wave-stars">'+stars+'</span>';
+  }
+  // Update player name tag bawah gif
   var pbn=document.getElementById('p-battle-name'); if(pbn) pbn.textContent=p.name;
   // Show/hide sprite based on character
   var gifEl=document.getElementById('player-gif');
@@ -1444,12 +1475,14 @@ function closeFlee(){
 
 function doFlee(){
   closeFlee();
-  S.defending=false;S.busy=false;S.skillCooldowns={};
+  S.defending=false;S.busy=false;S.skillCooldowns={};S.wave=1;
   pickEnemy();renderBattle();
   var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
   setTurnUI(true);
-  addLog('🏃 Kabur! Musuh baru: '+S.enemy.icon+' '+S.enemy.name,'sys');
+  addLog('🏃 Kabur! Wave reset. Musuh baru: '+S.enemy.icon+' '+S.enemy.name,'sys');
 }
+
+function goMenu(){S.char=null;S.enemy=null;S.busy=false;S.defending=false;S.wave=1;var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';showScreen('menu');}
 
 function victory(){
   const e=S.enemy,p=S.char;
@@ -1458,7 +1491,8 @@ function victory(){
   totalWins++;
   let lu=false;
   while(p.xp>=p.xpNext){p.xp-=p.xpNext;p.level++;p.xpNext=Math.floor(p.xpNext*1.4);p.maxhp=Math.floor(p.maxhp*1.1);p.hp=p.maxhp;p.maxmp=Math.floor(p.maxmp*1.1);p.mp=p.maxmp;p.atk+=3;p.def+=2;p.healPow+=5;lu=true;}
-  document.getElementById('vic-msg').textContent=e.name+' dikalahkan!'+(lu?' 🎉 Level '+p.level+'!':'');
+  document.getElementById('vic-msg').textContent=e.name+' dikalahkan! (Wave '+S.wave+')'+(lu?' 🎉 Level '+p.level+'!':'');
+  var vw=document.getElementById('vic-wave'); if(vw) vw.textContent='Wave '+S.wave+' '+'⭐'.repeat(Math.min(S.wave,5))+(S.wave>5?'+'+(S.wave-5):'');
   document.getElementById('vic-xp').textContent='+'+e.xp+' XP';
   document.getElementById('vic-total-xp').textContent=S.totalXP+' XP';
   document.getElementById('vic-wins').textContent=totalWins+' kemenangan';
@@ -1477,9 +1511,11 @@ function victory(){
 }
 
 function nextBattle(){
+  S.wave=(S.wave||1)+1;
   S.defending=false;S.busy=false;pickEnemy();renderBattle();showScreen('battle');
   var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';setTurnUI(true);
-  addLog('⚔️ Battle baru! Musuh: '+S.enemy.icon+' '+S.enemy.name,'sys');addLog('Giliran kamu!','sys');
+  addLog('⚔️ WAVE '+S.wave+'! Musuh: '+S.enemy.icon+' '+S.enemy.name,'sys');
+  addLog('Musuh semakin kuat! Giliran kamu!','sys');
 }
 
 function revive(){
