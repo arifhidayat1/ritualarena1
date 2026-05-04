@@ -632,12 +632,26 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 <!-- ===== DISCONNECT MODAL ===== -->
 <div class="disc-modal-overlay" id="disc-modal">
   <div class="disc-modal-box">
-    <div class="disc-modal-icon">⏻</div>
-    <div class="disc-modal-title">DISCONNECT WALLET?</div>
-    <div class="disc-modal-addr" id="disc-modal-addr">—</div>
-    <div class="disc-btn-row">
-      <button class="px-btn px-btn-red px-btn-sm" onclick="confirmDisconnect()">⏻ Disconnect</button>
-      <button class="px-btn px-btn-blue px-btn-sm" onclick="closeDiscModal()">✕ Cancel</button>
+    <div id="disc-confirm-view">
+      <div class="disc-modal-icon">⏻</div>
+      <div class="disc-modal-title">DISCONNECT WALLET?</div>
+      <div class="disc-modal-addr" id="disc-modal-addr">—</div>
+      <div class="disc-btn-row">
+        <button class="px-btn px-btn-red px-btn-sm" onclick="confirmDisconnect()">⏻ Disconnect</button>
+        <button class="px-btn px-btn-blue px-btn-sm" onclick="closeDiscModal()">✕ Cancel</button>
+      </div>
+    </div>
+    <div id="disc-success-view" style="display:none">
+      <div class="disc-modal-icon">✅</div>
+      <div class="disc-modal-title" style="color:var(--cyan)">DISCONNECTED</div>
+      <div style="font-family:var(--vt);font-size:12px;color:#8080b0;margin:10px 0 14px;line-height:1.6">
+        To fully remove this site from your wallet, revoke permission manually:<br><br>
+        <span style="color:var(--gold)">MetaMask:</span> ⋮ Menu → Connected Sites → ritualarena1.vercel.app → Disconnect<br><br>
+        <span style="color:var(--gold)">Rabby:</span> Settings → Connected Dapps → Remove
+      </div>
+      <div class="disc-btn-row">
+        <button class="px-btn px-btn-blue px-btn-sm" onclick="closeDiscModal()">✕ Close</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1146,18 +1160,34 @@ async function addRitualNetwork() {
 function openDiscModal(){
   const addr = wallet.address ? wallet.address.slice(0,8)+'...'+wallet.address.slice(-6) : (wallet.isDemo ? '0xDEMO (Demo Mode)' : '—');
   document.getElementById('disc-modal-addr').textContent = addr;
+  document.getElementById('disc-confirm-view').style.display = 'block';
+  document.getElementById('disc-success-view').style.display = 'none';
   document.getElementById('disc-modal').classList.add('show');
 }
 function closeDiscModal(){
   document.getElementById('disc-modal').classList.remove('show');
 }
 function confirmDisconnect(){
-  closeDiscModal();
   disconnectWallet();
+  // Show guide view inside modal before closing
+  document.getElementById('disc-confirm-view').style.display = 'none';
+  document.getElementById('disc-success-view').style.display = 'block';
+  showScreen('connect');
 }
 
 function disconnectWallet() {
   if (wallet.wcProvider) { try { wallet.wcProvider.disconnect(); } catch(e){} }
+
+  // Attempt to revoke permissions (supported in MetaMask 11.3+ and Rabby)
+  if (wallet.provider) {
+    try {
+      wallet.provider.request({
+        method: 'wallet_revokePermissions',
+        params: [{ eth_accounts: {} }]
+      });
+    } catch(e) {}
+  }
+
   // Mark as intentionally disconnected — prevents auto-reconnect on refresh
   sessionStorage.setItem('wallet_disconnected', '1');
   wallet = { connected: false, address: null, chainId: null, isDemo: false, provider: null, wcProvider: null };
