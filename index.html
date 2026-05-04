@@ -781,7 +781,7 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
         <button class="px-btn px-btn-gold" id="btn-submit" onclick="submitScoreOnChain()" style="width:100%">🚀 Submit to Ritual Chain</button>
       </div>
       <div class="btn-row">
-        <button class="px-btn px-btn-gold" onclick="nextBattle()">⚔ Battle Lagi</button>
+        <button class="px-btn px-btn-gold" onclick="nextBattle()">⚔ Battle Again</button>
         <button class="px-btn px-btn-blue px-btn-sm" onclick="showLeaderboard()">🏅 Ranking</button>
         <button class="px-btn px-btn-red px-btn-sm" onclick="goMenu()">🏠 Menu</button>
       </div>
@@ -1057,7 +1057,7 @@ function closeQRModal() {
 
 function copyURI() {
   if (!wcURIValue) return;
-  navigator.clipboard.writeText(wcURIValue).then(() => showToast('✅ URI berhasil dicopy!'));
+  navigator.clipboard.writeText(wcURIValue).then(() => showToast('✅ URI copied!'));
 }
 
 // ============================================================
@@ -1491,7 +1491,7 @@ function victory(){
   totalWins++;
   let lu=false;
   while(p.xp>=p.xpNext){p.xp-=p.xpNext;p.level++;p.xpNext=Math.floor(p.xpNext*1.4);p.maxhp=Math.floor(p.maxhp*1.1);p.hp=p.maxhp;p.maxmp=Math.floor(p.maxmp*1.1);p.mp=p.maxmp;p.atk+=3;p.def+=2;p.healPow+=5;lu=true;}
-  document.getElementById('vic-msg').textContent=e.name+' dikalahkan! (Wave '+S.wave+')'+(lu?' 🎉 Level '+p.level+'!':'');
+  document.getElementById('vic-msg').textContent=e.name+' defeated! (Wave '+S.wave+')'+(lu?' 🎉 Level Up! '+p.level+'!':'');
   var vw=document.getElementById('vic-wave'); if(vw) vw.textContent='Wave '+S.wave+' '+'⭐'.repeat(Math.min(S.wave,5))+(S.wave>5?'+'+(S.wave-5):'');
   document.getElementById('vic-xp').textContent='+'+e.xp+' XP';
   document.getElementById('vic-total-xp').textContent=S.totalXP+' XP';
