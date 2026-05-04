@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -524,13 +524,13 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 <div class="modal-overlay" id="qr-modal">
   <div class="modal-box">
     <div class="modal-title">📱 Scan QR Wallet</div>
-    <div class="modal-sub">Buka wallet mobile → scan QR ini</div>
+    <div class="modal-sub">Open your mobile wallet → scan this QR</div>
     <div id="qr-container"></div>
-    <div style="font-size:7px;color:#6060a0;margin-bottom:8px">Atau copy URI:</div>
-    <div class="modal-uri" id="wc-uri">Menghubungkan...</div>
+    <div style="font-size:7px;color:#6060a0;margin-bottom:8px">Or copy URI:</div>
+    <div class="modal-uri" id="wc-uri">Connecting...</div>
     <div style="display:flex;gap:8px;justify-content:center">
       <button class="px-btn px-btn-blue px-btn-sm" onclick="copyURI()">Copy URI</button>
-      <button class="px-btn px-btn-red px-btn-sm" onclick="closeQRModal()">✕ Tutup</button>
+      <button class="px-btn px-btn-red px-btn-sm" onclick="closeQRModal()">✕ Close</button>
     </div>
   </div>
 </div>
@@ -539,11 +539,11 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 <div class="modal-overlay" id="flee-modal">
   <div class="modal-box" style="text-align:center">
     <div style="font-size:28px;margin-bottom:8px">🏃</div>
-    <div class="modal-title">KABUR?</div>
-    <div class="modal-sub" style="margin-bottom:16px">Musuh baru akan muncul.<br>Progress battle ini hilang.</div>
+    <div class="modal-title">FLEE?</div>
+    <div class="modal-sub" style="margin-bottom:16px">A new enemy will appear.<br>This battle progress will be lost.</div>
     <div style="display:flex;gap:8px;justify-content:center">
-      <button class="px-btn px-btn-gold" onclick="doFlee()">✔ Kabur</button>
-      <button class="px-btn px-btn-red px-btn-sm" onclick="closeFlee()">✕ Batal</button>
+      <button class="px-btn px-btn-gold" onclick="doFlee()">✔ Flee</button>
+      <button class="px-btn px-btn-red px-btn-sm" onclick="closeFlee()">✕ Cancel</button>
     </div>
   </div>
 </div>
@@ -568,13 +568,13 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
         <div><div class="wname">WalletConnect</div><div class="wsub">Scan QR — mobile wallet</div></div>
         <span id="wc-status" style="font-size:7px;color:#6060a0;margin-left:auto">v2</span>
       </button>
-      <div class="divider-line">atau</div>
+      <div class="divider-line">or</div>
       <button class="wallet-btn" onclick="connectDemo()" style="border-color:rgba(240,192,64,0.3)">
         <div class="wicon" style="background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.3)">🎮</div>
-        <div><div class="wname" style="color:#c0a020">Demo Mode</div><div class="wsub">Tanpa wallet</div></div>
+        <div><div class="wname" style="color:#c0a020">Demo Mode</div><div class="wsub">No wallet needed</div></div>
       </button>
       <div style="margin-top:14px;font-family:var(--vt);font-size:13px;color:#404060;text-align:center">
-        Belum punya MetaMask? <a href="https://metamask.io/download/" target="_blank" style="color:var(--gold);text-decoration:none">Download →</a>
+        Don't have MetaMask? <a href="https://metamask.io/download/" target="_blank" style="color:var(--gold);text-decoration:none">Download →</a>
       </div>
     </div>
   </div>
@@ -585,8 +585,8 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
   <div class="overlay">
     <div class="wrongnet-box">
       <div style="font-size:36px;margin-bottom:10px">⛓️</div>
-      <div class="wrongnet-title">JARINGAN SALAH!</div>
-      <div style="font-family:var(--vt);font-size:15px;color:#8080b0;margin-bottom:14px">Butuh: <span style="color:var(--gold)">Ritual Chain Testnet</span></div>
+      <div class="wrongnet-title">WRONG NETWORK!</div>
+      <div style="font-family:var(--vt);font-size:15px;color:#8080b0;margin-bottom:14px">Required: <span style="color:var(--gold)">Ritual Chain Testnet</span></div>
       <div class="net-info">
         <div class="net-row"><span>Network</span><span class="net-val">Ritual Testnet</span></div>
         <div class="net-row"><span>Chain ID</span><span class="net-val">1979</span></div>
@@ -595,8 +595,8 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
         <div class="net-row"><span>Explorer</span><span class="net-val">explorer.ritualfoundation.org</span></div>
       </div>
       <div class="btn-row">
-        <button class="px-btn px-btn-gold" onclick="addRitualNetwork()">+ Tambah Network</button>
-        <button class="px-btn px-btn-red px-btn-sm" onclick="disconnectWallet()">Ganti Wallet</button>
+        <button class="px-btn px-btn-gold" onclick="addRitualNetwork()">+ Add Network</button>
+        <button class="px-btn px-btn-red px-btn-sm" onclick="disconnectWallet()">Switch Wallet</button>
       </div>
     </div>
   </div>
@@ -606,16 +606,16 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 <div id="screen-menu" class="screen bg-menu">
   <div class="overlay">
     <div class="menu-panel">
-      <div class="menu-title-bar">— PILIH KARAKTER —</div>
+      <div class="menu-title-bar">— SELECT CHARACTER —</div>
       <div class="status-pill">
         <div class="dot" id="menu-dot"></div>
         <span id="menu-addr">—</span>
         <span style="margin-left:auto;font-family:var(--vt);font-size:14px;color:#6060a0" id="menu-net">Ritual Testnet</span>
-        <button onclick="disconnectWallet()" style="background:rgba(150,30,30,0.4);border:1px solid rgba(200,50,50,0.4);color:#ff8080;padding:2px 8px;font-size:6px;cursor:pointer;font-family:var(--pixel);margin-left:8px">Keluar</button>
+        <button onclick="disconnectWallet()" style="background:rgba(150,30,30,0.4);border:1px solid rgba(200,50,50,0.4);color:#ff8080;padding:2px 8px;font-size:6px;cursor:pointer;font-family:var(--pixel);margin-left:8px">Logout</button>
       </div>
       <div id="char-list"></div>
       <div class="btn-row" style="margin-top:14px">
-        <button class="px-btn px-btn-gold" onclick="startGame()">▶ MULAI BATTLE</button>
+        <button class="px-btn px-btn-gold" onclick="startGame()">▶ START BATTLE</button>
         <button class="px-btn px-btn-blue px-btn-sm" onclick="loadLeaderboard();document.getElementById('btn-back-vic').style.display='none';showScreen('leaderboard')">🏅 Ranking</button>
       </div>
     </div>
@@ -724,15 +724,15 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 
       <!-- Command buttons -->
       <div class="command-window">
-        <div class="command-title">── PERINTAH ──</div>
+        <div class="command-title">── COMMANDS ──</div>
         <div class="command-grid">
           <button class="cmd-btn atk" id="btn-atk" onclick="doAction('attack')">
             <span class="cmd-icon">⚔️</span>
-            <span class="cmd-name">SERANG</span>
+            <span class="cmd-name">ATTACK</span>
           </button>
           <button class="cmd-btn def" id="btn-def" onclick="doAction('defend')">
             <span class="cmd-icon">🛡️</span>
-            <span class="cmd-name">BERTAHAN</span>
+            <span class="cmd-name">DEFEND</span>
           </button>
           <button class="cmd-btn heal-btn" id="btn-heal" onclick="doAction('heal')">
             <span class="cmd-icon">💊</span>
@@ -740,7 +740,7 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
           </button>
           <button class="cmd-btn flee" id="btn-flee" onclick="confirmFlee()">
             <span class="cmd-icon">🏃</span>
-            <span class="cmd-name">KABUR</span>
+            <span class="cmd-name">FLEE</span>
           </button>
         </div>
         <!-- Skills -->
@@ -758,27 +758,27 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
   <div class="victory-overlay">
     <div class="result-panel">
       <span class="result-icon">🏆</span>
-      <div class="result-title">MUSUH DIKALAHKAN!</div>
+      <div class="result-title">ENEMY DEFEATED!</div>
       <div class="result-sub" id="vic-msg">—</div>
       <div class="reward-table">
-        <div style="font-size:6px;color:var(--gold);margin-bottom:8px;letter-spacing:1px">── HASIL BATTLE ──</div>
-        <div class="reward-row"><span>Wave Dicapai</span><span class="reward-val" id="vic-wave" style="color:var(--gold)">1</span></div>
-        <div class="reward-row"><span>XP Didapat</span><span class="reward-val" id="vic-xp">+0</span></div>
+        <div style="font-size:6px;color:var(--gold);margin-bottom:8px;letter-spacing:1px">── BATTLE RESULTS ──</div>
+        <div class="reward-row"><span>Wave Reached</span><span class="reward-val" id="vic-wave" style="color:var(--gold)">1</span></div>
+        <div class="reward-row"><span>XP Gained</span><span class="reward-val" id="vic-xp">+0</span></div>
         <div class="reward-row"><span>Total XP</span><span class="reward-val" id="vic-total-xp">0</span></div>
-        <div class="reward-row"><span>Kemenangan</span><span class="reward-val" id="vic-wins">0</span></div>
+        <div class="reward-row"><span>Victories</span><span class="reward-val" id="vic-wins">0</span></div>
         <div class="reward-row"><span>Score</span><span class="reward-val" id="vic-score">0 pts</span></div>
         <div class="reward-row"><span>Wallet</span><span class="reward-val" style="color:var(--cyan);font-family:monospace;font-size:8px" id="vic-wallet">—</span></div>
       </div>
       <div id="submit-score-box" class="submit-box">
         <div class="submit-title">📡 SUBMIT SCORE → RITUAL CHAIN</div>
-        <div class="submit-sub">Simpan score ke smart contract.<br>Butuh tanda tangan wallet + gas kecil.</div>
+        <div class="submit-sub">Save your score to the smart contract.<br>Requires wallet signature + small gas fee.</div>
         <div id="submit-status"></div>
         <div id="submit-tx-info">
           <div style="color:#6060a0;margin-bottom:4px;font-size:7px">TX Hash:</div>
           <div id="submit-tx-hash"></div>
-          <div style="margin-top:6px"><a id="submit-explorer-link" href="#" target="_blank">🔍 Lihat di Explorer →</a></div>
+          <div style="margin-top:6px"><a id="submit-explorer-link" href="#" target="_blank">🔍 View on Explorer →</a></div>
         </div>
-        <button class="px-btn px-btn-gold" id="btn-submit" onclick="submitScoreOnChain()" style="width:100%">🚀 Submit ke Ritual Chain</button>
+        <button class="px-btn px-btn-gold" id="btn-submit" onclick="submitScoreOnChain()" style="width:100%">🚀 Submit to Ritual Chain</button>
       </div>
       <div class="btn-row">
         <button class="px-btn px-btn-gold" onclick="nextBattle()">⚔ Battle Lagi</button>
@@ -810,7 +810,7 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
     <div class="lb-panel">
       <div class="lb-title">🏅 LEADERBOARD<br><span style="font-family:var(--vt);font-size:14px;color:#6060a0">RITUAL TESTNET · ON-CHAIN</span></div>
       <div id="my-score-box" class="my-score-box" style="display:none">
-        <div style="font-size:6px;color:var(--gold);margin-bottom:6px">── SCORE KAMU ──</div>
+        <div style="font-size:6px;color:var(--gold);margin-bottom:6px">── YOUR SCORE ──</div>
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div>
             <div style="font-family:var(--vt);font-size:20px;color:var(--green)" id="my-score-val">—</div>
@@ -826,7 +826,7 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
       <div class="btn-row" style="margin-top:14px">
         <button class="px-btn px-btn-gold" onclick="goMenu()">🏠 Menu</button>
         <button class="px-btn px-btn-blue px-btn-sm" onclick="loadLeaderboard();showToast('Refresh...')">🔄</button>
-        <button class="px-btn px-btn-red px-btn-sm" onclick="showScreen('victory')" id="btn-back-vic" style="display:none">← Kembali</button>
+        <button class="px-btn px-btn-red px-btn-sm" onclick="showScreen('victory')" id="btn-back-vic" style="display:none">← Back</button>
       </div>
     </div>
   </div>
@@ -847,7 +847,7 @@ const RITUAL_CHAIN_PARAMS = {
   blockExplorerUrls: ['https://explorer.ritualfoundation.org']
 };
 
-// WalletConnect Project ID — ganti dengan project ID kamu dari cloud.walletconnect.com
+// WalletConnect Project ID — replace with your project ID from cloud.walletconnect.com
 const WC_PROJECT_ID = 'b56e18d47c72ab683b10814fe9495694';
 
 // ============================================================
@@ -863,7 +863,7 @@ let wcURIValue = '';
 // HELPER: cari provider yang tepat
 // ============================================================
 function getProvider(preferRabby = false) {
-  // Kalau ada window.ethereum.providers (multi-wallet aktif bersamaan)
+  // If window.ethereum.providers exists (multiple wallets active)
   if (window.ethereum && window.ethereum.providers && window.ethereum.providers.length) {
     const providers = window.ethereum.providers;
     if (preferRabby) {
@@ -883,11 +883,11 @@ function getProvider(preferRabby = false) {
 async function connectWithProvider(provider, btnId, btnLabel) {
   const btn = document.getElementById(btnId);
   btn.disabled = true;
-  btn.querySelector('.wname').innerHTML = '<span class="spinner"></span>Menghubungkan...';
+  btn.querySelector('.wname').innerHTML = '<span class="spinner"></span>Connecting...';
   try {
     const accounts = await provider.request({ method: 'eth_requestAccounts' });
     if (!accounts || !accounts.length) {
-      showToast('❌ Tidak ada akun dipilih');
+      showToast('❌ No account selected');
       resetBtn(btn, btnLabel); return;
     }
     wallet.address = accounts[0];
@@ -900,19 +900,19 @@ async function connectWithProvider(provider, btnId, btnLabel) {
     // Listen events
     provider.on('accountsChanged', (a) => {
       if (!a.length) { disconnectWallet(); return; }
-      wallet.address = a[0]; updateHeader(); showToast('🔄 Akun berganti');
+      wallet.address = a[0]; updateHeader(); showToast('🔄 Account changed');
     });
     provider.on('chainChanged', (id) => {
       wallet.chainId = id; updateHeader();
       if (id.toLowerCase() !== RITUAL_CHAIN_ID.toLowerCase()) {
-        showScreen('wrongnet'); setDot('yellow'); showToast('⚠️ Jaringan berubah!');
-      } else { showScreen('menu'); setDot('green'); showToast('✅ Kembali ke Ritual Testnet'); }
+        showScreen('wrongnet'); setDot('yellow'); showToast('⚠️ Network changed!');
+      } else { showScreen('menu'); setDot('green'); showToast('✅ Back on Ritual Testnet'); }
     });
 
     onConnected();
   } catch (e) {
     resetBtn(btn, btnLabel);
-    if (e.code === 4001) showToast('❌ Ditolak pengguna');
+    if (e.code === 4001) showToast('❌ Rejected by user');
     else { console.error(e); showToast('❌ Error: ' + (e.message || 'Unknown')); }
   }
 }
@@ -920,7 +920,7 @@ async function connectWithProvider(provider, btnId, btnLabel) {
 async function connectMetaMask() {
   const provider = getProvider(false);
   if (!provider) {
-    showToast('❌ MetaMask tidak ditemukan! Install dulu.');
+    showToast('❌ MetaMask not found! Please install it.');
     setTimeout(() => window.open('https://metamask.io/download/', '_blank'), 1200);
     return;
   }
@@ -931,10 +931,10 @@ async function connectMetaMask() {
 // RABBY WALLET
 // ============================================================
 async function connectRabby() {
-  // Rabby bisa ada di window.rabby, atau window.ethereum.providers, atau window.ethereum dengan isRabby
+  // Rabby bisa ada di window.rabby, or window.ethereum.providers, or window.ethereum dengan isRabby
   const provider = getProvider(true);
   if (!provider) {
-    showToast('❌ Rabby Wallet tidak ditemukan! Install dulu.');
+    showToast('❌ Rabby Wallet not found! Please install it.');
     setTimeout(() => window.open('https://rabby.io/', '_blank'), 1200);
     return;
   }
@@ -945,13 +945,13 @@ async function connectRabby() {
 async function connectWalletConnect() {
   // Cek apakah library berhasil dimuat
   if (typeof window.EthereumProvider === 'undefined' && typeof window.WalletConnectProvider === 'undefined') {
-    showToast('⏳ Library WalletConnect sedang dimuat, coba lagi...');
+    showToast('⏳ WalletConnect library loading, try again...');
     return;
   }
 
   const btn = document.getElementById('btn-wc');
   btn.disabled = true;
-  btn.querySelector('.wname').innerHTML = '<span class="spinner"></span>Inisialisasi...';
+  btn.querySelector('.wname').innerHTML = '<span class="spinner"></span>Initializing...';
 
   try {
     // Coba gunakan @walletconnect/ethereum-provider
@@ -992,7 +992,7 @@ async function connectWalletConnect() {
     });
 
     wcProvider.on('disconnect', () => {
-      showToast('🔌 WalletConnect terputus');
+      showToast('🔌 WalletConnect disconnected');
       disconnectWallet();
     });
 
@@ -1010,14 +1010,14 @@ function showWCFallback() {
   document.getElementById('qr-container').innerHTML = `
     <div style="padding:20px;color:#a8a0d0;font-size:13px;line-height:1.7">
       <div style="font-size:24px;margin-bottom:10px">📱</div>
-      <b style="color:#fff">Cara manual WalletConnect:</b><br><br>
-      1. Buka wallet mobile kamu<br>
-      2. Pilih "Connect Wallet" atau scan QR<br>
-      3. Masukkan URL: <span style="color:#7F77DD">${window.location.href}</span><br><br>
-      <small>Atau gunakan MetaMask Extension / Mode Demo</small>
+      <b style="color:#fff">Manual WalletConnect:</b><br><br>
+      1. Open your mobile wallet<br>
+      2. Select "Connect Wallet" or scan QR<br>
+      3. Enter URL: <span style="color:#7F77DD">${window.location.href}</span><br><br>
+      <small>Or use MetaMask Extension / Demo Mode</small>
     </div>`;
   document.getElementById('qr-modal').classList.add('show');
-  document.getElementById('wc-uri').textContent = 'Gunakan MetaMask Extension untuk pengalaman terbaik.';
+  document.getElementById('wc-uri').textContent = 'Use MetaMask Extension for the best experience.';
 }
 
 // ============================================================
@@ -1069,7 +1069,7 @@ function connectDemo() {
   wallet.isDemo = true;
   wallet.chainId = RITUAL_CHAIN_ID;
   wallet.provider = null;
-  showToast('🎮 Mode Demo aktif!');
+  showToast('🎮 Demo Mode active!');
   onConnected();
 }
 
@@ -1083,28 +1083,28 @@ function onConnected() {
   if (!isCorrectNet) {
     showScreen('wrongnet');
     setDot('yellow');
-    showToast('⚠️ Ganti ke Ritual Testnet! (Chain: ' + wallet.chainId + ')');
+    showToast('⚠️ Switch to Ritual Testnet! (Chain: ' + wallet.chainId + ')');
   } else {
     showScreen('menu');
     setDot('green');
     const rb=document.getElementById('ritual-bal'); if(rb) rb.style.display = 'block';
-    showToast('✅ Wallet terhubung!' + (wallet.isDemo ? ' (Demo)' : ''));
+    showToast('✅ Wallet connected!' + (wallet.isDemo ? ' (Demo)' : ''));
   }
 }
 
 async function addRitualNetwork() {
   const provider = wallet.provider || getProvider(false);
   if (wallet.isDemo || !provider) {
-    showToast('⚠️ Perlu wallet untuk menambah network');
+    showToast('⚠️ Wallet required to add network');
     return;
   }
   try {
     await provider.request({ method: 'wallet_addEthereumChain', params: [RITUAL_CHAIN_PARAMS] });
-    showToast('✅ Ritual Testnet ditambahkan!');
+    showToast('✅ Ritual Testnet added!');
     wallet.chainId = await provider.request({ method: 'eth_chainId' });
     onConnected();
   } catch (e) {
-    showToast('❌ Gagal: ' + e.message);
+    showToast('❌ Failed: ' + e.message);
   }
 }
 
@@ -1116,7 +1116,7 @@ function disconnectWallet() {
   setDot('red');
   const rb2=document.getElementById('ritual-bal'); if(rb2) rb2.style.display = 'none';
   showScreen('connect');
-  showToast('🔌 Wallet terputus');
+  showToast('🔌 Wallet disconnected');
 }
 
 // ============================================================
@@ -1135,7 +1135,7 @@ function updateHeader() {
     if(mnEl) mnEl.textContent = wallet.isDemo ? 'Demo Mode' : 'Ritual Testnet';
   } else {
     if(wEl) wEl.textContent = '—';
-    if(nEl) nEl.textContent = 'Tidak terhubung';
+    if(nEl) nEl.textContent = 'Not connected';
   }
 }
 
@@ -1185,24 +1185,24 @@ window.addEventListener('load', () => {
 const CHARS = [
   {id:'node',name:'Jez Runner',cls:'Strong Fighter',hp:130,maxhp:130,mp:80,maxmp:80,atk:18,def:8,healPow:30,icon:'<img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/jezzCharArena.gif" style="width:48px;height:48px;image-rendering:pixelated">',
    skills:[
-    {id:'s1',name:'Infernet Strike',desc:'Serangan dari infernet node',dmg:28,mpCost:15,type:'dmg'},
-    {id:'s2',name:'AI Compute',desc:'Panggil model AI — damage masif',dmg:50,mpCost:30,type:'dmg'},
-    {id:'s3',name:'Regen Node',desc:'Heal HP dan isi mana sekaligus',heal:25,manaHeal:15,mpCost:0,type:'special'},
-    {id:'s4',name:'Fork Network',desc:'Serang dua kali berturut-turut',dmg:22,mpCost:25,type:'multi'}
+    {id:'s1',name:'Infernet Strike',desc:'Infernet node strike',dmg:28,mpCost:15,type:'dmg'},
+    {id:'s2',name:'AI Compute',desc:'Summon AI model — massive damage',dmg:50,mpCost:30,type:'dmg'},
+    {id:'s3',name:'Regen Node',desc:'Restore HP and refill mana at once',heal:25,manaHeal:15,mpCost:0,type:'special'},
+    {id:'s4',name:'Fork Network',desc:'Attack twice in a row',dmg:22,mpCost:25,type:'multi'}
   ]},
   {id:'val',name:'Mad Steel',cls:'Strong Guardian',hp:170,maxhp:170,mp:60,maxmp:60,atk:22,def:16,healPow:40,icon:'<img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/madCharArena.gif" style="width:48px;height:48px;image-rendering:pixelated">',
    skills:[
-    {id:'s1',name:'Slash TX',desc:'Hukum transaksi nakal musuh',dmg:32,mpCost:18,type:'dmg'},
-    {id:'s2',name:'Consensus Blast',desc:'Ledakan kekuatan konsensus',dmg:55,mpCost:35,type:'dmg'},
-    {id:'s3',name:'Epoch Regen',desc:'Pulih HP & Mana penuh, cooldown 12 turn',heal:50,manaHeal:40,mpCost:0,cooldown:12,type:'cooldown'},
-    {id:'s4',name:'Finality Strike',desc:'Pasti kena, tidak meleset',dmg:38,mpCost:28,type:'sure'}
+    {id:'s1',name:'Slash TX',desc:'Punish enemy with a rogue transaction',dmg:32,mpCost:18,type:'dmg'},
+    {id:'s2',name:'Consensus Blast',desc:'Consensus power explosion',dmg:55,mpCost:35,type:'dmg'},
+    {id:'s3',name:'Epoch Regen',desc:'Fully restore HP & Mana, 12 turn cooldown',heal:50,manaHeal:40,mpCost:0,cooldown:12,type:'cooldown'},
+    {id:'s4',name:'Finality Strike',desc:'Always hits, never misses',dmg:38,mpCost:28,type:'sure'}
   ]},
   {id:'mage',name:'Flash Shadow',cls:'Strong Mage',hp:95,maxhp:95,mp:130,maxmp:130,atk:29,def:5,healPow:20,icon:'<img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/flashCharArena.gif" style="width:48px;height:48px;image-rendering:pixelated">',
    skills:[
-    {id:'s1',name:'Deploy Contract',desc:'Lempar smart contract sebagai bom',dmg:22,mpCost:10,type:'dmg'},
-    {id:'s2',name:'Reentrancy Bug',desc:'Eksploitasi celah — damage besar',dmg:65,mpCost:40,type:'dmg'},
-    {id:'s3',name:'Audit Shield',desc:'Perlindungan dari code audit',heal:18,mpCost:12,type:'heal'},
-    {id:'s4',name:'MEV Drain',desc:'Curi HP musuh, isi mana kamu',dmg:32,manaHeal:20,mpCost:18,type:'drain'}
+    {id:'s1',name:'Deploy Contract',desc:'Throw a smart contract as a bomb',dmg:22,mpCost:10,type:'dmg'},
+    {id:'s2',name:'Reentrancy Bug',desc:'Exploit a vulnerability — massive damage',dmg:65,mpCost:40,type:'dmg'},
+    {id:'s3',name:'Audit Shield',desc:'Code audit protection',heal:18,mpCost:12,type:'heal'},
+    {id:'s4',name:'MEV Drain',desc:'Drain enemy HP, restore your mana',dmg:32,manaHeal:20,mpCost:18,type:'drain'}
   ]}
 ];
 
@@ -1225,7 +1225,7 @@ function renderCharList(){
     <div class="char-card ${i===0?'selected':''}" id="cc${i}" onclick="selectChar(${i})">
       <div class="char-icon-box">${c.icon}</div>
       <div style="flex:1"><div class="char-name">${c.name}</div><div class="char-meta">${c.cls} · HP ${c.hp} · ATK ${c.atk} · DEF ${c.def}</div></div>
-      ${i===0?'<span class="sel-badge">Dipilih</span>':''}
+      ${i===0?'<span class="sel-badge">Selected</span>':''}
     </div>`).join('');
   S.selectedChar=0;
 }
@@ -1233,7 +1233,7 @@ function renderCharList(){
 function selectChar(i){
   S.selectedChar=i;
   CHARS.forEach((_,idx)=>{const el=document.getElementById('cc'+idx);el.className='char-card'+(idx===i?' selected':'');const b=el.querySelector('.sel-badge');if(b)b.remove();});
-  const badge=document.createElement('span');badge.className='sel-badge';badge.textContent='Dipilih';
+  const badge=document.createElement('span');badge.className='sel-badge';badge.textContent='Selected';
   document.getElementById('cc'+i).appendChild(badge);
 }
 
@@ -1243,9 +1243,9 @@ function startGame(){
   S.char=c;S.defending=false;S.isPlayerTurn=true;S.busy=false;S.skillCooldowns={};S.wave=1;
   var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
   pickEnemy();renderBattle();showScreen('battle');setTurnUI(true);
-  addLog('⚔️ Pertarungan dimulai di Ritual Testnet!','sys');
-  addLog('Musuh muncul: '+S.enemy.icon+' '+S.enemy.name,'sys');
-  addLog('Giliran kamu — pilih aksi!','sys');
+  addLog('⚔️ Battle begins on Ritual Testnet!','sys');
+  addLog('Enemy appears: '+S.enemy.icon+' '+S.enemy.name,'sys');
+  addLog('Your turn — choose an action!','sys');
 }
 
 function pickEnemy(){
@@ -1337,8 +1337,8 @@ function renderSkills(){
     const isCooldown=s.type==='cooldown';
     const disabled=!S.isPlayerTurn||S.busy||(isCooldown?cd>0:p.mp<s.mpCost);
     const costLabel=isCooldown
-      ? (cd>0?'⏳ '+cd+' turn':'Siap!')
-      : (s.mpCost>0?'MP:'+s.mpCost:'Gratis');
+      ? (cd>0?'⏳ '+cd+' turn':'Ready!')
+      : (s.mpCost>0?'MP:'+s.mpCost:'Free');
     const costColor=isCooldown
       ? (cd>0?'color:#ff8080':'color:#40ff80')
       : 'color:var(--gold)';
@@ -1357,7 +1357,7 @@ function setTurnUI(isPlayer){
   S.isPlayerTurn=isPlayer;
   const banner=document.getElementById('turn-banner');
   const turnText=document.getElementById('turn-text');
-  if(turnText) turnText.textContent=isPlayer?'Giliran kamu — pilih aksi!':S.enemy.name+' sedang menyerang...';
+  if(turnText) turnText.textContent=isPlayer?'Your turn — choose an action!':S.enemy.name+' is attacking...';
   if(banner) banner.className='turn-banner '+(isPlayer?'player-turn':'enemy-turn');
   setButtonsDisabled(!isPlayer);
   if(isPlayer&&S.char&&S.char.mp<20)document.getElementById('btn-heal').disabled=true;
@@ -1403,14 +1403,14 @@ function doAction(type){
   const p=S.char,e=S.enemy;
   if(type==='attack'){
     let dmg=Math.max(1,p.atk-e.def+rnd(-4,6));const crit=rnd(1,10)>8;if(crit)dmg=Math.floor(dmg*1.6);
-    e.hp=Math.max(0,e.hp-dmg);addLog('⚔️ Serang: -'+dmg+' HP musuh'+(crit?' ⚡ CRITICAL!':''),'hit');shakeEl('e-icon');updateBars();
+    e.hp=Math.max(0,e.hp-dmg);addLog('⚔️ Attack: -'+dmg+' enemy HP'+(crit?' ⚡ CRITICAL!':''),'hit');shakeEl('e-icon');updateBars();
     if(e.hp<=0){setTimeout(victory,300);return;}setTimeout(endPlayerTurn,400);
   }else if(type==='defend'){
-    S.defending=true;addLog('🛡️ Bertahan — damage -60% giliran ini!','def');updateBars();setTimeout(endPlayerTurn,400);
+    S.defending=true;addLog('🛡️ Defend — -60% damage this turn!','def');updateBars();setTimeout(endPlayerTurn,400);
   }else if(type==='heal'){
     if(p.mp<20){S.busy=false;setTurnUI(true);return;}
     p.mp=Math.max(0,p.mp-20);const h=p.healPow+rnd(0,8);p.hp=Math.min(p.maxhp,p.hp+h);
-    addLog('💊 Heal: +'+h+' HP pulih','heal');updateBars();setTimeout(endPlayerTurn,400);
+    addLog('💊 Heal: +'+h+' HP restored','heal');updateBars();setTimeout(endPlayerTurn,400);
   }
 }
 
@@ -1454,14 +1454,14 @@ function enemyTurn(){
   const t=rnd(1,10);const defR=S.defending?0.6:0;
   let dmg;
   if(t>=9){dmg=Math.max(1,Math.floor((e.atk+rnd(5,12))*1.5*(1-defR))-p.def);addLog('💥 '+e.name+' "'+move+'" — CRITICAL! -'+dmg+' HP','dmg');}
-  else if(t<=2){dmg=Math.max(1,Math.floor(e.atk*0.5*(1-defR))-p.def+rnd(0,2));addLog('😤 '+e.name+' "'+move+'" (lemah): -'+dmg+' HP','enemy');}
+  else if(t<=2){dmg=Math.max(1,Math.floor(e.atk*0.5*(1-defR))-p.def+rnd(0,2));addLog('😤 '+e.name+' "'+move+'" (weak): -'+dmg+' HP','enemy');}
   else{dmg=Math.max(1,Math.floor((e.atk+rnd(-3,4))*(1-defR))-p.def);addLog('🗡️ '+e.name+' "'+move+'": -'+dmg+' HP','dmg');}
   p.hp=Math.max(0,p.hp-dmg);shakeEl('player-card');
-  if(S.defending){S.defending=false;addLog('🛡️ Pertahanan selesai','sys');}
-  if(e.hp<e.maxhp*0.3&&rnd(1,4)===1){const eh=rnd(10,22);e.hp=Math.min(e.maxhp,e.hp+eh);addLog('🔄 '+e.name+' pulih '+eh+' HP!','enemy');}
+  if(S.defending){S.defending=false;addLog('🛡️ Defense ended','sys');}
+  if(e.hp<e.maxhp*0.3&&rnd(1,4)===1){const eh=rnd(10,22);e.hp=Math.min(e.maxhp,e.hp+eh);addLog('🔄 '+e.name+' recovered '+eh+' HP!','enemy');}
   updateBars();
   if(p.hp<=0){setTimeout(()=>showScreen('dead'),500);return;}
-  setTimeout(()=>{addLog('── Giliran kamu ──','sys');S.busy=false;setTurnUI(true);renderSkills();},600);
+  setTimeout(()=>{addLog('── Your Turn ──','sys');S.busy=false;setTurnUI(true);renderSkills();},600);
 }
 
 function confirmFlee(){
@@ -1479,7 +1479,7 @@ function doFlee(){
   pickEnemy();renderBattle();
   var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
   setTurnUI(true);
-  addLog('🏃 Kabur! Wave reset. Musuh baru: '+S.enemy.icon+' '+S.enemy.name,'sys');
+  addLog('🏃 Kabur! Wave reset. New enemy: '+S.enemy.icon+' '+S.enemy.name,'sys');
 }
 
 function goMenu(){S.char=null;S.enemy=null;S.busy=false;S.defending=false;S.wave=1;var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';showScreen('menu');}
@@ -1495,14 +1495,14 @@ function victory(){
   var vw=document.getElementById('vic-wave'); if(vw) vw.textContent='Wave '+S.wave+' '+'⭐'.repeat(Math.min(S.wave,5))+(S.wave>5?'+'+(S.wave-5):'');
   document.getElementById('vic-xp').textContent='+'+e.xp+' XP';
   document.getElementById('vic-total-xp').textContent=S.totalXP+' XP';
-  document.getElementById('vic-wins').textContent=totalWins+' kemenangan';
+  document.getElementById('vic-wins').textContent=totalWins+' victories';
   const score = calcScore(S.totalXP, p.level, totalWins);
   document.getElementById('vic-score').textContent=score.toLocaleString()+' pts';
   document.getElementById('vic-wallet').textContent=wallet.address?wallet.address.slice(0,6)+'...'+wallet.address.slice(-4):'—';
   // Reset submit UI
   const btn=document.getElementById('btn-submit');
   btn.disabled=false;
-  btn.innerHTML='🚀 Submit Score ke Ritual Chain';
+  btn.innerHTML='🚀 Submit Score to Ritual Chain';
   const statusEl=document.getElementById('submit-status');
   statusEl.textContent='';statusEl.className='';
   document.getElementById('submit-tx-info').style.display='none';
@@ -1514,15 +1514,15 @@ function nextBattle(){
   S.wave=(S.wave||1)+1;
   S.defending=false;S.busy=false;pickEnemy();renderBattle();showScreen('battle');
   var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';setTurnUI(true);
-  addLog('⚔️ WAVE '+S.wave+'! Musuh: '+S.enemy.icon+' '+S.enemy.name,'sys');
-  addLog('Musuh semakin kuat! Giliran kamu!','sys');
+  addLog('⚔️ WAVE '+S.wave+'! Enemy: '+S.enemy.icon+' '+S.enemy.name,'sys');
+  addLog('Enemies grow stronger! Your turn!','sys');
 }
 
 function revive(){
   S.char.hp=Math.floor(S.char.maxhp*0.5);
   S.char.mp=Math.floor(S.char.maxmp*0.5);
   S.defending=false;S.busy=false;updateBars();showScreen('battle');setTurnUI(true);
-  addLog('💊 Revive! HP & Mana 50% pulih','heal');
+  addLog('💊 Revive! HP & Mana 50% recovered','heal');
 }
 
 function goMenu(){S.char=null;S.enemy=null;S.busy=false;S.defending=false;var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';showScreen('menu');}
@@ -1539,7 +1539,7 @@ renderCharList();
 // ============================================================
 // SCORE & LEADERBOARD
 // ============================================================
-// Contract Address — deploy RitualArenaScore.sol ke Ritual Testnet dulu
+// Contract Address — deploy RitualArenaScore.sol to Ritual Testnet first
 // Setelah deploy, ganti CONTRACT_ADDRESS dengan address hasil deploy kamu
 const CONTRACT_ADDRESS = '0xB96Cf73c7D528E95F2AaD71fCE938B98989275B3'; // Ritual Testnet
 
@@ -1677,7 +1677,7 @@ function isContractDeployed() {
 // ============================================================
 async function submitScoreOnChain() {
   if (!wallet.connected || wallet.isDemo) {
-    showToast('❌ Hubungkan wallet nyata dulu!'); return;
+    showToast('❌ Connect a real wallet first!'); return;
   }
   const btn = document.getElementById('btn-submit');
   const statusEl = document.getElementById('submit-status');
@@ -1686,8 +1686,8 @@ async function submitScoreOnChain() {
 
   if (!isContractDeployed()) {
     // Contract belum di-deploy — tampilkan instruksi
-    statusEl.innerHTML = `⚠️ Smart contract belum di-deploy.<br>
-      <span style="font-size:11px">Copy kode Solidity di atas, deploy ke Remix IDE → Ritual Testnet,<br>lalu ganti <code style="color:#7F77DD">CONTRACT_ADDRESS</code> di file ini.</span>`;
+    statusEl.innerHTML = `⚠️ Smart contract not deployed yet.<br>
+      <span style="font-size:11px">Copy the Solidity code above, deploy to Remix IDE → Ritual Testnet,<br>then replace <code style="color:#7F77DD">CONTRACT_ADDRESS</code> in this file.</span>`;
     statusEl.style.color = '#EF9F27';
     // Tetap simpan ke localStorage sebagai fallback
     submitScoreLocal(score, btn, statusEl);
@@ -1695,16 +1695,16 @@ async function submitScoreOnChain() {
   }
 
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Menunggu tanda tangan...';
+  btn.innerHTML = '<span class="spinner"></span>Waiting for signature...';
   statusEl.style.color = '#EF9F27';
-  statusEl.textContent = '⏳ Buka wallet kamu dan tanda tangani transaksi...';
+  statusEl.textContent = '⏳ Open your wallet and sign the transaction...';
 
   try {
     // MetaMask untuk sign; RPC Ritual untuk gasPrice
     const mmProvider = new ethers.providers.Web3Provider(wallet.provider);
     const signer = mmProvider.getSigner();
 
-    // Ambil gasPrice langsung dari RPC Ritual (bypass MetaMask yang return 0)
+    // Ambil gasPrice langsung of RPC Ritual (bypass MetaMask yang return 0)
     let gasPrice = ethers.utils.parseUnits('1', 'gwei'); // default 1 gwei
     try {
       const ritualRpc = new ethers.providers.JsonRpcProvider('https://rpc.ritualfoundation.org');
@@ -1715,8 +1715,8 @@ async function submitScoreOnChain() {
 
     const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-    statusEl.textContent = '⏳ Mengirim transaksi ke Ritual Chain...';
-    btn.innerHTML = '<span class="spinner"></span>Mengirim...';
+    statusEl.textContent = '⏳ Sending transaction to Ritual Chain...';
+    btn.innerHTML = '<span class="spinner"></span>Sending...';
 
     // Cast tipe eksplisit agar tidak revert
     const scoreBN  = ethers.BigNumber.from(Math.floor(score));
@@ -1730,8 +1730,8 @@ async function submitScoreOnChain() {
       { gasLimit: 300000, gasPrice: gasPrice }
     );
 
-    statusEl.textContent = '⏳ Menunggu konfirmasi block...';
-    btn.innerHTML = '<span class="spinner"></span>Menunggu block...';
+    statusEl.textContent = '⏳ Waiting for block confirmation...';
+    btn.innerHTML = '<span class="spinner"></span>Waiting for block...';
 
     // Tunggu 1 konfirmasi
     const receipt = await tx.wait(1);
@@ -1741,7 +1741,7 @@ async function submitScoreOnChain() {
     const blockNum = receipt.blockNumber;
 
     statusEl.style.color = '#5DCAA5';
-    statusEl.textContent = `✅ Score berhasil tersimpan di block #${blockNum}!`;
+    statusEl.textContent = `✅ Score saved on block #${blockNum}!`;
 
     document.getElementById('submit-tx-info').style.display = 'block';
     document.getElementById('submit-tx-hash').textContent = txHash;
@@ -1749,7 +1749,7 @@ async function submitScoreOnChain() {
       `https://explorer.ritualfoundation.org/tx/${txHash}`;
 
     btn.disabled = false;
-    btn.innerHTML = '✅ Score Terkirim ke Chain!';
+    btn.innerHTML = '✅ Score Submitted to Chain!';
     showToast('✅ Score on-chain! Block #' + blockNum);
 
     // Juga simpan lokal untuk leaderboard fallback
@@ -1758,14 +1758,14 @@ async function submitScoreOnChain() {
   } catch(e) {
     console.error('Submit error:', e);
     btn.disabled = false;
-    btn.innerHTML = '🚀 Coba Lagi';
+    btn.innerHTML = '🚀 Try Again';
 
     if (e.code === 4001 || e.code === 'ACTION_REJECTED') {
       statusEl.style.color = '#f09595';
-      statusEl.textContent = '❌ Transaksi ditolak pengguna.';
+      statusEl.textContent = '❌ Transaction rejected by user.';
     } else if (e.code === 'INSUFFICIENT_FUNDS') {
       statusEl.style.color = '#f09595';
-      statusEl.textContent = '❌ Gas tidak cukup. Top up RITUAL Testnet dulu.';
+      statusEl.textContent = '❌ Not enough gas. Top up RITUAL Testnet first.';
     } else {
       statusEl.style.color = '#f09595';
       statusEl.textContent = '❌ Error: ' + (e.reason || e.message || 'Unknown');
@@ -1773,7 +1773,7 @@ async function submitScoreOnChain() {
   }
 }
 
-// Simpan ke localStorage (fallback / demo / contract belum deploy)
+// Save to localStorage (fallback / demo / contract not deployed)
 function submitScoreLocal(score, btn, statusEl, txHash, blockNum) {
   const lb = getLocalLeaderboard();
   const addr = wallet.address;
@@ -1797,9 +1797,9 @@ function submitScoreLocal(score, btn, statusEl, txHash, blockNum) {
 
   if (btn && statusEl && !txHash) {
     const rank = lb.findIndex(x => x.address.toLowerCase() === addr.toLowerCase()) + 1;
-    statusEl.innerHTML += `<br><span style="color:#a8a0d0">📋 Tersimpan lokal sementara · Posisi #${rank}</span>`;
+    statusEl.innerHTML += `<br><span style="color:#a8a0d0">📋 Saved locally · Rank #${rank}</span>`;
     btn.disabled = false;
-    btn.innerHTML = '📋 Tersimpan Lokal';
+    btn.innerHTML = '📋 Saved Locally';
   }
 }
 
@@ -1813,21 +1813,21 @@ async function loadLeaderboard() {
   const lbEl = document.getElementById('lb-list');
   const myAddr = wallet.address ? wallet.address.toLowerCase() : null;
 
-  // Coba baca dari contract dulu
+  // Try reading from contract first
   if (isContractDeployed() && wallet.connected && !wallet.isDemo) {
     if(!lbEl) return;
-  lbEl.innerHTML = `<div style="text-align:center;padding:20px;color:#a8a0d0"><span class="spinner"></span> Membaca dari blockchain...</div>`;
+  lbEl.innerHTML = `<div style="text-align:center;padding:20px;color:#a8a0d0"><span class="spinner"></span> Reading from blockchain...</div>`;
     try {
       const provider = new ethers.providers.Web3Provider(wallet.provider);
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
       const [addrs, scores, xps, levels, charNames] = await contract.getTopScores();
 
       if (addrs.length === 0) {
-        lbEl.innerHTML = `<div style="text-align:center;padding:30px;color:#555"><div style="font-size:32px;margin-bottom:8px">📭</div>Belum ada score — jadilah yang pertama!</div>`;
+        lbEl.innerHTML = `<div style="text-align:center;padding:30px;color:#555"><div style="font-size:32px;margin-bottom:8px">📭</div>No scores yet — be the first!</div>`;
         return;
       }
 
-      // Update my score box dari chain
+      // Update my score box from chain
       if (myAddr) {
         const myIdx = addrs.findIndex(a => a.toLowerCase() === myAddr);
         const myBox = document.getElementById('my-score-box');
@@ -1835,7 +1835,7 @@ async function loadLeaderboard() {
           myBox.style.display = 'block';
           var sv=document.getElementById('my-score-val'); if(sv) sv.textContent = scores[myIdx].toString() + ' pts';
           var sa=document.getElementById('my-score-addr'); if(sa) sa.textContent = addrs[myIdx].slice(0,6)+'...'+addrs[myIdx].slice(-4);
-          var sr=document.getElementById('my-score-rank'); if(sr) sr.textContent = '#' + (myIdx+1) + ' dari ' + addrs.length;
+          var sr=document.getElementById('my-score-rank'); if(sr) sr.textContent = '#' + (myIdx+1) + ' of ' + addrs.length;
           var sc2=document.getElementById('my-score-char'); if(sc2) sc2.textContent = (CHAR_ICONS[charNames[myIdx]]||'⚔️') + ' ' + charNames[myIdx] + ' Lv' + levels[myIdx];
         } else if(myBox) { myBox.style.display = 'none'; }
       }
@@ -1850,7 +1850,7 @@ async function loadLeaderboard() {
           <div class="lb-rank ${rankClass}">${rankLabel}</div>
           <div class="lb-char">${icon}</div>
           <div class="lb-info">
-            <div class="lb-addr">${addr.slice(0,6)}...${addr.slice(-4)}${isMe?'<span style="color:#7F77DD;margin-left:6px;font-size:10px">← Kamu</span>':''}
+            <div class="lb-addr">${addr.slice(0,6)}...${addr.slice(-4)}${isMe?'<span style="color:#7F77DD;margin-left:6px;font-size:10px">← You</span>':''}
               <span style="font-size:10px;background:rgba(29,158,117,0.2);color:#5DCAA5;padding:1px 6px;border-radius:4px;margin-left:4px">⛓ on-chain</span>
             </div>
             <div class="lb-meta">${charNames[i]} Lv${levels[i]} · ${xps[i].toString()} XP</div>
@@ -1860,11 +1860,11 @@ async function loadLeaderboard() {
       }).join('');
       return;
     } catch(e) {
-      console.warn('Gagal baca dari contract, fallback ke lokal:', e.message);
+      console.warn('Gagal baca of contract, fallback ke lokal:', e.message);
     }
   }
 
-  // Fallback: baca dari localStorage
+  // Fallback: read from localStorage
   renderLocalLeaderboard(myAddr);
 }
 
@@ -1881,7 +1881,7 @@ function renderLocalLeaderboard(myAddr) {
       var sv2=document.getElementById('my-score-val'); if(sv2) sv2.textContent = myEntry.score.toLocaleString() + ' pts';
       var sa2=document.getElementById('my-score-addr'); if(sa2) sa2.textContent = myEntry.address.slice(0,6)+'...'+myEntry.address.slice(-4);
       const rank = lb.findIndex(x => x.address.toLowerCase() === myAddr) + 1;
-      var sr2=document.getElementById('my-score-rank'); if(sr2) sr2.textContent = '#' + rank + ' dari ' + lb.length;
+      var sr2=document.getElementById('my-score-rank'); if(sr2) sr2.textContent = '#' + rank + ' of ' + lb.length;
       var sc3=document.getElementById('my-score-char'); if(sc3) sc3.textContent = (myEntry.charIcon||'⚔️') + ' ' + myEntry.charName + ' Lv' + myEntry.level;
     } else if(myBox) { myBox.style.display = 'none'; }
   }
@@ -1889,14 +1889,14 @@ function renderLocalLeaderboard(myAddr) {
   if (!lb.length) {
     lbEl.innerHTML = `<div style="text-align:center;padding:30px;color:#555">
       <div style="font-size:32px;margin-bottom:8px">📭</div>
-      Belum ada score — jadilah yang pertama!
-      <div style="font-size:12px;margin-top:6px;color:#444">Menang battle → Submit Score</div>
+      No scores yet — be the first!
+      <div style="font-size:12px;margin-top:6px;color:#444">Win a battle → Submit Score</div>
     </div>`;
     return;
   }
 
   lbEl.innerHTML = `<div style="font-size:11px;color:#555;margin-bottom:10px;text-align:center">
-    ${isContractDeployed() ? '⚠️ Menampilkan data lokal (gagal baca chain)' : '📋 Data lokal · Deploy contract untuk leaderboard on-chain'}
+    ${isContractDeployed() ? '⚠️ Showing local data (failed to read chain)' : '📋 Local data · Deploy contract for on-chain leaderboard'}
   </div>` + lb.slice(0,20).map((e,i) => {
     const isMe = myAddr && e.address.toLowerCase() === myAddr;
     const rankLabel = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
@@ -1909,8 +1909,8 @@ function renderLocalLeaderboard(myAddr) {
       <div class="lb-rank ${rankClass}">${rankLabel}</div>
       <div class="lb-char">${e.charIcon||'⚔️'}</div>
       <div class="lb-info">
-        <div class="lb-addr">${e.address.slice(0,6)}...${e.address.slice(-4)}${isMe?'<span style="color:#7F77DD;margin-left:6px;font-size:10px">← Kamu</span>':''}${chainTag}</div>
-        <div class="lb-meta">${e.charName} Lv${e.level} · ${e.xp} XP · ${e.wins} menang · ${ago}</div>
+        <div class="lb-addr">${e.address.slice(0,6)}...${e.address.slice(-4)}${isMe?'<span style="color:#7F77DD;margin-left:6px;font-size:10px">← You</span>':''}${chainTag}</div>
+        <div class="lb-meta">${e.charName} Lv${e.level} · ${e.xp} XP · ${e.wins} wins · ${ago}</div>
       </div>
       <div class="lb-score">${e.score.toLocaleString()}</div>
     </div>`;
@@ -1919,10 +1919,10 @@ function renderLocalLeaderboard(myAddr) {
 
 function timeAgo(ts) {
   const sec = Math.floor((Date.now()-ts)/1000);
-  if(sec<60)return'baru saja';
-  if(sec<3600)return Math.floor(sec/60)+' menit lalu';
-  if(sec<86400)return Math.floor(sec/3600)+' jam lalu';
-  return Math.floor(sec/86400)+' hari lalu';
+  if(sec<60)return'just now';
+  if(sec<3600)return Math.floor(sec/60)+' minutes ago';
+  if(sec<86400)return Math.floor(sec/3600)+' hours ago';
+  return Math.floor(sec/86400)+' days ago';
 }
 
 
