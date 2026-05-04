@@ -906,11 +906,18 @@ async function connectWithProvider(provider, btnId, btnLabel) {
   btn.disabled = true;
   btn.querySelector('.wname').innerHTML = '<span class="spinner"></span>Connecting...';
   try {
-    const accounts = await provider.request({ method: 'eth_requestAccounts' });
+    // Force wallet to show account selection prompt every time
+    await provider.request({
+      method: 'wallet_requestPermissions',
+      params: [{ eth_accounts: {} }]
+    });
+    const accounts = await provider.request({ method: 'eth_accounts' });
     if (!accounts || !accounts.length) {
       showToast('❌ No account selected');
       resetBtn(btn, btnLabel); return;
     }
+    // Clear disconnected flag
+    sessionStorage.removeItem('wallet_disconnected');
     wallet.address = accounts[0];
     wallet.connected = true;
     wallet.isDemo = false;
@@ -1002,6 +1009,12 @@ async function connectWalletConnect() {
     // Saat session terhubung
     wcProvider.on('connect', async () => {
       closeQRModal();
+      // If user intentionally disconnected, reject auto-reconnect
+      if (sessionStorage.getItem('wallet_disconnected') === '1') {
+        try { wcProvider.disconnect(); } catch(e) {}
+        return;
+      }
+      sessionStorage.removeItem('wallet_disconnected');
       const accounts = await wcProvider.request({ method: 'eth_accounts' });
       wallet.address = accounts[0];
       wallet.connected = true;
@@ -1145,6 +1158,8 @@ function confirmDisconnect(){
 
 function disconnectWallet() {
   if (wallet.wcProvider) { try { wallet.wcProvider.disconnect(); } catch(e){} }
+  // Mark as intentionally disconnected — prevents auto-reconnect on refresh
+  sessionStorage.setItem('wallet_disconnected', '1');
   wallet = { connected: false, address: null, chainId: null, isDemo: false, provider: null, wcProvider: null };
   updateHeader();
   setDot('red');
