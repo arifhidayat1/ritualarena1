@@ -1386,17 +1386,6 @@ function selectChar(i){
   document.getElementById('cc'+i).appendChild(badge);
 }
 
-function startGame(){
-  const c=JSON.parse(JSON.stringify(CHARS[S.selectedChar]));
-  c.xp=0;c.level=1;c.xpNext=100;
-  S.char=c;S.defending=false;S.isPlayerTurn=true;S.busy=false;S.skillCooldowns={};S.wave=1;
-  var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
-  pickEnemy();renderBattle();showScreen('battle');setTurnUI(true);
-  addLog('⚔️ Battle begins on Ritual Testnet!','sys');
-  addLog('Enemy appears: '+S.enemy.icon+' '+S.enemy.name,'sys');
-  addLog('Your turn — choose an action!','sys');
-}
-
 function pickEnemy(){
   const wave=S.wave||1;
   const e=JSON.parse(JSON.stringify(ENEMIES[rnd(0,ENEMIES.length-1)]));
@@ -1791,7 +1780,16 @@ function selectCustomChar(i){
   S.selectedChar='custom_'+i;
 }
 
-const _origStartGame=startGame;
+const _origStartGame=function(){
+  const c=JSON.parse(JSON.stringify(CHARS[S.selectedChar]));
+  c.xp=0;c.level=1;c.xpNext=100;
+  S.char=c;S.defending=false;S.isPlayerTurn=true;S.busy=false;S.skillCooldowns={};S.wave=1;
+  var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
+  pickEnemy();renderBattle();showScreen('battle');setTurnUI(true);
+  addLog('⚔️ Battle begins on Ritual Testnet!','sys');
+  addLog('Enemy appears: '+S.enemy.icon+' '+S.enemy.name,'sys');
+  addLog('Your turn — choose an action!','sys');
+};
 function startGame(){
   if(typeof S.selectedChar==='string' && S.selectedChar.startsWith('custom_')){
     const i=parseInt(S.selectedChar.replace('custom_',''));
