@@ -693,7 +693,8 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
       <div id="preview-skills"></div>
     </div>
     <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px">
-      <button class="px-btn px-btn-gold" id="btn-save-char" onclick="saveCustomChar()" style="display:none">💾 Save Character</button>
+      <button class="px-btn px-btn-gold" id="btn-save-char" onclick="saveCustomChar()" style="display:none">💾 Save</button>
+      <button class="px-btn px-btn-gold" id="btn-mint-char" onclick="mintCharacterNFT()" style="display:none;background:linear-gradient(135deg,#a855f7,#7c3aed);border-color:#a855f7">🎖 Mint as NFT</button>
       <button class="px-btn px-btn-red px-btn-sm" onclick="closeCustomModal()">✕ Close</button>
     </div>
   </div>
@@ -1207,6 +1208,8 @@ function onConnected() {
     setDot('green');
     const rb=document.getElementById('ritual-bal'); if(rb) rb.style.display = 'block';
     showToast('✅ Wallet connected!' + (wallet.isDemo ? ' (Demo)' : ''));
+    renderCustomCharList();
+    loadNFTCharacter();
   }
 }
 
@@ -1697,6 +1700,74 @@ function openCustomModal(){
 }
 function closeCustomModal(){ document.getElementById('custom-modal').classList.remove('show'); }
 
+// NFT CONTRACT
+const NFT_CONTRACT_ADDRESS = '0xEd74C6E07a5f119B82735f4f7270e6C4d047a241';
+const NFT_ABI = [
+  'function mintCharacter(string username, string avatarUrl, string charName, string cls, string lore, uint16 hp, uint16 atk, uint16 def, uint16 mp, uint16 healPow) external',
+  'function hasCharacter(address wallet) external view returns (bool)',
+  'function getCharacterByWallet(address wallet) external view returns (tuple(string username, string avatarUrl, string charName, string cls, string lore, uint16 hp, uint16 atk, uint16 def, uint16 mp, uint16 healPow, uint256 mintedAt))',
+  'function burnCharacter() external',
+];
+
+async function mintCharacterNFT(){
+  if(!generatedChar){ showToast('❌ Generate a character first!'); return; }
+  if(!wallet.address || wallet.isDemo){ showToast('❌ Connect a real wallet first!'); return; }
+  const btn=document.getElementById('btn-mint-char');
+  btn.disabled=true; btn.textContent='⏳ Minting...';
+  try {
+    const provider=new ethers.providers.Web3Provider(wallet.provider);
+    const signer=provider.getSigner();
+    const contract=new ethers.Contract(NFT_CONTRACT_ADDRESS,NFT_ABI,signer);
+    const c=generatedChar;
+    const tx=await contract.mintCharacter(c.username,c.avatarUrl||'',c.name,c.cls,c.lore||'',c.hp,c.atk,c.def,c.mp,c.healPow);
+    document.getElementById('gen-status').innerHTML='<span class="spinner"></span> Waiting for confirmation...';
+    await tx.wait();
+    saveCustomChar();
+    showToast('🎖 NFT minted! Character saved on-chain!');
+    document.getElementById('gen-status').textContent='🎖 NFT minted on Ritual Chain!';
+    btn.textContent='✅ Minted!';
+  } catch(err){
+    if(err.message&&err.message.includes('Already have')) showToast('❌ Wallet already has a character NFT!');
+    else showToast('❌ Mint failed: '+(err.reason||err.message));
+    btn.disabled=false; btn.textContent='🎖 Mint as NFT';
+  }
+}
+
+async function loadNFTCharacter(){
+  if(!wallet.address||wallet.isDemo) return;
+  try {
+    const provider=new ethers.providers.Web3Provider(wallet.provider);
+    const contract=new ethers.Contract(NFT_CONTRACT_ADDRESS,NFT_ABI,provider);
+    const hasNFT=await contract.hasCharacter(wallet.address);
+    if(!hasNFT) return;
+    const data=await contract.getCharacterByWallet(wallet.address);
+    const nftChar={
+      id:'nft_'+data.username.toLowerCase(),
+      username:data.username, name:data.charName,
+      avatarUrl:data.avatarUrl, cls:data.cls, lore:data.lore,
+      hp:Number(data.hp), maxhp:Number(data.hp),
+      atk:Number(data.atk), def:Number(data.def),
+      mp:Number(data.mp), maxmp:Number(data.mp),
+      healPow:Number(data.healPow),
+      isCustom:true, isNFT:true,
+      skills:[
+        {id:'s1',name:'Timeline Strike',desc:'Signature attack',dmg:Math.floor(Number(data.atk)*1.4),mpCost:12,type:'dmg'},
+        {id:'s2',name:'Viral Burst',desc:'Massive follower power',dmg:Math.floor(Number(data.atk)*2.2),mpCost:28,type:'dmg'},
+        {id:'s3',name:'Echo Chamber',desc:'Restore HP',heal:Math.floor(Number(data.healPow)*1.3),mpCost:15,type:'heal'},
+        {id:'s4',name:'Retweet Drain',desc:'Drain enemy restore mana',dmg:Math.floor(Number(data.atk)*1.1),manaHeal:20,mpCost:10,type:'drain'},
+      ]
+    };
+    const key='customChars_'+wallet.address;
+    let saved=[];
+    try{ saved=JSON.parse(localStorage.getItem(key)||'[]'); }catch(e){}
+    const idx=saved.findIndex(c=>c.username===nftChar.username);
+    if(idx>=0) saved[idx]=nftChar; else saved.unshift(nftChar);
+    localStorage.setItem(key,JSON.stringify(saved));
+    renderCustomCharList();
+    showToast('🎖 NFT character loaded: @'+data.username);
+  } catch(err){ console.error('NFT load:',err.message); }
+}
+
 async function generateCustomChar(){
   const username = document.getElementById('x-username-input').value.trim().replace('@','');
   if(!username){ showToast('❌ Enter your X username first!'); return; }
@@ -1731,6 +1802,7 @@ async function generateCustomChar(){
     ).join('');
     document.getElementById('char-preview').classList.add('show');
     document.getElementById('btn-save-char').style.display='inline-block';
+    document.getElementById('btn-mint-char').style.display= wallet.isDemo ? 'none' : 'inline-block';
     document.getElementById('gen-status').textContent='✅ Character generated!';
   } catch(err){
     document.getElementById('gen-status').textContent='❌ Failed: '+err.message;
@@ -1774,7 +1846,7 @@ function renderCustomCharList(){
     <div class="custom-saved-item" id="cc_custom_${i}" onclick="selectCustomChar(${i})">
       <img class="custom-saved-avatar" src="${c.avatarUrl||''}" onerror="this.style.display='none'">
       <div style="flex:1">
-        <div class="custom-saved-name">${c.name} <span style="color:#6060a0">@${c.username}</span></div>
+        <div class="custom-saved-name">${c.name} <span style="color:#6060a0">@${c.username}</span>${c.isNFT?'<span style="background:#a855f7;color:#fff;font-size:5px;padding:2px 5px;font-family:var(--pixel);margin-left:4px">NFT</span>':''}</div>
         <div class="custom-saved-meta">${c.cls} · HP ${c.hp} · ATK ${c.atk} · DEF ${c.def}</div>
       </div>
       <button onclick="event.stopPropagation();deleteCustomChar('${c.username}')" style="background:rgba(150,30,30,0.4);border:1px solid rgba(200,50,50,0.4);color:#ff8080;padding:2px 6px;font-size:8px;cursor:pointer;font-family:var(--pixel)">✕</button>
