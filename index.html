@@ -1440,7 +1440,18 @@ function renderBattle(){
     if(madGifEl) madGifEl.style.display='none';
     if(flashGifEl) flashGifEl.style.display='none';
     var eo=document.getElementById('player-emoji-big'); if(eo) eo.remove();
-    if(p.id==='node'){
+    var customAvEl=document.getElementById('custom-avatar-battle'); if(customAvEl) customAvEl.remove();
+    if(p.isCustom && p.avatarUrl){
+      // Custom X character — tampilkan foto profil
+      var pbn2=document.getElementById('p-battle-name');
+      var cImg=document.createElement('img');
+      cImg.id='custom-avatar-battle';
+      cImg.src=p.avatarUrl;
+      cImg.className='player-sprite-img';
+      cImg.style.cssText='border-radius:8px;border:2px solid var(--gold);filter:drop-shadow(0 0 18px rgba(255,200,0,0.5));width:150px;height:150px;object-fit:cover;';
+      cImg.onerror=function(){this.style.display='none';};
+      psSprite.insertBefore(cImg, pbn2);
+    } else if(p.id==='node'){
       if(gifEl) gifEl.style.display='block';
     } else if(p.id==='val'){
       if(madGifEl) madGifEl.style.display='block';
