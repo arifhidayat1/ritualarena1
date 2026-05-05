@@ -497,6 +497,32 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 .disc-modal-title{font-family:var(--pixel);font-size:9px;color:#ff6060;letter-spacing:2px;margin-bottom:6px}
 .disc-modal-addr{font-family:var(--pixel);font-size:7px;color:#6060a0;margin-bottom:16px;word-break:break-all}
 .disc-btn-row{display:flex;gap:10px;justify-content:center}
+.custom-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:8000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s}
+.custom-modal-overlay.show{opacity:1;pointer-events:all}
+.custom-modal-box{background:#0a0a1e;border:2px solid var(--gold);width:90%;max-width:360px;padding:20px;max-height:85vh;overflow-y:auto}
+.custom-modal-title{font-family:var(--pixel);font-size:9px;color:var(--gold);text-align:center;margin-bottom:4px;letter-spacing:2px}
+.custom-modal-sub{font-family:var(--vt);font-size:12px;color:#6060a0;text-align:center;margin-bottom:16px}
+.x-input-row{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.x-input{flex:1;background:#050510;border:1px solid #3030a0;color:var(--cyan);padding:8px 12px;font-family:var(--pixel);font-size:8px;outline:none}
+.x-input:focus{border-color:var(--gold)}
+.x-input::placeholder{color:#3030a0}
+.custom-char-preview{background:#050520;border:1px solid #2020a0;padding:14px;margin-bottom:14px;display:none}
+.custom-char-preview.show{display:block}
+.preview-header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.preview-avatar{width:64px;height:64px;border-radius:4px;border:2px solid var(--gold);object-fit:cover}
+.preview-name{font-family:var(--pixel);font-size:9px;color:var(--gold);margin-bottom:2px}
+.preview-class{font-family:var(--vt);font-size:12px;color:var(--cyan);margin-bottom:4px}
+.preview-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:8px}
+.pstat{background:#0a0a30;border:1px solid #2020a0;padding:4px;text-align:center}
+.pstat-val{font-family:var(--pixel);font-size:9px;color:var(--text)}
+.pstat-lbl{font-family:var(--vt);font-size:10px;color:#6060a0}
+.preview-lore{font-family:var(--vt);font-size:11px;color:#8080b0;line-height:1.5;border-top:1px solid #1a1a40;padding-top:8px}
+.custom-gen-status{font-family:var(--vt);font-size:12px;text-align:center;padding:8px;color:var(--cyan);min-height:20px}
+.custom-saved-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--gold);margin-bottom:6px;cursor:pointer;background:#050510}
+.custom-saved-item.selected{background:#0a0a30}
+.custom-saved-avatar{width:36px;height:36px;border-radius:2px;object-fit:cover;border:1px solid var(--gold)}
+.custom-saved-name{font-family:var(--pixel);font-size:7px;color:var(--gold)}
+.custom-saved-meta{font-family:var(--vt);font-size:11px;color:#6060a0}
 ::-webkit-scrollbar{width:3px}
 ::-webkit-scrollbar-track{background:rgba(0,0,0,0.3)}
 ::-webkit-scrollbar-thumb{background:var(--gold)}
@@ -621,10 +647,54 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
         <button onclick="openDiscModal()" style="background:rgba(150,30,30,0.4);border:1px solid rgba(200,50,50,0.5);color:#ff8080;padding:3px 10px;font-size:6px;cursor:pointer;font-family:var(--pixel);margin-left:8px;transition:all 0.15s" onmouseover="this.style.background='rgba(200,50,50,0.6)'" onmouseout="this.style.background='rgba(150,30,30,0.4)'">⏻ Disconnect</button>
       </div>
       <div id="char-list"></div>
+      <!-- Custom characters saved -->
+      <div id="custom-char-section" style="display:none;margin-top:6px">
+        <div style="font-size:6px;color:var(--gold);margin-bottom:6px;letter-spacing:1px;border-top:1px solid #2020a0;padding-top:8px">── CUSTOM CHARACTERS ──</div>
+        <div id="custom-char-list"></div>
+      </div>
       <div class="btn-row" style="margin-top:14px">
         <button class="px-btn px-btn-gold" onclick="startGame()">▶ START BATTLE</button>
+        <button class="px-btn px-btn-blue px-btn-sm" onclick="openCustomModal()">✨ Create Character</button>
         <button class="px-btn px-btn-blue px-btn-sm" onclick="loadLeaderboard();document.getElementById('btn-back-vic').style.display='none';showScreen('leaderboard')">🏅 Ranking</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CUSTOM CHARACTER MODAL ===== -->
+<div class="custom-modal-overlay" id="custom-modal">
+  <div class="custom-modal-box">
+    <div class="custom-modal-title">✨ CREATE CHARACTER FROM X</div>
+    <div class="custom-modal-sub">Enter your X username — we'll generate a unique warrior!</div>
+    <div class="x-input-row">
+      <span style="font-family:var(--pixel);font-size:10px;color:var(--gold)">@</span>
+      <input class="x-input" id="x-username-input" placeholder="your_username" maxlength="50">
+      <button class="px-btn px-btn-gold px-btn-sm" id="btn-gen-char" onclick="generateCustomChar()">⚡ Generate</button>
+    </div>
+    <div class="custom-gen-status" id="gen-status"></div>
+    <div class="custom-char-preview" id="char-preview">
+      <div class="preview-header">
+        <img class="preview-avatar" id="preview-avatar" src="" alt="avatar" onerror="this.style.display='none'">
+        <div>
+          <div class="preview-name" id="preview-name">—</div>
+          <div class="preview-class" id="preview-class">—</div>
+        </div>
+      </div>
+      <div class="preview-stats">
+        <div class="pstat"><div class="pstat-val" id="preview-hp">—</div><div class="pstat-lbl">HP</div></div>
+        <div class="pstat"><div class="pstat-val" id="preview-atk">—</div><div class="pstat-lbl">ATK</div></div>
+        <div class="pstat"><div class="pstat-val" id="preview-def">—</div><div class="pstat-lbl">DEF</div></div>
+        <div class="pstat"><div class="pstat-val" id="preview-mp">—</div><div class="pstat-lbl">MP</div></div>
+        <div class="pstat"><div class="pstat-val" id="preview-heal">—</div><div class="pstat-lbl">HEAL</div></div>
+        <div class="pstat"><div class="pstat-val" id="preview-cls">—</div><div class="pstat-lbl">CLASS</div></div>
+      </div>
+      <div class="preview-lore" id="preview-lore">—</div>
+      <div style="font-size:7px;color:var(--cyan);margin:8px 0 4px;border-bottom:1px solid rgba(64,208,255,0.2);padding-bottom:2px">── SKILLS ──</div>
+      <div id="preview-skills"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px">
+      <button class="px-btn px-btn-gold" id="btn-save-char" onclick="saveCustomChar()" style="display:none">💾 Save Character</button>
+      <button class="px-btn px-btn-red px-btn-sm" onclick="closeCustomModal()">✕ Close</button>
     </div>
   </div>
 </div>
@@ -1611,7 +1681,135 @@ function switchTab(name,el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
 }
 
+// ============================================================
+// CUSTOM CHARACTER — via VPS Backend
+// ============================================================
+const BACKEND_URL = 'http://20.205.6.194:3001';
+let generatedChar = null;
+
+function openCustomModal(){
+  document.getElementById('custom-modal').classList.add('show');
+  document.getElementById('gen-status').textContent='';
+  document.getElementById('char-preview').classList.remove('show');
+  document.getElementById('btn-save-char').style.display='none';
+  document.getElementById('x-username-input').value='';
+  generatedChar=null;
+}
+function closeCustomModal(){ document.getElementById('custom-modal').classList.remove('show'); }
+
+async function generateCustomChar(){
+  const username = document.getElementById('x-username-input').value.trim().replace('@','');
+  if(!username){ showToast('❌ Enter your X username first!'); return; }
+  const btn=document.getElementById('btn-gen-char');
+  btn.disabled=true; btn.textContent='⏳...';
+  document.getElementById('gen-status').innerHTML='<span class="spinner"></span> Generating your character...';
+  document.getElementById('char-preview').classList.remove('show');
+  document.getElementById('btn-save-char').style.display='none';
+  generatedChar=null;
+  try {
+    const res = await fetch(BACKEND_URL+'/api/twitter-to-nft', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username})
+    });
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error||'Failed');
+    const c = data.character;
+    generatedChar = c;
+    document.getElementById('preview-avatar').src = c.avatarUrl||'';
+    document.getElementById('preview-name').textContent = c.name;
+    document.getElementById('preview-class').textContent = c.cls;
+    document.getElementById('preview-hp').textContent = c.hp;
+    document.getElementById('preview-atk').textContent = c.atk;
+    document.getElementById('preview-def').textContent = c.def;
+    document.getElementById('preview-mp').textContent = c.mp;
+    document.getElementById('preview-heal').textContent = c.healPow;
+    document.getElementById('preview-cls').textContent = c.cls.split(' ')[0];
+    document.getElementById('preview-lore').textContent = c.lore;
+    document.getElementById('preview-skills').innerHTML = (c.skills||[]).map(s=>
+      `<div style="font-family:var(--vt);font-size:11px;color:#a0a0d0;margin-bottom:2px">⚡ <b>${s.name}</b> — ${s.desc} (MP:${s.mpCost})</div>`
+    ).join('');
+    document.getElementById('char-preview').classList.add('show');
+    document.getElementById('btn-save-char').style.display='inline-block';
+    document.getElementById('gen-status').textContent='✅ Character generated!';
+  } catch(err){
+    document.getElementById('gen-status').textContent='❌ Failed: '+err.message;
+  }
+  btn.disabled=false; btn.textContent='⚡ Generate';
+}
+
+function saveCustomChar(){
+  if(!generatedChar) return;
+  const key='customChars_'+(wallet.address||'demo');
+  let saved=[];
+  try{ saved=JSON.parse(localStorage.getItem(key)||'[]'); }catch(e){}
+  const idx=saved.findIndex(c=>c.username===generatedChar.username);
+  if(idx>=0) saved[idx]=generatedChar; else saved.push(generatedChar);
+  localStorage.setItem(key, JSON.stringify(saved));
+  showToast('✅ @'+generatedChar.username+' saved!');
+  closeCustomModal();
+  renderCustomCharList();
+}
+
+function loadCustomChars(){
+  const key='customChars_'+(wallet.address||'demo');
+  try{ return JSON.parse(localStorage.getItem(key)||'[]'); }catch(e){ return []; }
+}
+
+function deleteCustomChar(username){
+  const key='customChars_'+(wallet.address||'demo');
+  localStorage.setItem(key, JSON.stringify(loadCustomChars().filter(c=>c.username!==username)));
+  if(typeof S.selectedChar==='string' && S.selectedChar==='custom_'+username) S.selectedChar=0;
+  renderCustomCharList();
+  showToast('🗑️ Character deleted');
+}
+
+function renderCustomCharList(){
+  const saved=loadCustomChars();
+  const section=document.getElementById('custom-char-section');
+  const list=document.getElementById('custom-char-list');
+  if(!saved.length){ section.style.display='none'; return; }
+  section.style.display='block';
+  list.innerHTML=saved.map((c,i)=>`
+    <div class="custom-saved-item" id="cc_custom_${i}" onclick="selectCustomChar(${i})">
+      <img class="custom-saved-avatar" src="${c.avatarUrl||''}" onerror="this.style.display='none'">
+      <div style="flex:1">
+        <div class="custom-saved-name">${c.name} <span style="color:#6060a0">@${c.username}</span></div>
+        <div class="custom-saved-meta">${c.cls} · HP ${c.hp} · ATK ${c.atk} · DEF ${c.def}</div>
+      </div>
+      <button onclick="event.stopPropagation();deleteCustomChar('${c.username}')" style="background:rgba(150,30,30,0.4);border:1px solid rgba(200,50,50,0.4);color:#ff8080;padding:2px 6px;font-size:8px;cursor:pointer;font-family:var(--pixel)">✕</button>
+    </div>`).join('');
+}
+
+function selectCustomChar(i){
+  // Deselect all regular chars
+  document.querySelectorAll('.char-card').forEach(el=>{ el.classList.remove('selected'); const b=el.querySelector('.sel-badge'); if(b)b.remove(); });
+  // Deselect all custom
+  document.querySelectorAll('[id^="cc_custom_"]').forEach(el=>el.classList.remove('selected'));
+  const el=document.getElementById('cc_custom_'+i);
+  if(el) el.classList.add('selected');
+  S.selectedChar='custom_'+i;
+}
+
+const _origStartGame=startGame;
+function startGame(){
+  if(typeof S.selectedChar==='string' && S.selectedChar.startsWith('custom_')){
+    const i=parseInt(S.selectedChar.replace('custom_',''));
+    const saved=loadCustomChars();
+    if(!saved[i]){ showToast('❌ Character not found!'); return; }
+    const c=JSON.parse(JSON.stringify(saved[i]));
+    c.xp=0; c.level=1; c.xpNext=100;
+    S.char=c; S.defending=false; S.isPlayerTurn=true; S.busy=false; S.skillCooldowns={}; S.wave=1;
+    var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
+    pickEnemy(); renderBattle(); showScreen('battle'); setTurnUI(true);
+    addLog('⚔️ @'+c.username+' enters the Ritual Arena!','sys');
+    addLog('Enemy appears: '+S.enemy.icon+' '+S.enemy.name,'sys');
+    addLog('Your turn — choose an action!','sys');
+  } else { _origStartGame(); }
+}
+
 renderCharList();
+renderCustomCharList();
 
 // ============================================================
 // SCORE & LEADERBOARD (localStorage sebagai simulasi on-chain)
