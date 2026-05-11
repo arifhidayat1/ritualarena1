@@ -1224,6 +1224,7 @@ function onConnected() {
     showToast('✅ Wallet connected!' + (wallet.isDemo ? ' (Demo)' : ''));
     renderCustomCharList();
     loadNFTCharacter();
+    loadPvpEnemyPool();
   }
 }
 
@@ -1405,46 +1406,49 @@ function selectChar(i){
 
 function pickEnemy(){
   const wave=S.wave||1;
+
+  // Every 3rd wave — fight an NFT character from another player
+  const isPvpWave = wave>1 && wave%3===0 && pvpEnemyPool.length>0;
+
+  if(isPvpWave){
+    const nft = pvpEnemyPool[Math.floor(Math.random()*pvpEnemyPool.length)];
+    // Scale PvP enemy stats by wave too
+    const atkMult = Math.pow(1.10, wave-1);
+    const hpMult  = Math.pow(1.18, wave-1);
+    const e = {
+      name: '@'+nft.username,
+      icon: '👤',
+      type: 'NFT Player',
+      hp:   Math.floor(Number(nft.hp)  * hpMult),
+      maxhp:Math.floor(Number(nft.hp)  * hpMult),
+      atk:  Math.floor(Number(nft.atk) * atkMult),
+      def:  Number(nft.def),
+      xp:   Math.floor(120 * Math.pow(1.30, wave-1)),
+      avatarUrl: nft.avatarUrl,
+      cls:  nft.cls,
+      isPvp: true,
+      wave: wave,
+    };
+    S.enemy=e;
+    return;
+  }
+
+  // Normal enemy with wave scaling
   const e=JSON.parse(JSON.stringify(ENEMIES[rnd(0,ENEMIES.length-1)]));
-
   if(wave>1){
-    // Exponential scaling — makin terasa di wave tinggi
-    const hpMult  = Math.pow(1.22, wave-1);  // +22% HP per wave (compound)
-    const atkMult = Math.pow(1.12, wave-1);  // +12% ATK per wave
-    const defMult = Math.pow(1.08, wave-1);  // +8% DEF per wave
-    const xpMult  = Math.pow(1.30, wave-1);  // +30% XP per wave
-
+    const hpMult  = Math.pow(1.22, wave-1);
+    const atkMult = Math.pow(1.12, wave-1);
+    const defMult = Math.pow(1.08, wave-1);
+    const xpMult  = Math.pow(1.30, wave-1);
     e.hp   = Math.floor(e.hp   * hpMult);
     e.maxhp= e.hp;
     e.atk  = Math.floor(e.atk  * atkMult);
     e.def  = Math.floor(e.def  * defMult);
     e.xp   = Math.floor(e.xp   * xpMult);
-
-    // Wave 5+: enemy gets extra moves (more varied attacks)
-    if(wave>=5 && e.moves){
-      e.moves=[...e.moves,'Double Strike','Rage Mode','Chain Attack'];
-    }
-    // Wave 10+: enemy cannot be interrupted
-    if(wave>=10){
-      e.atk = Math.floor(e.atk * 1.15); // bonus ATK lagi
-      e.moves=[...e.moves,'Berserker Slash','Annihilate'];
-    }
-    // Wave 15+ : boss-tier scaling
-    if(wave>=15){
-      e.hp  = Math.floor(e.hp  * 1.3);
-      e.maxhp=e.hp;
-      e.def = Math.floor(e.def * 1.2);
-    }
+    if(wave>=5)  e.name='⚡ '+e.name;
+    if(wave>=10){ e.name='💀 '+e.name; e.icon='💀'; e.atk=Math.floor(e.atk*1.15); }
+    if(wave>=15){ e.hp=Math.floor(e.hp*1.3); e.maxhp=e.hp; e.def=Math.floor(e.def*1.2); }
   }
-
-  // Rename enemy at high waves for epic feel
-  if(wave>=10){
-    e.name = '💀 '+e.name;
-    e.icon = '💀';
-  } else if(wave>=5){
-    e.name = '⚡ '+e.name;
-  }
-
   e.wave=wave;
   S.enemy=e;
 }
@@ -1453,8 +1457,30 @@ function renderBattle(){
   const p=S.char,e=S.enemy;
   var pnEl=document.getElementById('p-name'); if(pnEl) pnEl.textContent=p.name;
   var pcEl=document.getElementById('p-class'); if(pcEl) pcEl.textContent=p.cls;
-  var eiEl=document.getElementById('e-icon'); if(eiEl) eiEl.textContent=e.icon;
-  var eibEl=document.getElementById('e-icon-bottom'); if(eibEl) eibEl.textContent=e.icon;
+  var eiEl=document.getElementById('e-icon'); if(eiEl) eiEl.textContent=e.isPvp?'':e.icon;
+  var eibEl=document.getElementById('e-icon-bottom'); if(eibEl) eibEl.textContent=e.isPvp?'':e.icon;
+
+  // PvP enemy — show avatar photo
+  var enemySprite=document.getElementById('enemy-sprite');
+  var pvpAvEl=document.getElementById('pvp-enemy-avatar');
+  if(enemySprite){
+    if(pvpAvEl) pvpAvEl.remove();
+    if(e.isPvp && e.avatarUrl){
+      var pbnEn=document.getElementById('e-name-tag');
+      var pvpImg=document.createElement('img');
+      pvpImg.id='pvp-enemy-avatar';
+      pvpImg.src=e.avatarUrl;
+      pvpImg.style.cssText='width:150px;height:150px;border-radius:8px;object-fit:cover;border:2px solid #ff4040;filter:drop-shadow(0 0 18px rgba(255,60,60,0.6));display:block;image-rendering:pixelated';
+      pvpImg.onerror=function(){this.style.display='none';};
+      enemySprite.insertBefore(pvpImg, pbnEn);
+      // Show PvP badge on wave badge
+      var wb=document.getElementById('wave-badge');
+      if(wb) wb.style.borderColor='#ff4040';
+    } else {
+      var wb=document.getElementById('wave-badge');
+      if(wb) wb.style.borderColor='var(--gold)';
+    }
+  }
   document.getElementById('e-name').textContent=e.name;
   document.getElementById('e-type').textContent=e.type;
   document.getElementById('e-reward').textContent='+'+e.xp+' XP';
@@ -1472,7 +1498,15 @@ function renderBattle(){
   if(wb){
     var wave=S.wave||1;
     var stars='⭐'.repeat(Math.min(wave,5))+(wave>5?'+'+(wave-5):'');
-    wb.innerHTML='WAVE '+wave+' <span class="wave-stars">'+stars+'</span>';
+    if(e.isPvp){
+      wb.innerHTML='WAVE '+wave+' <span style="color:#ff6060;font-size:7px">⚔ PvP</span> '+stars;
+      wb.style.borderColor='#ff4040';
+      wb.style.color='#ff8080';
+    } else {
+      wb.innerHTML='WAVE '+wave+' <span class="wave-stars">'+stars+'</span>';
+      wb.style.borderColor='var(--gold)';
+      wb.style.color='var(--gold)';
+    }
   }
   // Update player name tag bawah gif
   var pbn=document.getElementById('p-battle-name'); if(pbn) pbn.textContent=p.name;
@@ -1841,8 +1875,13 @@ function nextBattle(){
   S.wave=(S.wave||1)+1;
   S.defending=false;S.busy=false;pickEnemy();renderBattle();showScreen('battle');
   var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';setTurnUI(true);
-  addLog('⚔️ WAVE '+S.wave+'! Enemy: '+S.enemy.icon+' '+S.enemy.name,'sys');
-  addLog('Enemies grow stronger! Your turn!','sys');
+  if(S.enemy.isPvp){
+    addLog('⚔️ WAVE '+S.wave+' — PvP! Fighting '+S.enemy.name+'!','sys');
+    addLog('🔴 This is a real player\'s NFT character!','sys');
+  } else {
+    addLog('⚔️ WAVE '+S.wave+'! Enemy: '+S.enemy.icon+' '+S.enemy.name,'sys');
+    addLog('Enemies grow stronger! Your turn!','sys');
+  }
 }
 
 function revive(){
@@ -1876,24 +1915,56 @@ function openCustomModal(){
 function closeCustomModal(){ document.getElementById('custom-modal').classList.remove('show'); }
 
 // NFT CONTRACT
-const NFT_CONTRACT_ADDRESS = '0xEd74C6E07a5f119B82735f4f7270e6C4d047a241';
+const NFT_CONTRACT_ADDRESS = '0x592d75AC5aB1B04cA4109FBa9f08A69fDc2D566C';
 const NFT_ABI = [
   'function mintCharacter(string username, string avatarUrl, string charName, string cls, string lore, uint16 hp, uint16 atk, uint16 def, uint16 mp, uint16 healPow) external',
   'function hasCharacter(address wallet) external view returns (bool)',
-  'function getCharacterByWallet(address wallet) external view returns (tuple(string username, string avatarUrl, string charName, string cls, string lore, uint16 hp, uint16 atk, uint16 def, uint16 mp, uint16 healPow, uint256 mintedAt))',
+  'function usernameTaken(string username) external view returns (bool)',
+  'function getCharacterByWallet(address wallet) external view returns (tuple(string username, string avatarUrl, string charName, string cls, string lore, uint16 hp, uint16 atk, uint16 def, uint16 mp, uint16 healPow, uint256 mintedAt, address owner))',
+  'function getAllCharacters() external view returns (tuple(string username, string avatarUrl, string charName, string cls, string lore, uint16 hp, uint16 atk, uint16 def, uint16 mp, uint16 healPow, uint256 mintedAt, address owner)[])',
+  'function getRandomEnemies(address caller, uint256 count) external view returns (tuple(string username, string avatarUrl, string charName, string cls, string lore, uint16 hp, uint16 atk, uint16 def, uint16 mp, uint16 healPow, uint256 mintedAt, address owner)[])',
   'function burnCharacter() external',
 ];
+
+// PvP enemy pool — fetched from chain
+let pvpEnemyPool = [];
+let pvpPoolLoaded = false;
+
+async function loadPvpEnemyPool(){
+  if(!wallet.address || wallet.isDemo) return;
+  try {
+    const provider = new ethers.providers.Web3Provider(wallet.provider);
+    const contract = new ethers.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, provider);
+    const enemies = await contract.getRandomEnemies(wallet.address, 10);
+    pvpEnemyPool = enemies.filter(e => e.username && e.username.length > 0);
+    pvpPoolLoaded = true;
+    console.log('PvP pool loaded:', pvpEnemyPool.length, 'enemies');
+  } catch(err){
+    console.log('PvP pool load failed:', err.message);
+    pvpEnemyPool = [];
+  }
+}
 
 async function mintCharacterNFT(){
   if(!generatedChar){ showToast('❌ Generate a character first!'); return; }
   if(!wallet.address || wallet.isDemo){ showToast('❌ Connect a real wallet first!'); return; }
   const btn=document.getElementById('btn-mint-char');
-  btn.disabled=true; btn.textContent='⏳ Minting...';
+  btn.disabled=true; btn.textContent='⏳ Checking...';
   try {
     const provider=new ethers.providers.Web3Provider(wallet.provider);
     const signer=provider.getSigner();
     const contract=new ethers.Contract(NFT_CONTRACT_ADDRESS,NFT_ABI,signer);
     const c=generatedChar;
+
+    // Check if username already taken on-chain
+    const taken = await contract.usernameTaken(c.username);
+    if(taken){
+      showToast('❌ @'+c.username+' is already minted by another player!');
+      btn.disabled=false; btn.textContent='🎖 Mint as NFT';
+      return;
+    }
+
+    btn.textContent='⏳ Minting...';
     const tx=await contract.mintCharacter(c.username,c.avatarUrl||'',c.name,c.cls,c.lore||'',c.hp,c.atk,c.def,c.mp,c.healPow);
     document.getElementById('gen-status').innerHTML='<span class="spinner"></span> Waiting for confirmation...';
     await tx.wait();
@@ -1977,8 +2048,28 @@ async function generateCustomChar(){
     ).join('');
     document.getElementById('char-preview').classList.add('show');
     document.getElementById('btn-save-char').style.display='inline-block';
-    document.getElementById('btn-mint-char').style.display= wallet.isDemo ? 'none' : 'inline-block';
-    document.getElementById('gen-status').textContent='✅ Character generated!';
+
+    // Check if username already taken on-chain
+    if(!wallet.isDemo && wallet.address){
+      try {
+        const provider=new ethers.providers.Web3Provider(wallet.provider);
+        const contract=new ethers.Contract(NFT_CONTRACT_ADDRESS,NFT_ABI,provider);
+        const taken=await contract.usernameTaken(username);
+        if(taken){
+          document.getElementById('gen-status').innerHTML='⚠️ <span style="color:#ff8040">@'+username+' is already minted by another player — you can save but cannot mint this username.</span>';
+          document.getElementById('btn-mint-char').style.display='none';
+        } else {
+          document.getElementById('btn-mint-char').style.display='inline-block';
+          document.getElementById('gen-status').textContent='✅ Character generated! Username available to mint.';
+        }
+      } catch(e){
+        document.getElementById('btn-mint-char').style.display= wallet.isDemo ? 'none' : 'inline-block';
+        document.getElementById('gen-status').textContent='✅ Character generated!';
+      }
+    } else {
+      document.getElementById('btn-mint-char').style.display= wallet.isDemo ? 'none' : 'inline-block';
+      document.getElementById('gen-status').textContent='✅ Character generated!';
+    }
   } catch(err){
     document.getElementById('gen-status').textContent='❌ Failed: '+err.message;
   }
