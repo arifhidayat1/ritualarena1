@@ -223,10 +223,10 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
   position:relative;
 }
 
-/* BATTLE TOP — hidden, semua dipindah ke bawah */
+/* BATTLE TOP — hidden, moved to bottom */
 .battle-status-bar{ display:none; }
 
-/* bars tetap tersedia untuk updateBars() JS */
+/* bars available for updateBars() JS */
 .stat-label{font-size:6px;color:#6060a0;width:16px;flex-shrink:0;font-family:var(--vt);font-size:11px}
 .hp-bar-wrap{flex:1;height:7px;background:#0a0a1a;border:1px solid rgba(255,255,255,0.1);overflow:hidden;image-rendering:pixelated}
 .hp-bar-fill{height:100%;transition:width 0.3s;background:linear-gradient(90deg,#10a040,#40d040);image-rendering:pixelated}
@@ -909,7 +909,7 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
     <div class="result-panel">
       <span class="result-icon">💀</span>
       <div class="result-title" style="color:var(--red)">GAME OVER</div>
-      <div class="result-sub">Karaktermu gugur dalam pertempuran...</div>
+      <div class="result-sub">Your character has fallen in battle...</div>
       <div class="btn-row" style="margin-top:16px">
         <button class="px-btn px-btn-gold" onclick="revive()">💊 Revive</button>
         <button class="px-btn px-btn-red px-btn-sm" onclick="goMenu()">🏠 Menu</button>
@@ -1064,7 +1064,7 @@ async function connectRabby() {
 
 
 async function connectWalletConnect() {
-  // Cek apakah library berhasil dimuat
+  // Check if library loaded successfully
   if (typeof window.EthereumProvider === 'undefined' && typeof window.WalletConnectProvider === 'undefined') {
     showToast('⏳ WalletConnect library loading, try again...');
     return;
@@ -1324,7 +1324,7 @@ function showScreen(id) {
   document.getElementById('screen-' + id).classList.add('active');
 }
 
-// Cek wallet tersedia saat load — delay 600ms biar extension sempat inject
+// Check wallet on load — 600ms delay for extension to inject
 window.addEventListener('load', () => {
   setTimeout(() => {
     const allProviders = (window.ethereum && window.ethereum.providers) || [];
@@ -1400,15 +1400,45 @@ function selectChar(i){
 function pickEnemy(){
   const wave=S.wave||1;
   const e=JSON.parse(JSON.stringify(ENEMIES[rnd(0,ENEMIES.length-1)]));
-  // Scale stats per wave: HP +20%, ATK +10%, DEF +8%, XP +25% per wave
+
   if(wave>1){
-    const wm=wave-1;
-    e.hp  =Math.floor(e.hp  *(1+wm*0.20));
-    e.maxhp=e.hp;
-    e.atk =Math.floor(e.atk *(1+wm*0.10));
-    e.def =Math.floor(e.def *(1+wm*0.08));
-    e.xp  =Math.floor(e.xp  *(1+wm*0.25));
+    // Exponential scaling — makin terasa di wave tinggi
+    const hpMult  = Math.pow(1.22, wave-1);  // +22% HP per wave (compound)
+    const atkMult = Math.pow(1.12, wave-1);  // +12% ATK per wave
+    const defMult = Math.pow(1.08, wave-1);  // +8% DEF per wave
+    const xpMult  = Math.pow(1.30, wave-1);  // +30% XP per wave
+
+    e.hp   = Math.floor(e.hp   * hpMult);
+    e.maxhp= e.hp;
+    e.atk  = Math.floor(e.atk  * atkMult);
+    e.def  = Math.floor(e.def  * defMult);
+    e.xp   = Math.floor(e.xp   * xpMult);
+
+    // Wave 5+: enemy gets extra moves (more varied attacks)
+    if(wave>=5 && e.moves){
+      e.moves=[...e.moves,'Double Strike','Rage Mode','Chain Attack'];
+    }
+    // Wave 10+: enemy cannot be interrupted
+    if(wave>=10){
+      e.atk = Math.floor(e.atk * 1.15); // bonus ATK lagi
+      e.moves=[...e.moves,'Berserker Slash','Annihilate'];
+    }
+    // Wave 15+ : boss-tier scaling
+    if(wave>=15){
+      e.hp  = Math.floor(e.hp  * 1.3);
+      e.maxhp=e.hp;
+      e.def = Math.floor(e.def * 1.2);
+    }
   }
+
+  // Rename enemy at high waves for epic feel
+  if(wave>=10){
+    e.name = '💀 '+e.name;
+    e.icon = '💀';
+  } else if(wave>=5){
+    e.name = '⚡ '+e.name;
+  }
+
   e.wave=wave;
   S.enemy=e;
 }
@@ -1768,10 +1798,16 @@ function victory(){
   const btn = document.getElementById('btn-submit');
 
   if(isNewBest){
-    // New best — save and allow submit
+    // New best — clear old submitted flag, save new best
     saveBestScore(score);
-    btn.disabled=false;
-    btn.innerHTML='🚀 Submit Score to Ritual Chain';
+    const submittedKey = 'submittedScore_'+(wallet.address||'').toLowerCase();
+    const alreadySubmitted = localStorage.getItem(submittedKey) === score.toString();
+    // Remove old submitted flag since score changed
+    if(!alreadySubmitted) localStorage.removeItem(submittedKey);
+    btn.disabled = alreadySubmitted;
+    btn.innerHTML = alreadySubmitted ? '✅ Submitted to Chain!' : '🚀 Submit Score to Ritual Chain';
+    if(alreadySubmitted){ btn.style.background='rgba(29,158,117,0.3)'; btn.style.borderColor='#5DCAA5'; btn.onclick=null; }
+    else { btn.style.background=''; btn.style.borderColor=''; btn.onclick=submitScoreOnChain; }
     statusEl.textContent='';statusEl.className='';
     document.getElementById('submit-tx-info').style.display='none';
     submitBox.style.display=wallet.isDemo?'none':'block';
@@ -2033,10 +2069,10 @@ renderCustomCharList();
 // SCORE & LEADERBOARD
 // ============================================================
 // Contract Address — deploy RitualArenaScore.sol to Ritual Testnet first
-// Setelah deploy, ganti CONTRACT_ADDRESS dengan address hasil deploy kamu
+// After deploy, replace CONTRACT_ADDRESS with your deployed contract address
 const CONTRACT_ADDRESS = '0xB96Cf73c7D528E95F2AaD71fCE938B98989275B3'; // Ritual Testnet
 
-// ABI minimal untuk fungsi submitScore dan getLeaderboard
+// ABI minimal untuk fungsi submitScore & getLeaderboard
 const CONTRACT_ABI = [
   {
     "inputs": [
@@ -2197,14 +2233,14 @@ async function submitScoreOnChain() {
     const mmProvider = new ethers.providers.Web3Provider(wallet.provider);
     const signer = mmProvider.getSigner();
 
-    // Ambil gasPrice langsung of RPC Ritual (bypass MetaMask yang return 0)
+    // Get gasPrice directly from Ritual RPC (bypass MetaMask returning 0)
     let gasPrice = ethers.utils.parseUnits('1', 'gwei'); // default 1 gwei
     try {
       const ritualRpc = new ethers.providers.JsonRpcProvider('https://rpc.ritualfoundation.org');
       const feeData = await ritualRpc.getFeeData();
       const raw = feeData.gasPrice || feeData.maxFeePerGas;
       if (raw && raw.gt(gasPrice)) gasPrice = raw;
-    } catch(_) { /* pakai default 1 gwei */ }
+    } catch(_) { /* use default 1 gwei */ }
 
     const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
@@ -2226,7 +2262,7 @@ async function submitScoreOnChain() {
     statusEl.textContent = '⏳ Waiting for block confirmation...';
     btn.innerHTML = '<span class="spinner"></span>Waiting for block...';
 
-    // Tunggu 1 konfirmasi
+    // Wait for 1 confirmation
     const receipt = await tx.wait(1);
 
     // Sukses!
@@ -2241,11 +2277,19 @@ async function submitScoreOnChain() {
     document.getElementById('submit-explorer-link').href =
       `https://explorer.ritualfoundation.org/tx/${txHash}`;
 
-    btn.disabled = false;
-    btn.innerHTML = '✅ Score Submitted to Chain!';
+    // Permanently disable — already submitted
+    btn.disabled = true;
+    btn.innerHTML = '✅ Submitted to Chain!';
+    btn.style.background = 'rgba(29,158,117,0.3)';
+    btn.style.borderColor = '#5DCAA5';
+    btn.onclick = null;
     showToast('✅ Score on-chain! Block #' + blockNum);
 
-    // Juga simpan lokal untuk leaderboard fallback
+    // Mark this score as submitted so it can't be re-submitted
+    const submittedKey = 'submittedScore_'+(wallet.address||'').toLowerCase();
+    localStorage.setItem(submittedKey, score.toString());
+
+    // Also save locally for leaderboard fallback
     submitScoreLocal(score, null, null, txHash, blockNum);
 
   } catch(e) {
@@ -2383,7 +2427,7 @@ async function loadLeaderboard() {
       }).join('');
       return;
     } catch(e) {
-      console.warn('Gagal baca of contract, fallback ke lokal:', e.message);
+      console.warn('Failed to read contract, falling back to local:', e.message);
     }
   }
 
