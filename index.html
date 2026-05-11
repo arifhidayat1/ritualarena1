@@ -1223,6 +1223,7 @@ function onConnected() {
     const rb=document.getElementById('ritual-bal'); if(rb) rb.style.display = 'block';
     showToast('✅ Wallet connected!' + (wallet.isDemo ? ' (Demo)' : ''));
     renderCustomCharList();
+    clearOldNFTData();
     loadNFTCharacter();
     loadPvpEnemyPool();
   }
@@ -1977,6 +1978,18 @@ async function mintCharacterNFT(){
     else showToast('❌ Mint failed: '+(err.reason||err.message));
     btn.disabled=false; btn.textContent='🎖 Mint as NFT';
   }
+}
+
+function clearOldNFTData(){
+  // Remove NFT characters from localStorage that came from old contracts
+  // Keep only non-NFT custom chars
+  const key='customChars_'+(wallet.address||'demo').toLowerCase();
+  try {
+    let saved=JSON.parse(localStorage.getItem(key)||'[]');
+    // Remove entries flagged as NFT — will be re-fetched from new contract
+    const filtered=saved.filter(c=>!c.isNFT);
+    localStorage.setItem(key, JSON.stringify(filtered));
+  } catch(e){}
 }
 
 async function loadNFTCharacter(){
