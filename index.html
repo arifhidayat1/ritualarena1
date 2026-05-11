@@ -526,6 +526,11 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 .custom-saved-avatar{width:36px;height:36px;border-radius:2px;object-fit:cover;border:1px solid var(--gold)}
 .custom-saved-name{font-family:var(--pixel);font-size:7px;color:var(--gold)}
 .custom-saved-meta{font-family:var(--vt);font-size:11px;color:#6060a0}
+/* PROJECTILE EFFECTS */
+.projectile{position:fixed;pointer-events:none;z-index:9999;font-size:28px;line-height:1;transform:translate(-50%,-50%)}
+@keyframes hitBurst{0%{opacity:1;transform:translate(-50%,-50%) scale(0.5)}50%{opacity:1;transform:translate(-50%,-50%) scale(2)}100%{opacity:0;transform:translate(-50%,-50%) scale(2.5)}}
+.hit-burst{position:fixed;pointer-events:none;z-index:9999;font-size:36px;line-height:1;transform:translate(-50%,-50%);animation:hitBurst 0.35s ease-out forwards}
+
 ::-webkit-scrollbar{width:3px}
 ::-webkit-scrollbar-track{background:rgba(0,0,0,0.3)}
 ::-webkit-scrollbar-thumb{background:var(--gold)}
@@ -890,7 +895,7 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
         <button class="px-btn px-btn-gold" id="btn-submit" onclick="submitScoreOnChain()" style="width:100%">🚀 Submit to Ritual Chain</button>
       </div>
       <div class="btn-row">
-        <button class="px-btn px-btn-gold" onclick="nextBattle()">⚔ Battle Again</button>
+        <button class="px-btn px-btn-gold" onclick="nextBattle()">⚔ Next Wave</button>
         <button class="px-btn px-btn-blue px-btn-sm" onclick="showLeaderboard()">🏅 Ranking</button>
         <button class="px-btn px-btn-red px-btn-sm" onclick="goMenu()">🏠 Menu</button>
       </div>
@@ -1552,20 +1557,105 @@ function shakeEl(id){
 
 function endPlayerTurn(){S.busy=false;tickCooldowns();setTurnUI(false);setTimeout(enemyTurn,800);}
 
+// ============================================================
+// PROJECTILE ATTACK EFFECTS
+// ============================================================
+function getCharProjectile(charId, skillType){
+  // Per-character projectile config
+  const configs = {
+    node:  { normal:'⚙️', dmg:'⚡', heal:'💚', drain:'🔋', multi:'⚙️', sure:'🎯', color:'#40d0ff' },
+    val:   { normal:'🔩', dmg:'💥', heal:'🛡️', drain:'⚔️', multi:'🔩', sure:'💢', color:'#ff8040' },
+    mage:  { normal:'✨', dmg:'🌟', heal:'💫', drain:'🌀', multi:'✨', sure:'🎯', color:'#c040ff' },
+  };
+  const custom = { normal:'💫', dmg:'⚡', heal:'💚', drain:'🌀', multi:'💥', sure:'🎯', color:'#ffd700' };
+  const p = S.char;
+  const cfg = configs[p.id] || custom;
+  return { emoji: cfg[skillType]||cfg.normal, color: cfg.color };
+}
+
+function fireProjectile(skillType, onHit){
+  const playerEl = document.getElementById('player-sprite');
+  const enemyEl  = document.getElementById('enemy-sprite');
+  if(!playerEl || !enemyEl){ onHit(); return; }
+
+  const pr = playerEl.getBoundingClientRect();
+  const er = enemyEl.getBoundingClientRect();
+
+  // Start: center of player, End: center of enemy
+  const startX = pr.left + pr.width/2;
+  const startY = pr.top  + pr.height/2;
+  const endX   = er.left + er.width/2;
+  const endY   = er.top  + er.height/2;
+
+  const { emoji, color } = getCharProjectile(S.char.id, skillType);
+
+  // Create projectile element
+  const proj = document.createElement('div');
+  proj.className = 'projectile';
+  proj.textContent = emoji;
+  proj.style.left = startX+'px';
+  proj.style.top  = startY+'px';
+  proj.style.filter = `drop-shadow(0 0 10px ${color})`;
+  document.body.appendChild(proj);
+
+  // Animate with requestAnimationFrame
+  const duration = 380; // ms
+  const start = performance.now();
+
+  function animate(now){
+    const t = Math.min((now - start) / duration, 1);
+    // Ease in-out + arc
+    const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+    const x = startX + (endX - startX) * ease;
+    const y = startY + (endY - startY) * ease - Math.sin(Math.PI * t) * 40;
+    const scale = 1 + Math.sin(Math.PI * t) * 0.4;
+    proj.style.left = x+'px';
+    proj.style.top  = y+'px';
+    proj.style.transform = `translate(-50%,-50%) scale(${scale})`;
+    if(t < 1){
+      requestAnimationFrame(animate);
+    } else {
+      proj.remove();
+      // Hit burst effect at enemy
+      const burst = document.createElement('div');
+      burst.className = 'hit-burst';
+      burst.textContent = skillType==='heal' ? '💚' : '💥';
+      burst.style.left = endX+'px';
+      burst.style.top  = endY+'px';
+      burst.style.filter = `drop-shadow(0 0 14px ${color})`;
+      document.body.appendChild(burst);
+      setTimeout(()=>burst.remove(), 400);
+      onHit();
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+function fireAndAttack(skillType, dmgFn){
+  fireProjectile(skillType, ()=>{
+    dmgFn();
+  });
+}
+
 function doAction(type){
   if(!S.isPlayerTurn||S.busy)return;
   S.busy=true;setButtonsDisabled(true);
   const p=S.char,e=S.enemy;
   if(type==='attack'){
     let dmg=Math.max(1,p.atk-e.def+rnd(-4,6));const crit=rnd(1,10)>8;if(crit)dmg=Math.floor(dmg*1.6);
-    e.hp=Math.max(0,e.hp-dmg);addLog('⚔️ Attack: -'+dmg+' enemy HP'+(crit?' ⚡ CRITICAL!':''),'hit');shakeEl('e-icon');updateBars();
-    if(e.hp<=0){setTimeout(victory,300);return;}setTimeout(endPlayerTurn,400);
+    fireProjectile('normal',()=>{
+      e.hp=Math.max(0,e.hp-dmg);addLog('⚔️ Attack: -'+dmg+' enemy HP'+(crit?' ⚡ CRITICAL!':''),'hit');shakeEl('e-icon');updateBars();
+      if(e.hp<=0){setTimeout(victory,300);return;}setTimeout(endPlayerTurn,400);
+    });
   }else if(type==='defend'){
     S.defending=true;addLog('🛡️ Defend — -60% damage this turn!','def');updateBars();setTimeout(endPlayerTurn,400);
   }else if(type==='heal'){
     if(p.mp<20){S.busy=false;setTurnUI(true);return;}
-    p.mp=Math.max(0,p.mp-20);const h=p.healPow+rnd(0,8);p.hp=Math.min(p.maxhp,p.hp+h);
-    addLog('💊 Heal: +'+h+' HP restored','heal');updateBars();setTimeout(endPlayerTurn,400);
+    p.mp=Math.max(0,p.mp-20);const h=p.healPow+rnd(0,8);
+    fireProjectile('heal',()=>{
+      p.hp=Math.min(p.maxhp,p.hp+h);
+      addLog('💊 Heal: +'+h+' HP restored','heal');updateBars();setTimeout(endPlayerTurn,400);
+    });
   }
 }
 
@@ -1573,28 +1663,34 @@ function useSkill(id){
   if(!S.isPlayerTurn||S.busy)return;
   const p=S.char,e=S.enemy;const s=p.skills.find(x=>x.id===id);
   if(!s)return;
-  // Cek cooldown
   if(s.type==='cooldown'&&S.skillCooldowns[id]>0)return;
   if(s.type!=='cooldown'&&p.mp<s.mpCost)return;
   S.busy=true;setButtonsDisabled(true);
   if(s.type!=='cooldown') p.mp=Math.max(0,p.mp-s.mpCost);
-  if(s.type==='dmg'){let d=s.dmg+rnd(-5,10);const c=rnd(1,10)>9;if(c)d=Math.floor(d*1.5);e.hp=Math.max(0,e.hp-d);addLog('⚡ '+s.name+': -'+d+' HP'+(c?' CRITICAL!':''),'hit');shakeEl('e-icon');}
-  else if(s.type==='heal'){const h=s.heal+rnd(0,6);p.hp=Math.min(p.maxhp,p.hp+h);addLog('💚 '+s.name+': +'+h+' HP','heal');}
-  else if(s.type==='multi'){let d1=s.dmg+rnd(-3,6),d2=s.dmg+rnd(-3,6);e.hp=Math.max(0,e.hp-d1-d2);addLog('⚡ '+s.name+': -'+d1+' dan -'+d2+' HP','hit');shakeEl('e-icon');}
-  else if(s.type==='sure'){e.hp=Math.max(0,e.hp-s.dmg);addLog('🎯 '+s.name+': -'+s.dmg+' HP (pasti kena!)','hit');shakeEl('e-icon');}
-  else if(s.type==='drain'){let d=s.dmg+rnd(-5,6);const mg=s.manaHeal||0;e.hp=Math.max(0,e.hp-d);p.mp=Math.min(p.maxmp,p.mp+mg);addLog('🌀 '+s.name+': -'+d+' HP, +'+mg+' Mana','hit');shakeEl('e-icon');}
-  else if(s.type==='special'){const h=s.heal+rnd(0,5);const mg=s.manaHeal||0;p.hp=Math.min(p.maxhp,p.hp+h);p.mp=Math.min(p.maxmp,p.mp+mg);addLog('✨ '+s.name+': +'+h+' HP, +'+mg+' Mana','heal');}
-  else if(s.type==='cooldown'){
-    const h=s.heal+rnd(0,8);const mg=s.manaHeal||0;
-    p.hp=Math.min(p.maxhp,p.hp+h);p.mp=Math.min(p.maxmp,p.mp+mg);
-    S.skillCooldowns[id]=s.cooldown;
+
+  const isDmg = ['dmg','multi','sure','drain'].includes(s.type);
+  const isHeal = ['heal','special','cooldown'].includes(s.type);
+  const projType = s.type;
+
+  fireProjectile(projType, ()=>{
+    if(s.type==='dmg'){let d=s.dmg+rnd(-5,10);const c=rnd(1,10)>9;if(c)d=Math.floor(d*1.5);e.hp=Math.max(0,e.hp-d);addLog('⚡ '+s.name+': -'+d+' HP'+(c?' CRITICAL!':''),'hit');shakeEl('e-icon');}
+    else if(s.type==='heal'){const h=s.heal+rnd(0,6);p.hp=Math.min(p.maxhp,p.hp+h);addLog('💚 '+s.name+': +'+h+' HP','heal');}
+    else if(s.type==='multi'){let d1=s.dmg+rnd(-3,6),d2=s.dmg+rnd(-3,6);e.hp=Math.max(0,e.hp-d1-d2);addLog('⚡ '+s.name+': -'+d1+' & -'+d2+' HP','hit');shakeEl('e-icon');}
+    else if(s.type==='sure'){e.hp=Math.max(0,e.hp-s.dmg);addLog('🎯 '+s.name+': -'+s.dmg+' HP (sure hit!)','hit');shakeEl('e-icon');}
+    else if(s.type==='drain'){let d=s.dmg+rnd(-5,6);const mg=s.manaHeal||0;e.hp=Math.max(0,e.hp-d);p.mp=Math.min(p.maxmp,p.mp+mg);addLog('🌀 '+s.name+': -'+d+' HP, +'+mg+' Mana','hit');shakeEl('e-icon');}
+    else if(s.type==='special'){const h=s.heal+rnd(0,5);const mg=s.manaHeal||0;p.hp=Math.min(p.maxhp,p.hp+h);p.mp=Math.min(p.maxmp,p.mp+mg);addLog('✨ '+s.name+': +'+h+' HP, +'+mg+' Mana','heal');}
+    else if(s.type==='cooldown'){
+      const h=s.heal+rnd(0,8);const mg=s.manaHeal||0;
+      p.hp=Math.min(p.maxhp,p.hp+h);p.mp=Math.min(p.maxmp,p.mp+mg);
+      S.skillCooldowns[id]=s.cooldown;
     addLog('🔄 '+s.name+': +'+h+' HP, +'+mg+' Mana — cooldown '+s.cooldown+' turn','heal');
   }
-  updateBars();
-  if(e.hp<=0){setTimeout(victory,300);return;}
-  tickCooldowns();
-  renderSkills();
-  setTimeout(endPlayerTurn,400);
+    updateBars();
+    if(e.hp<=0){setTimeout(victory,300);return;}
+    tickCooldowns();
+    renderSkills();
+    setTimeout(endPlayerTurn,400);
+  }); // end fireProjectile
 }
 
 function tickCooldowns(){
@@ -1639,6 +1735,15 @@ function doFlee(){
 
 function goMenu(){S.char=null;S.enemy=null;S.busy=false;S.defending=false;S.wave=1;var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';showScreen('menu');}
 
+function getBestScore(){
+  const key = 'bestScore_'+(wallet.address||'demo').toLowerCase();
+  return parseInt(localStorage.getItem(key)||'0');
+}
+function saveBestScore(score){
+  const key = 'bestScore_'+(wallet.address||'demo').toLowerCase();
+  localStorage.setItem(key, score.toString());
+}
+
 function victory(){
   const e=S.enemy,p=S.char;
   p.xp+=e.xp;
@@ -1654,14 +1759,39 @@ function victory(){
   const score = calcScore(S.totalXP, p.level, totalWins);
   document.getElementById('vic-score').textContent=score.toLocaleString()+' pts';
   document.getElementById('vic-wallet').textContent=wallet.address?wallet.address.slice(0,6)+'...'+wallet.address.slice(-4):'—';
-  // Reset submit UI
-  const btn=document.getElementById('btn-submit');
-  btn.disabled=false;
-  btn.innerHTML='🚀 Submit Score to Ritual Chain';
-  const statusEl=document.getElementById('submit-status');
-  statusEl.textContent='';statusEl.className='';
-  document.getElementById('submit-tx-info').style.display='none';
-  document.getElementById('submit-score-box').style.display=wallet.isDemo?'none':'block';
+
+  // Check if score improved from best
+  const bestScore = getBestScore();
+  const isNewBest = score > bestScore;
+  const submitBox = document.getElementById('submit-score-box');
+  const statusEl = document.getElementById('submit-status');
+  const btn = document.getElementById('btn-submit');
+
+  if(isNewBest){
+    // New best — save and allow submit
+    saveBestScore(score);
+    btn.disabled=false;
+    btn.innerHTML='🚀 Submit Score to Ritual Chain';
+    statusEl.textContent='';statusEl.className='';
+    document.getElementById('submit-tx-info').style.display='none';
+    submitBox.style.display=wallet.isDemo?'none':'block';
+    // Show new best badge
+    var sbEl=document.getElementById('vic-score');
+    if(sbEl) sbEl.innerHTML=score.toLocaleString()+' pts <span style="background:#ffd700;color:#000;font-size:6px;padding:2px 6px;font-family:var(--pixel);vertical-align:middle">NEW BEST!</span>';
+  } else {
+    // Not a new best — hide submit, show message
+    submitBox.style.display='none';
+    var notBestEl=document.getElementById('vic-not-best');
+    if(!notBestEl){
+      notBestEl=document.createElement('div');
+      notBestEl.id='vic-not-best';
+      notBestEl.style.cssText='background:rgba(40,40,80,0.6);border:1px solid #3030a0;padding:10px;margin-top:8px;text-align:center;font-family:var(--vt);font-size:13px;color:#6060a0';
+      submitBox.parentNode.insertBefore(notBestEl, submitBox);
+    }
+    notBestEl.style.display='block';
+    notBestEl.innerHTML='📊 Current score: <span style="color:var(--cyan)">'+ score.toLocaleString() +'</span> pts<br>Best score: <span style="color:var(--gold)">'+ bestScore.toLocaleString() +'</span> pts<br><span style="font-size:11px;color:#4040a0">Beat your best score to submit on-chain!</span>';
+  }
+
   showScreen('victory');
 }
 
@@ -1883,7 +2013,9 @@ function startGame(){
     if(!saved[i]){ showToast('❌ Character not found!'); return; }
     const c=JSON.parse(JSON.stringify(saved[i]));
     c.xp=0; c.level=1; c.xpNext=100;
-    S.char=c; S.defending=false; S.isPlayerTurn=true; S.busy=false; S.skillCooldowns={}; S.wave=1;
+    S.char=c; S.defending=false; S.isPlayerTurn=true; S.busy=false; S.skillCooldowns={}; S.wave=1; S.totalXP=0;
+  totalWins=0;
+  var nb=document.getElementById('vic-not-best'); if(nb) nb.style.display='none';
     var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
     pickEnemy(); renderBattle(); showScreen('battle'); setTurnUI(true);
     addLog('⚔️ @'+c.username+' enters the Ritual Arena!','sys');
