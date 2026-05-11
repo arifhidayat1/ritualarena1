@@ -1413,22 +1413,24 @@ function pickEnemy(){
 
   if(isPvpWave){
     const nft = pvpEnemyPool[Math.floor(Math.random()*pvpEnemyPool.length)];
-    // Scale PvP enemy stats by wave too
-    const atkMult = Math.pow(1.10, wave-1);
-    const hpMult  = Math.pow(1.18, wave-1);
+    // Use exact NFT stats — same as when the player uses this character
     const e = {
       name: '@'+nft.username,
       icon: '👤',
       type: 'NFT Player',
-      hp:   Math.floor(Number(nft.hp)  * hpMult),
-      maxhp:Math.floor(Number(nft.hp)  * hpMult),
-      atk:  Math.floor(Number(nft.atk) * atkMult),
-      def:  Number(nft.def),
-      xp:   Math.floor(120 * Math.pow(1.30, wave-1)),
+      hp:      Number(nft.hp),
+      maxhp:   Number(nft.hp),
+      atk:     Number(nft.atk),
+      def:     Number(nft.def),
+      mp:      Number(nft.mp),
+      maxmp:   Number(nft.mp),
+      healPow: Number(nft.healPow),
+      xp:      Math.floor(120 * Math.pow(1.30, wave-1)),
       avatarUrl: nft.avatarUrl,
-      cls:  nft.cls,
-      isPvp: true,
-      wave: wave,
+      cls:     nft.cls,
+      isPvp:   true,
+      wave:    wave,
+      moves:   ['Timeline Strike','Viral Burst','Retweet Drain','Echo Chamber'],
     };
     S.enemy=e;
     return;
@@ -1772,7 +1774,11 @@ function tickCooldowns(){
 
 function enemyTurn(){
   const e=S.enemy,p=S.char;
-  const move=e.moves[rnd(0,e.moves.length-1)];
+  // PvP enemies don't have moves array — use default PvP moves
+  const defaultMoves = e.isPvp
+    ? ['Timeline Strike','Viral Burst','Retweet Drain','Echo Chamber']
+    : (e.moves||['Strike']);
+  const move=defaultMoves[rnd(0,defaultMoves.length-1)];
   const t=rnd(1,10);const defR=S.defending?0.6:0;
   let dmg;
   if(t>=9){dmg=Math.max(1,Math.floor((e.atk+rnd(5,12))*1.5*(1-defR))-p.def);addLog('💥 '+e.name+' "'+move+'" — CRITICAL! -'+dmg+' HP','dmg');}
@@ -1780,7 +1786,11 @@ function enemyTurn(){
   else{dmg=Math.max(1,Math.floor((e.atk+rnd(-3,4))*(1-defR))-p.def);addLog('🗡️ '+e.name+' "'+move+'": -'+dmg+' HP','dmg');}
   p.hp=Math.max(0,p.hp-dmg);shakeEl('player-card');
   if(S.defending){S.defending=false;addLog('🛡️ Defense ended','sys');}
-  if(e.hp<e.maxhp*0.3&&rnd(1,4)===1){const eh=rnd(10,22);e.hp=Math.min(e.maxhp,e.hp+eh);addLog('🔄 '+e.name+' recovered '+eh+' HP!','enemy');}
+  if(e.hp<e.maxhp*0.3&&rnd(1,4)===1){
+    const healAmt = e.isPvp ? rnd(e.healPow||15, (e.healPow||15)+10) : rnd(10,22);
+    e.hp=Math.min(e.maxhp,e.hp+healAmt);
+    addLog('🔄 '+e.name+' recovered '+healAmt+' HP!','enemy');
+  }
   updateBars();
   if(p.hp<=0){setTimeout(()=>showScreen('dead'),500);return;}
   setTimeout(()=>{addLog('── Your Turn ──','sys');S.busy=false;setTurnUI(true);renderSkills();},600);
