@@ -52,7 +52,7 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 }
 
 /* ===== SCREENS ===== */
-.screen{display:none}
+.screen{display:none;width:100%;min-height:100vh}
 .screen.active{display:block}
 
 /* ===== HUD HEADER (battle only) ===== */
@@ -144,6 +144,14 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 #screen-menu .overlay{
   min-height:100vh;
   background:rgba(0,0,10,0.6);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:20px;
+  gap:0;
+}
+#screen-event .overlay,
+#screen-event-victory .overlay{
+  min-height:100vh;
+  background:rgba(10,0,0,0.7);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:20px;
 }
@@ -652,6 +660,30 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 <!-- ===== SCREEN: MENU ===== -->
 <div id="screen-menu" class="screen bg-menu">
   <div class="overlay">
+
+    <!-- TOP: COLLAB EVENT BANNER (exclusive, full width) -->
+    <div id="event-banner" style="display:none;width:100%;max-width:520px;cursor:pointer;margin-bottom:16px" onclick="enterEventArena()">
+      <div id="event-banner-inner" style="border:2px solid #ff4040;background:linear-gradient(135deg,rgba(40,0,0,0.95),rgba(100,0,0,0.6));padding:18px 20px;position:relative;overflow:hidden;box-shadow:0 0 30px rgba(255,40,40,0.3);background-image:url('https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/bg_event.webp');background-size:cover;background-position:center">
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.55)"></div>
+        <div style="position:relative">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+            <span style="font-size:10px;background:#ff4040;color:#fff;font-family:var(--pixel);padding:3px 8px;letter-spacing:1px">🔥 LIVE EVENT</span>
+            <span id="event-banner-players" style="font-family:var(--vt);font-size:12px;color:#ffaaaa"></span>
+          </div>
+          <div id="event-banner-name" style="font-family:var(--pixel);font-size:12px;color:#fff;letter-spacing:2px;text-shadow:0 0 20px #ff4040,0 0 40px #ff2020;margin-bottom:6px">COLLAB EVENT</div>
+          <div id="event-banner-desc" style="font-family:var(--vt);font-size:14px;color:#ffaaaa;margin-bottom:10px">NFT holders only - compete for the top rank!</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <!-- Countdown -->
+            <div id="event-countdown" style="display:none;font-family:var(--pixel);font-size:7px;color:#ffd700;background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.4);padding:4px 10px;letter-spacing:1px">
+              ⏱ --D --H --M --S
+            </div>
+            <div style="font-family:var(--pixel);font-size:7px;color:#fff;background:rgba(255,40,40,0.5);border:1px solid #ff4040;padding:6px 14px;animation:vsPulse 1s ease-in-out infinite">ENTER ▶</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM: CHARACTER SELECT -->
     <div class="menu-panel">
       <div class="menu-title-bar">— SELECT CHARACTER —</div>
       <div class="status-pill">
@@ -660,6 +692,7 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
         <span style="margin-left:auto;font-family:var(--vt);font-size:14px;color:#6060a0" id="menu-net">Ritual Testnet</span>
         <button onclick="openDiscModal()" style="background:rgba(150,30,30,0.4);border:1px solid rgba(200,50,50,0.5);color:#ff8080;padding:3px 10px;font-size:6px;cursor:pointer;font-family:var(--pixel);margin-left:8px;transition:all 0.15s" onmouseover="this.style.background='rgba(200,50,50,0.6)'" onmouseout="this.style.background='rgba(150,30,30,0.4)'">⏻ Disconnect</button>
       </div>
+
       <div id="char-list"></div>
       <!-- Custom characters saved -->
       <div id="custom-char-section" style="display:none;margin-top:6px">
@@ -668,8 +701,72 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
       </div>
       <div class="btn-row" style="margin-top:14px">
         <button class="px-btn px-btn-gold" onclick="startGame()">▶ START BATTLE</button>
-        <button class="px-btn px-btn-blue px-btn-sm" onclick="openCustomModal()">✨ Create Character</button>
+        <button id="btn-create-char" class="px-btn px-btn-blue px-btn-sm" onclick="openCustomModal()">✨ Create Character</button>
         <button class="px-btn px-btn-blue px-btn-sm" onclick="loadLeaderboard();document.getElementById('btn-back-vic').style.display='none';showScreen('leaderboard')">🏅 Ranking</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== SCREEN: EVENT ARENA ===== -->
+<div id="screen-event" class="screen bg-menu">
+  <div class="overlay">
+    <div class="menu-panel">
+      <div class="menu-title-bar" id="event-arena-title" style="color:#ff6060">⚔️ COLLAB EVENT</div>
+      <div id="event-arena-desc" style="font-family:var(--vt);font-size:13px;color:#8080b0;text-align:center;margin-bottom:10px"></div>
+
+      <!-- NFT Character info -->
+      <div id="event-nft-info" style="display:none;margin-bottom:8px"></div>
+
+      <!-- Event leaderboard -->
+      <div style="font-size:6px;color:#ff6060;letter-spacing:1px;margin-bottom:6px;border-bottom:1px solid rgba(255,60,60,0.3);padding-bottom:4px">── EVENT RANKING ──</div>
+      <div id="event-lb-list" style="max-height:260px;overflow-y:auto;margin-bottom:10px">
+        <div style="font-family:var(--vt);font-size:12px;color:#4040a0;text-align:center;padding:10px">Loading...</div>
+      </div>
+
+      <!-- My event score -->
+      <div id="event-my-score" style="background:rgba(255,40,40,0.08);border:1px solid rgba(255,60,60,0.3);padding:8px 12px;margin-bottom:10px;display:none">
+        <div style="font-size:6px;color:#ff6060;margin-bottom:4px">── YOUR BEST ──</div>
+        <div style="display:flex;justify-content:space-between;font-family:var(--vt);font-size:13px">
+          <span id="event-my-wave" style="color:#a0a0d0"></span>
+          <span id="event-my-score-val" style="color:#ff6060;font-family:var(--pixel);font-size:8px"></span>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="px-btn" style="background:linear-gradient(135deg,#7f0000,#cc0000);border-color:#ff4040;color:#fff" onclick="startEventBattle()">⚔️ Enter Battle</button>
+        <button class="px-btn px-btn-blue px-btn-sm" onclick="showScreen('menu')">← Back</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: EVENT VICTORY ===== -->
+<div id="screen-event-victory" class="screen bg-menu">
+  <div class="overlay">
+    <div class="result-box">
+      <div style="font-size:40px;margin-bottom:8px">🏆</div>
+      <div class="result-title" style="color:#ff6060" id="ev-title">EVENT ROUND COMPLETE!</div>
+      <div class="result-sub" id="ev-msg"></div>
+      <div class="reward-table" style="border-color:rgba(255,60,60,0.4)">
+        <div style="font-size:6px;color:#ff6060;margin-bottom:8px;letter-spacing:1px">── EVENT RESULTS ──</div>
+        <div class="reward-row"><span>Wave</span><span class="reward-val" id="ev-wave" style="color:#ff6060"></span></div>
+        <div class="reward-row"><span>Score</span><span class="reward-val" id="ev-score" style="color:#ff6060;font-family:var(--pixel);font-size:8px"></span></div>
+        <div class="reward-row"><span>Best Score</span><span class="reward-val" id="ev-best" style="color:var(--gold)"></span></div>
+      </div>
+
+      <!-- Submit event score -->
+      <div id="ev-submit-box" style="background:rgba(255,40,40,0.08);border:1px solid rgba(255,60,60,0.4);padding:12px;margin:10px 0;text-align:center">
+        <div style="font-family:var(--vt);font-size:12px;color:#8080b0;margin-bottom:8px">Submit your score to the Event Leaderboard</div>
+        <div id="ev-submit-status" style="font-family:var(--vt);font-size:12px;min-height:18px;margin-bottom:6px"></div>
+        <button class="px-btn" id="btn-ev-submit" style="background:linear-gradient(135deg,#7f0000,#cc0000);border-color:#ff4040;color:#fff" onclick="submitEventScore()">🏆 Submit to Event Board</button>
+      </div>
+
+      <div class="btn-row" style="margin-top:8px">
+        <button class="px-btn" style="background:linear-gradient(135deg,#7f0000,#cc0000);border-color:#ff4040" onclick="continueEventBattle()">⚔️ Next Wave</button>
+        <button class="px-btn px-btn-blue px-btn-sm" onclick="showScreen('event');loadEventLeaderboard()">🏆 Rankings</button>
+        <button class="px-btn px-btn-red px-btn-sm" onclick="exitEvent()">🏠 Menu</button>
       </div>
     </div>
   </div>
@@ -1224,8 +1321,10 @@ function onConnected() {
     showToast('✅ Wallet connected!' + (wallet.isDemo ? ' (Demo)' : ''));
     renderCustomCharList();
     clearOldNFTData();
+    updateCreateCharButton();
     loadNFTCharacter();
     loadPvpEnemyPool();
+    loadEventInfo();
   }
 }
 
@@ -1342,8 +1441,34 @@ window.addEventListener('load', () => {
     if(mmEl){mmEl.textContent = hasMM ? '✓' : '✗'; mmEl.style.color = hasMM ? '#5DCAA5' : '#f09595';}
     const rabbyEl = document.getElementById('rabby-status');
     if(rabbyEl){rabbyEl.textContent = hasRabby ? '✓' : '✗'; rabbyEl.style.color = hasRabby ? '#5DCAA5' : '#f09595';}
+
+    // Auto-reconnect on refresh if not intentionally disconnected
+    if(sessionStorage.getItem('wallet_disconnected') !== '1' && window.ethereum){
+      window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
+        if(accounts && accounts.length > 0){
+          wallet.address = accounts[0];
+          wallet.connected = true;
+          wallet.isDemo = false;
+          wallet.provider = window.ethereum;
+          window.ethereum.request({ method: 'eth_chainId' }).then(chainId => {
+            wallet.chainId = chainId;
+            onConnected();
+          }).catch(()=>{});
+          // Listen for account/chain changes
+          window.ethereum.on('accountsChanged', (a) => {
+            if(!a.length){ disconnectWallet(); return; }
+            wallet.address = a[0]; updateHeader(); showToast('🔄 Account changed');
+          });
+          window.ethereum.on('chainChanged', (id) => {
+            wallet.chainId = id; updateHeader();
+            if(id.toLowerCase() !== RITUAL_CHAIN_ID.toLowerCase()){
+              showScreen('wrongnet'); setDot('yellow');
+            } else { showScreen('menu'); setDot('green'); }
+          });
+        }
+      }).catch(()=>{});
+    }
   }, 600);
-  // Only load leaderboard if element exists
   if(document.getElementById('lb-list')) loadLeaderboard();
 });
 
@@ -1458,8 +1583,8 @@ function pickEnemy(){
 
 function renderBattle(){
   const p=S.char,e=S.enemy;
-  var pnEl=document.getElementById('p-name'); if(pnEl) pnEl.textContent=p.name;
-  var pcEl=document.getElementById('p-class'); if(pcEl) pcEl.textContent=p.cls;
+  var pnEl=document.getElementById('p-name'); if(pnEl) pnEl.textContent=p.name||p.username||'Player';
+  var pcEl=document.getElementById('p-class'); if(pcEl) pcEl.textContent=p.cls||p.charName||'NFT Fighter';
   var eiEl=document.getElementById('e-icon'); if(eiEl) eiEl.textContent=e.isPvp?'':e.icon;
   var eibEl=document.getElementById('e-icon-bottom'); if(eibEl) eibEl.textContent=e.isPvp?'':e.icon;
 
@@ -1490,10 +1615,10 @@ function renderBattle(){
   var haEl=document.getElementById('heal-amt'); if(haEl) haEl.textContent=p.healPow;
   updateBars();renderSkills();
   // sync
-  var nt=document.getElementById('e-name-tag'); if(nt) nt.textContent=e.name;
-  var ps=document.getElementById('p-sprite'); if(ps) ps.innerHTML=p.icon;
-  var pn=document.getElementById('p-name'); if(pn) pn.textContent=p.name;
-  var pl=document.getElementById('p-level'); if(pl) pl.textContent=p.level;
+  var nt=document.getElementById('e-name-tag'); if(nt) nt.textContent=e.name||'Enemy';
+  var ps=document.getElementById('p-sprite'); if(ps) ps.innerHTML=p.icon||'';
+  var pn=document.getElementById('p-name'); if(pn) pn.textContent=p.name||p.username||'Player';
+  var pl=document.getElementById('p-level'); if(pl) pl.textContent=p.level||1;
   var bw=document.getElementById('battle-wallet'); if(bw) bw.textContent=wallet.address?wallet.address.slice(0,6)+'...'+wallet.address.slice(-4):'—';
   var bn=document.getElementById('battle-net'); if(bn) bn.textContent=wallet.isDemo?'Demo':'Ritual';
   // Update wave badge
@@ -1512,7 +1637,7 @@ function renderBattle(){
     }
   }
   // Update player name tag bawah gif
-  var pbn=document.getElementById('p-battle-name'); if(pbn) pbn.textContent=p.name;
+  var pbn=document.getElementById('p-battle-name'); if(pbn) pbn.textContent=p.name||p.username||'Player';
   // Show/hide sprite based on character
   var gifEl=document.getElementById('player-gif');
   var madGifEl=document.getElementById('mad-gif');
@@ -1814,7 +1939,7 @@ function doFlee(){
   addLog('🏃 Kabur! Wave reset. New enemy: '+S.enemy.icon+' '+S.enemy.name,'sys');
 }
 
-function goMenu(){S.char=null;S.enemy=null;S.busy=false;S.defending=false;S.wave=1;var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';showScreen('menu');}
+function goMenu(){S.char=null;S.enemy=null;S.busy=false;S.defending=false;S.wave=1;var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';showScreen('menu');renderCustomCharList();updateCreateCharButton();}
 
 function getBestScore(){
   const key = 'bestScore_'+(wallet.address||'demo').toLowerCase();
@@ -1983,11 +2108,21 @@ async function mintCharacterNFT(){
     showToast('🎖 NFT minted! Character saved on-chain!');
     document.getElementById('gen-status').textContent='🎖 NFT minted on Ritual Chain!';
     btn.textContent='✅ Minted!';
+    // Hide Create Character button
+    var btnCreate = document.getElementById('btn-create-char');
+    if(btnCreate) btnCreate.style.display='none';
   } catch(err){
     if(err.message&&err.message.includes('Already have')) showToast('❌ Wallet already has a character NFT!');
     else showToast('❌ Mint failed: '+(err.reason||err.message));
     btn.disabled=false; btn.textContent='🎖 Mint as NFT';
   }
+}
+
+function updateCreateCharButton(){
+  const saved = loadCustomChars();
+  const hasNFT = saved.some(c=>c.isNFT);
+  var btnCreate = document.getElementById('btn-create-char');
+  if(btnCreate) btnCreate.style.display = hasNFT ? 'none' : '';
 }
 
 function clearOldNFTData(){
@@ -2012,12 +2147,13 @@ async function loadNFTCharacter(){
     const data=await contract.getCharacterByWallet(wallet.address);
     const nftChar={
       id:'nft_'+data.username.toLowerCase(),
-      username:data.username, name:data.charName,
-      avatarUrl:data.avatarUrl, cls:data.cls, lore:data.lore,
+      username:data.username, name:data.charName||data.username,
+      avatarUrl:data.avatarUrl, cls:data.cls||'NFT Fighter', lore:data.lore||'',
       hp:Number(data.hp), maxhp:Number(data.hp),
       atk:Number(data.atk), def:Number(data.def),
       mp:Number(data.mp), maxmp:Number(data.mp),
       healPow:Number(data.healPow),
+      level:1, xp:0, xpNext:100,
       isCustom:true, isNFT:true,
       skills:[
         {id:'s1',name:'Timeline Strike',desc:'Signature attack',dmg:Math.floor(Number(data.atk)*1.4),mpCost:12,type:'dmg'},
@@ -2034,6 +2170,8 @@ async function loadNFTCharacter(){
     localStorage.setItem(key,JSON.stringify(saved));
     renderCustomCharList();
     showToast('🎖 NFT character loaded: @'+data.username);
+    var btnCreate = document.getElementById('btn-create-char');
+    if(btnCreate) btnCreate.style.display='none';
   } catch(err){ console.error('NFT load:',err.message); }
 }
 
@@ -2119,10 +2257,12 @@ function loadCustomChars(){
 
 function deleteCustomChar(username){
   const key='customChars_'+(wallet.address||'demo');
-  localStorage.setItem(key, JSON.stringify(loadCustomChars().filter(c=>c.username!==username)));
+  const remaining=loadCustomChars().filter(c=>c.username!==username);
+  localStorage.setItem(key, JSON.stringify(remaining));
   if(typeof S.selectedChar==='string' && S.selectedChar==='custom_'+username) S.selectedChar=0;
   renderCustomCharList();
   showToast('🗑️ Character deleted');
+  updateCreateCharButton();
 }
 
 function renderCustomCharList(){
@@ -2180,8 +2320,320 @@ function startGame(){
   } else { _origStartGame(); }
 }
 
-renderCharList();
-renderCustomCharList();
+// ============================================================
+// COLLAB EVENT ARENA
+// ============================================================
+const EVENT_CONTRACT_ADDRESS = '0xc06D367E65Fcc8D87E4Df9Be6ff925468F63751B';
+const EVENT_ABI = [
+  'function getEventInfo() external view returns (bool active, string name, string description, string bannerColor, uint256 startTime, uint256 endTime, uint256 totalPlayers)',
+  'function submitScore(uint256 score, uint256 wave, string username, string avatarUrl, string charName) external',
+  'function getLeaderboard(uint256 limit) external view returns (tuple(address player, string username, string avatarUrl, string charName, uint256 score, uint256 wave, uint256 timestamp)[])',
+  'function getMyScore() external view returns (tuple(address player, string username, string avatarUrl, string charName, uint256 score, uint256 wave, uint256 timestamp))',
+];
+
+let eventInfo = null;
+let eventWave = 0;
+let eventScore = 0;
+let eventBestScore = 0;
+let inEventMode = false;
+
+// Local event config — show banner even without contract
+const LOCAL_EVENT = {
+  active: false,
+  name: 'Collab Event Season 1',
+  description: 'NFT holders only - compete for the top rank!',
+  bannerColor: '#ff4040',
+};
+
+// EVENT COUNTDOWN TIMER
+let countdownInterval = null;
+
+function startEventCountdown(endTime){
+  if(countdownInterval) clearInterval(countdownInterval);
+  const el = document.getElementById('event-countdown');
+  if(!el) return;
+
+  function update(){
+    const now = Math.floor(Date.now()/1000);
+    const diff = endTime - now;
+    if(diff <= 0){
+      el.innerHTML='⏱ EVENT ENDED';
+      el.style.color='#ff4040';
+      clearInterval(countdownInterval);
+      return;
+    }
+    const d = Math.floor(diff/86400);
+    const h = Math.floor((diff%86400)/3600);
+    const m = Math.floor((diff%3600)/60);
+    const s = diff%60;
+    el.innerHTML=`⏱ ${d}D ${String(h).padStart(2,'0')}H ${String(m).padStart(2,'0')}M ${String(s).padStart(2,'0')}S`;
+  }
+  update();
+  countdownInterval = setInterval(update, 1000);
+}
+
+async function loadEventInfo(){
+  // Always show banner if LOCAL_EVENT.active
+  const banner = document.getElementById('event-banner');
+  if(!banner) return;
+
+  let info = LOCAL_EVENT;
+
+  // Try to fetch from contract if available
+  if(EVENT_CONTRACT_ADDRESS && wallet.address && !wallet.isDemo){
+    try {
+      const provider = new ethers.providers.Web3Provider(wallet.provider);
+      const contract = new ethers.Contract(EVENT_CONTRACT_ADDRESS, EVENT_ABI, provider);
+      const res = await contract.getEventInfo();
+      if(res[0]){ // active
+        info = { active:res[0], name:res[1], description:res[2], bannerColor:res[3],
+                 startTime:Number(res[4]), endTime:Number(res[5]), totalPlayers:Number(res[6]) };
+        document.getElementById('event-banner-players').textContent=info.totalPlayers+' players competing';
+
+        // Ritual Testnet timestamps are in milliseconds — convert to seconds
+        if(info.endTime > 0){
+          const endTimeSec = Math.floor(info.endTime / 1000);
+          startEventCountdown(endTimeSec);
+          document.getElementById('event-countdown').style.display='block';
+        } else {
+          document.getElementById('event-countdown').style.display='none';
+        }
+      }
+    } catch(err){ console.log('Event contract not ready, using local config'); }
+  }
+
+  if(info.active){
+    banner.style.display='block';
+    document.getElementById('event-banner-name').textContent='⚔️ '+info.name.toUpperCase();
+    document.getElementById('event-banner-desc').textContent=info.description;
+    document.getElementById('event-banner-inner').style.borderColor=info.bannerColor||'#ff4040';
+    eventInfo = info;
+  } else {
+    banner.style.display='none';
+  }
+}
+
+async function enterEventArena(){
+  if(!wallet.address || wallet.isDemo){ showToast('❌ Connect a real wallet first!'); return; }
+
+  // Check NFT
+  try {
+    const provider = new ethers.providers.Web3Provider(wallet.provider);
+    const nftContract2 = new ethers.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, provider);
+    const hasNFT = await nftContract2.hasCharacter(wallet.address);
+    if(!hasNFT){
+      showToast('❌ You need an NFT character to enter the event!');
+      return;
+    }
+  } catch(e){ showToast('❌ Could not verify NFT: '+e.message); return; }
+
+  // Load event screen info
+  document.getElementById('event-arena-title').textContent='⚔️ '+(eventInfo?.name||'COLLAB EVENT');
+  document.getElementById('event-arena-desc').textContent=eventInfo?.description||'NFT holders only — compete for the top rank!';
+
+  // Show NFT character in event lobby
+  const saved = loadCustomChars();
+  const nftChar = saved.find(c=>c.isNFT);
+  const nftInfoEl = document.getElementById('event-nft-info');
+  if(nftInfoEl && nftChar){
+    nftInfoEl.style.display='block';
+    nftInfoEl.innerHTML=`
+      <div style="display:flex;align-items:center;gap:10px;background:rgba(255,40,40,0.08);border:1px solid rgba(255,60,60,0.3);padding:10px;margin-bottom:8px">
+        <img src="${nftChar.avatarUrl||''}" style="width:48px;height:48px;border-radius:6px;object-fit:cover;border:2px solid #ff4040" onerror="this.style.display='none'">
+        <div>
+          <div style="font-family:var(--pixel);font-size:7px;color:#ff8080">@${nftChar.username}</div>
+          <div style="font-family:var(--vt);font-size:12px;color:#a0a0d0">${nftChar.cls} · HP ${nftChar.hp} · ATK ${nftChar.atk} · DEF ${nftChar.def}</div>
+          <div style="font-size:6px;background:#a855f7;color:#fff;padding:2px 6px;font-family:var(--pixel);display:inline-block;margin-top:2px">NFT ✓</div>
+        </div>
+      </div>`;
+  }
+
+  await loadEventLeaderboard();
+  await loadMyEventScore();
+  showScreen('event');
+}
+
+async function loadEventLeaderboard(){
+  if(!EVENT_CONTRACT_ADDRESS) return;
+  const lbEl = document.getElementById('event-lb-list');
+  if(!lbEl) return;
+  try {
+    const provider = new ethers.providers.Web3Provider(wallet.provider);
+    const contract = new ethers.Contract(EVENT_CONTRACT_ADDRESS, EVENT_ABI, provider);
+    const scores = await contract.getLeaderboard(20);
+    if(!scores.length){
+      lbEl.innerHTML='<div style="font-family:var(--vt);font-size:12px;color:#4040a0;text-align:center;padding:16px">No scores yet — be the first!</div>';
+      return;
+    }
+    lbEl.innerHTML = scores.map((s,i)=>{
+      const isMe = wallet.address && s.player.toLowerCase()===wallet.address.toLowerCase();
+      const rankLabel = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+      const avatarHtml = s.avatarUrl
+        ? `<img src="${s.avatarUrl}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid #ff4040;flex-shrink:0" onerror="this.style.display='none'">`
+        : `<div style="width:28px;height:28px;border-radius:50%;background:#1a0000;border:1px solid #ff4040;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">⚔️</div>`;
+      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid ${isMe?'#ff4040':'rgba(255,60,60,0.2)'};margin-bottom:4px;background:${isMe?'rgba(255,40,40,0.1)':'rgba(10,0,0,0.4)'}">
+        <div style="width:20px;text-align:center;font-size:12px;flex-shrink:0">${rankLabel}</div>
+        ${avatarHtml}
+        <div style="flex:1;min-width:0">
+          <div style="font-family:var(--pixel);font-size:6px;color:#ff8080;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@${s.username}${isMe?' ← You':''}</div>
+          <div style="font-family:var(--vt);font-size:11px;color:#6060a0">Wave ${s.wave} · ${s.charName}</div>
+        </div>
+        <div style="font-family:var(--pixel);font-size:7px;color:#ff4040;flex-shrink:0">${Number(s.score).toLocaleString()}</div>
+      </div>`;
+    }).join('');
+  } catch(err){
+    lbEl.innerHTML='<div style="font-family:var(--vt);font-size:12px;color:#4040a0;text-align:center;padding:10px">Failed to load rankings</div>';
+  }
+}
+
+async function loadMyEventScore(){
+  if(!EVENT_CONTRACT_ADDRESS || !wallet.address) return;
+  try {
+    const provider = new ethers.providers.Web3Provider(wallet.provider);
+    const contract = new ethers.Contract(EVENT_CONTRACT_ADDRESS, EVENT_ABI, provider);
+    const myScore = await contract.getMyScore();
+    const el = document.getElementById('event-my-score');
+    if(myScore.score > 0 && el){
+      el.style.display='block';
+      document.getElementById('event-my-wave').textContent='Wave '+myScore.wave+' reached';
+      document.getElementById('event-my-score-val').textContent=Number(myScore.score).toLocaleString()+' pts';
+      eventBestScore = Number(myScore.score);
+    }
+  } catch(e){}
+}
+
+function startEventBattle(){
+  // Use current selected char (must be NFT char)
+  const saved = loadCustomChars();
+  const nftChar = saved.find(c=>c.isNFT);
+  if(!nftChar){ showToast('❌ Select your NFT character first!'); showScreen('menu'); return; }
+
+  inEventMode = true;
+  eventWave = 1;
+  eventScore = 0;
+  S.wave = 1;
+
+  const c = JSON.parse(JSON.stringify(nftChar));
+  c.xp=0; c.level=1; c.xpNext=100;
+  S.char=c; S.defending=false; S.isPlayerTurn=true;
+  S.busy=false; S.skillCooldowns={}; S.totalXP=0;
+
+  // Pick PvP enemy
+  pickEventEnemy();
+  renderBattle();
+  showScreen('battle');
+  setTurnUI(true);
+  addLog('⚔️ EVENT BATTLE — Wave '+eventWave+'!','sys');
+  addLog('Fighting: '+S.enemy.name,'sys');
+  addLog('Your turn — choose an action!','sys');
+}
+
+function pickEventEnemy(){
+  // Always PvP in event — pick from pool
+  if(pvpEnemyPool.length>0){
+    const nft = pvpEnemyPool[Math.floor(Math.random()*pvpEnemyPool.length)];
+    const wave = S.wave||1;
+    const hpMult = Math.pow(1.15, wave-1);
+    const atkMult = Math.pow(1.10, wave-1);
+    S.enemy = {
+      name: '@'+nft.username,
+      icon: '👤', type: 'NFT Player',
+      hp: Math.floor(Number(nft.hp)*hpMult), maxhp: Math.floor(Number(nft.hp)*hpMult),
+      atk: Math.floor(Number(nft.atk)*atkMult), def: Number(nft.def),
+      mp: Number(nft.mp), maxmp: Number(nft.mp),
+      healPow: Number(nft.healPow),
+      xp: Math.floor(100 * Math.pow(1.25, wave-1)),
+      avatarUrl: nft.avatarUrl, cls: nft.cls,
+      isPvp: true, wave,
+      moves: ['Timeline Strike','Viral Burst','Retweet Drain','Echo Chamber'],
+    };
+  } else {
+    // Fallback to normal enemy if no PvP pool
+    pickEnemy();
+  }
+}
+
+function eventVictory(){
+  const e=S.enemy, p=S.char;
+  const waveScore = Math.floor(1000 * S.wave * (p.level||1));
+  eventScore += waveScore;
+  const totalEventScore = eventScore * eventWave;
+
+  document.getElementById('ev-msg').textContent=e.name+' defeated! Wave '+S.wave+' complete!';
+  document.getElementById('ev-wave').textContent='Wave '+S.wave+' ⭐'.repeat(Math.min(S.wave,5));
+  document.getElementById('ev-score').textContent=eventScore.toLocaleString()+' pts';
+  document.getElementById('ev-best').textContent=eventBestScore.toLocaleString()+' pts';
+
+  // Show submit if new best
+  const submitBox = document.getElementById('ev-submit-box');
+  const btn = document.getElementById('btn-ev-submit');
+  if(eventScore > eventBestScore && EVENT_CONTRACT_ADDRESS){
+    submitBox.style.display='block';
+    btn.disabled=false;
+    btn.innerHTML='🏆 Submit to Event Board';
+    document.getElementById('ev-submit-status').textContent='';
+  } else {
+    submitBox.style.display='none';
+  }
+  showScreen('event-victory');
+}
+
+function continueEventBattle(){
+  S.wave=(S.wave||1)+1;
+  eventWave=S.wave;
+  S.defending=false; S.busy=false;
+  pickEventEnemy();
+  renderBattle();
+  showScreen('battle');
+  var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
+  setTurnUI(true);
+  addLog('⚔️ EVENT Wave '+S.wave+'!','sys');
+  addLog('Fighting: '+S.enemy.name,'sys');
+}
+
+async function submitEventScore(){
+  if(!EVENT_CONTRACT_ADDRESS){ showToast('⚠️ Event contract not deployed!'); return; }
+  const btn=document.getElementById('btn-ev-submit');
+  const statusEl=document.getElementById('ev-submit-status');
+  btn.disabled=true; btn.innerHTML='⏳ Submitting...';
+  statusEl.innerHTML='<span class="spinner"></span> Waiting for signature...';
+  try {
+    const provider=new ethers.providers.Web3Provider(wallet.provider);
+    const signer=provider.getSigner();
+    const contract=new ethers.Contract(EVENT_CONTRACT_ADDRESS,EVENT_ABI,signer);
+    const saved = loadCustomChars();
+    const nftChar = saved.find(c=>c.isNFT);
+    const tx=await contract.submitScore(
+      eventScore, S.wave,
+      nftChar?.username||'', nftChar?.avatarUrl||'', nftChar?.name||''
+    );
+    statusEl.innerHTML='<span class="spinner"></span> Confirming...';
+    await tx.wait();
+    eventBestScore=eventScore;
+    statusEl.textContent='✅ Score submitted to Event Board!';
+    btn.innerHTML='✅ Submitted!';
+    document.getElementById('ev-best').textContent=eventBestScore.toLocaleString()+' pts';
+    showToast('🏆 Event score submitted!');
+  } catch(err){
+    statusEl.textContent='❌ '+(err.reason||err.message);
+    btn.disabled=false; btn.innerHTML='🏆 Submit to Event Board';
+  }
+}
+
+function exitEvent(){
+  inEventMode=false;
+  S.wave=1; S.char=null; S.enemy=null;
+  showScreen('menu');
+}
+
+// Override victory to handle event mode
+const _baseVictory = victory;
+function victory(){
+  if(inEventMode){ eventVictory(); return; }
+  _baseVictory();
+}
+
+
 
 // ============================================================
 // SCORE & LEADERBOARD (localStorage sebagai simulasi on-chain)
@@ -2635,6 +3087,11 @@ document.addEventListener('click', function startMusic(){
   }
   document.removeEventListener('click', startMusic);
 }, {once:true});
+
+// Init
+renderCharList();
+renderCustomCharList();
+loadEventInfo(); // Show banner immediately
 
 </script>
 </body>
