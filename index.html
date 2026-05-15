@@ -1952,6 +1952,7 @@ function saveBestScore(score){
 }
 
 function victory(){
+  if(inEventMode){ eventVictory(); return; }
   const e=S.enemy,p=S.char;
   p.xp+=e.xp;
   S.totalXP+=e.xp;
@@ -2331,9 +2332,12 @@ function selectCustomChar(i){
 }
 
 const _origStartGame=function(){
+  inEventMode = false;
   const c=JSON.parse(JSON.stringify(CHARS[S.selectedChar]));
   c.xp=0;c.level=1;c.xpNext=100;
-  S.char=c;S.defending=false;S.isPlayerTurn=true;S.busy=false;S.skillCooldowns={};S.wave=1;
+  S.char=c;S.defending=false;S.isPlayerTurn=true;S.busy=false;S.skillCooldowns={};S.wave=1;S.totalXP=0;
+  totalWins=0;
+  var nb=document.getElementById('vic-not-best'); if(nb) nb.style.display='none';
   var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
   pickEnemy();renderBattle();showScreen('battle');setTurnUI(true);
   addLog('⚔️ Battle begins on Ritual Testnet!','sys');
@@ -2342,6 +2346,7 @@ const _origStartGame=function(){
 };
 function startGame(){
   if(typeof S.selectedChar==='string' && S.selectedChar.startsWith('custom_')){
+    inEventMode = false;
     const i=parseInt(S.selectedChar.replace('custom_',''));
     const saved=loadCustomChars();
     if(!saved[i]){ showToast('❌ Character not found!'); return; }
@@ -2665,12 +2670,7 @@ function exitEvent(){
   showScreen('menu');
 }
 
-// Override victory to handle event mode
-const _baseVictory = victory;
-function victory(){
-  if(inEventMode){ eventVictory(); return; }
-  _baseVictory();
-}
+// (event mode is handled directly inside victory() below — no override needed)
 
 
 
