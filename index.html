@@ -2315,10 +2315,32 @@ function renderCustomCharList(){
       <img class="custom-saved-avatar" src="${c.avatarUrl||''}" onerror="this.style.display='none'">
       <div style="flex:1">
         <div class="custom-saved-name">${c.name} <span style="color:#6060a0">@${c.username}</span>${c.isNFT?'<span style="background:#a855f7;color:#fff;font-size:5px;padding:2px 5px;font-family:var(--pixel);margin-left:4px">NFT</span>':''}</div>
-        <div class="custom-saved-meta">${c.cls} · HP ${c.hp} · ATK ${c.atk} · DEF ${c.def}</div>
+        <div class="custom-saved-meta">${c.cls||'NFT Fighter'} · HP ${c.hp} · ATK ${c.atk} · DEF ${c.def}</div>
       </div>
-      <button onclick="event.stopPropagation();deleteCustomChar('${c.username}')" style="background:rgba(150,30,30,0.4);border:1px solid rgba(200,50,50,0.4);color:#ff8080;padding:2px 6px;font-size:8px;cursor:pointer;font-family:var(--pixel)">✕</button>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+        ${c.isNFT?`<button onclick="event.stopPropagation();burnNFTChar('${c.username}')" style="background:rgba(120,0,120,0.4);border:1px solid rgba(180,0,180,0.5);color:#ff80ff;padding:2px 6px;font-size:7px;cursor:pointer;font-family:var(--pixel)" title="Burn NFT on-chain">🔥</button>`:''}
+        <button onclick="event.stopPropagation();deleteCustomChar('${c.username}')" style="background:rgba(150,30,30,0.4);border:1px solid rgba(200,50,50,0.4);color:#ff8080;padding:2px 6px;font-size:8px;cursor:pointer;font-family:var(--pixel)">✕</button>
+      </div>
     </div>`).join('');
+}
+
+async function burnNFTChar(username){
+  if(!wallet.address||wallet.isDemo){ showToast('❌ Connect a real wallet first!'); return; }
+  if(!confirm('🔥 Burn NFT @'+username+'?\n\nThis will permanently delete your NFT on-chain and free up the username.\n\nThis cannot be undone!')) return;
+  try {
+    const provider=new ethers.providers.Web3Provider(wallet.provider);
+    const signer=provider.getSigner();
+    const contract=new ethers.Contract(NFT_CONTRACT_ADDRESS,['function burnCharacter() external'],signer);
+    showToast('⏳ Burning NFT...');
+    const tx=await contract.burnCharacter();
+    await tx.wait();
+    // Remove from localStorage
+    deleteCustomChar(username);
+    showToast('🔥 NFT @'+username+' burned! You can now mint a new character.');
+    updateCreateCharButton();
+  } catch(err){
+    showToast('❌ Burn failed: '+(err.reason||err.message));
+  }
 }
 
 function selectCustomChar(i){
