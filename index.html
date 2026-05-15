@@ -1013,8 +1013,9 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
       <span class="result-icon">💀</span>
       <div class="result-title" style="color:var(--red)">GAME OVER</div>
       <div class="result-sub">Your character has fallen in battle...</div>
+      <div id="revive-counter" style="font-family:var(--pixel);font-size:7px;color:#a0a0d0;margin:8px 0;letter-spacing:1px"></div>
       <div class="btn-row" style="margin-top:16px">
-        <button class="px-btn px-btn-gold" onclick="revive()">💊 Revive</button>
+        <button class="px-btn px-btn-gold" id="btn-revive" onclick="revive()">💊 Revive</button>
         <button class="px-btn px-btn-red px-btn-sm" onclick="goMenu()">🏠 Menu</button>
       </div>
     </div>
@@ -1917,7 +1918,7 @@ function enemyTurn(){
     addLog('🔄 '+e.name+' recovered '+healAmt+' HP!','enemy');
   }
   updateBars();
-  if(p.hp<=0){setTimeout(()=>showScreen('dead'),500);return;}
+  if(p.hp<=0){setTimeout(()=>{updateReviveUI();showScreen('dead');},500);return;}
   setTimeout(()=>{addLog('── Your Turn ──','sys');S.busy=false;setTurnUI(true);renderSkills();},600);
 }
 
@@ -2021,10 +2022,47 @@ function nextBattle(){
 }
 
 function revive(){
-  S.char.hp=Math.floor(S.char.maxhp*0.5);
-  S.char.mp=Math.floor(S.char.maxmp*0.5);
-  S.defending=false;S.busy=false;updateBars();showScreen('battle');setTurnUI(true);
-  addLog('💊 Revive! HP & Mana 50% recovered','heal');
+  const btn = document.getElementById('btn-revive');
+  const counter = document.getElementById('revive-counter');
+
+  if(inEventMode){
+    // Event mode: max 3 revives
+    S.reviveCount = (S.reviveCount||0) + 1;
+    const remaining = 3 - S.reviveCount;
+    if(remaining >= 0){
+      S.char.hp=Math.floor(S.char.maxhp*0.5);
+      S.char.mp=Math.floor(S.char.maxmp*0.5);
+      S.defending=false;S.busy=false;updateBars();showScreen('battle');setTurnUI(true);
+      addLog('💊 Revive! HP & Mana 50% recovered ('+remaining+' revives left)','heal');
+    }
+  } else {
+    // Normal mode: unlimited revive
+    S.char.hp=Math.floor(S.char.maxhp*0.5);
+    S.char.mp=Math.floor(S.char.maxmp*0.5);
+    S.defending=false;S.busy=false;updateBars();showScreen('battle');setTurnUI(true);
+    addLog('💊 Revive! HP & Mana 50% recovered','heal');
+  }
+}
+
+function updateReviveUI(){
+  const btn = document.getElementById('btn-revive');
+  const counter = document.getElementById('revive-counter');
+  if(!btn||!counter) return;
+  if(inEventMode){
+    const used = S.reviveCount||0;
+    const remaining = 3 - used;
+    if(remaining <= 0){
+      btn.style.display='none';
+      counter.innerHTML='<span style="color:#ff6060">No revives left!</span>';
+    } else {
+      btn.style.display='';
+      const dots = '💊'.repeat(remaining)+'🩶'.repeat(3-remaining);
+      counter.textContent='Revives: '+dots;
+    }
+  } else {
+    btn.style.display='';
+    counter.textContent='';
+  }
 }
 
 function goMenu(){S.char=null;S.enemy=null;S.busy=false;S.defending=false;var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';showScreen('menu');}
@@ -2512,6 +2550,7 @@ function startEventBattle(){
   eventWave = 1;
   eventScore = 0;
   S.wave = 1;
+  S.reviveCount = 0;
 
   const c = JSON.parse(JSON.stringify(nftChar));
   c.xp=0; c.level=1; c.xpNext=100;
