@@ -2076,7 +2076,7 @@ function switchTab(name,el){
 // ============================================================
 // CUSTOM CHARACTER — via VPS Backend
 // ============================================================
-const BACKEND_URL = 'https://ritualarena1-production.up.railway.app';
+const BACKEND_URL = 'https://ritualarena1.vercel.app';
 let generatedChar = null;
 
 function openCustomModal(){
@@ -2224,7 +2224,7 @@ async function generateCustomChar(){
   document.getElementById('btn-save-char').style.display='none';
   generatedChar=null;
   try {
-    const res = await fetch(BACKEND_URL+'/api/twitter-to-nft', {
+    const res = await fetch(BACKEND_URL+'/api/generate', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({username})
