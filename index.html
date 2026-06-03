@@ -664,42 +664,41 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
     <button onclick="openDiscModal()" style="background:rgba(150,30,30,0.4);border:1px solid rgba(200,50,50,0.5);color:#ff8080;padding:3px 8px;font-size:6px;cursor:pointer;font-family:var(--pixel)">⏻</button>
   </div>
 
-  <!-- 2 fullscreen mode cards -->
-  <div style="display:flex;flex-direction:column;min-height:100vh;padding-top:44px">
+  <!-- 2 mode cards — centered, mobile friendly -->
+  <div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 44px);padding:16px;padding-top:60px">
+    <div style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px">
 
-    <!-- EVENT MODE -->
-    <div id="mode-event-card" onclick="selectModeEvent()" style="flex:1;position:relative;cursor:pointer;overflow:hidden;min-height:50vh;transition:flex 0.4s ease" onmouseover="this.style.flex='1.5'" onmouseout="this.style.flex='1'">
-      <div style="position:absolute;inset:0;background-image:url('https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/bg_event.webp');background-size:cover;background-position:center;filter:brightness(0.6)"></div>
-      <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(120,0,0,0.7),rgba(0,0,0,0.4))"></div>
-      <div id="event-card-locked" style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;flex-direction:column;gap:6px">
-        <span style="font-size:32px">🔒</span>
-        <span style="font-family:var(--pixel);font-size:7px;color:#ff6060">NFT REQUIRED</span>
-      </div>
-      <div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;padding:24px 20px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <span style="background:#ff4040;color:#fff;font-family:var(--pixel);font-size:6px;padding:3px 8px">🔥 LIVE</span>
-          <div id="event-countdown-mini" style="display:none;font-family:var(--pixel);font-size:6px;color:#ffd700;background:rgba(0,0,0,0.5);padding:3px 8px;border:1px solid rgba(255,215,0,0.3)"></div>
+      <!-- RANK EVENT -->
+      <div id="mode-event-card" onclick="selectModeEvent()" style="cursor:pointer;border:2px solid #ff4040;background:linear-gradient(135deg,rgba(40,0,0,0.95),rgba(100,0,0,0.6));background-image:url('https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/bg_event.webp');background-size:cover;background-position:center;position:relative;overflow:hidden;border-radius:4px;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 0 20px rgba(255,40,40,0.3)" onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 0 30px rgba(255,40,40,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='0 0 20px rgba(255,40,40,0.3)'">
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.55)"></div>
+        <div style="position:relative;padding:20px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="background:#ff4040;color:#fff;font-family:var(--pixel);font-size:6px;padding:3px 8px">🔥 LIVE</span>
+            <div id="event-countdown-mini" style="display:none;font-family:var(--pixel);font-size:6px;color:#ffd700;background:rgba(0,0,0,0.5);padding:3px 8px;border:1px solid rgba(255,215,0,0.3)"></div>
+          </div>
+          <div style="font-family:var(--pixel);font-size:clamp(12px,3vw,18px);color:#fff;text-shadow:0 0 20px #ff4040;margin-bottom:4px" id="mode-event-name">RANK EVENT</div>
+          <div style="font-family:var(--vt);font-size:13px;color:#ffaaaa;margin-bottom:10px" id="mode-event-desc">NFT holders only - compete for the top rank!</div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font-family:var(--pixel);font-size:6px;color:#ff8080">⚔ EXCLUSIVE PvP ARENA</div>
+            <div style="font-family:var(--pixel);font-size:7px;color:#fff;background:rgba(255,40,40,0.6);border:1px solid #ff4040;padding:6px 14px">ENTER ▶</div>
+          </div>
         </div>
-        <div style="font-family:var(--pixel);font-size:clamp(14px,4vw,22px);color:#fff;text-shadow:0 0 20px #ff4040;margin-bottom:6px" id="mode-event-name">COLLAB EVENT</div>
-        <div style="font-family:var(--vt);font-size:14px;color:#ffaaaa;margin-bottom:12px" id="mode-event-desc">NFT holders only</div>
-        <div style="font-family:var(--pixel);font-size:7px;color:#ff6060;letter-spacing:1px">⚔ EXCLUSIVE PvP ARENA</div>
       </div>
-      <div style="position:absolute;right:16px;bottom:16px;font-family:var(--pixel);font-size:8px;color:#fff;background:rgba(255,40,40,0.6);border:1px solid #ff4040;padding:8px 16px">ENTER ▶</div>
-    </div>
 
-    <!-- CLASSIC MODE -->
-    <div onclick="selectModeClassic()" style="flex:1;position:relative;cursor:pointer;overflow:hidden;min-height:50vh;transition:flex 0.4s ease" onmouseover="this.style.flex='1.5'" onmouseout="this.style.flex='1'">
-      <div style="position:absolute;inset:0;background:linear-gradient(135deg,#0a0a2e,#050520);"></div>
-      <div style="position:absolute;inset:0;background-image:url('https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/jezzCharArena.gif');background-size:auto 80%;background-repeat:no-repeat;background-position:right 20px center;opacity:0.15"></div>
-      <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(5,5,30,0.95) 50%,transparent)"></div>
-      <div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;padding:24px 20px">
-        <div style="font-family:var(--pixel);font-size:clamp(14px,4vw,22px);color:var(--gold);text-shadow:0 0 20px var(--gold);margin-bottom:6px">CLASSIC BATTLE</div>
-        <div style="font-family:var(--vt);font-size:14px;color:#a0a0d0;margin-bottom:12px">Connect wallet · Choose your fighter</div>
-        <div style="font-family:var(--pixel);font-size:7px;color:var(--cyan);letter-spacing:1px">⚡ ON-CHAIN LEADERBOARD</div>
+      <!-- CLASSIC MODE -->
+      <div onclick="selectModeClassic()" style="cursor:pointer;border:2px solid var(--gold);background:linear-gradient(135deg,#0a0a2e,#050520);position:relative;overflow:hidden;border-radius:4px;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 0 20px rgba(255,200,0,0.15)" onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 0 30px rgba(255,200,0,0.3)'" onmouseout="this.style.transform='';this.style.boxShadow='0 0 20px rgba(255,200,0,0.15)'">
+        <div style="position:absolute;right:0;top:0;bottom:0;width:40%;background-image:url('https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/jezzCharArena.gif');background-size:auto 90%;background-repeat:no-repeat;background-position:right center;opacity:0.2"></div>
+        <div style="position:relative;padding:20px">
+          <div style="font-family:var(--pixel);font-size:clamp(12px,3vw,18px);color:var(--gold);text-shadow:0 0 20px var(--gold);margin-bottom:4px">CLASSIC BATTLE</div>
+          <div style="font-family:var(--vt);font-size:13px;color:#a0a0d0;margin-bottom:10px">Choose your fighter · Battle on-chain</div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font-family:var(--pixel);font-size:6px;color:var(--cyan)">⚡ ON-CHAIN LEADERBOARD</div>
+            <div style="font-family:var(--pixel);font-size:7px;color:#000;background:var(--gold);border:1px solid var(--gold2);padding:6px 14px">PLAY ▶</div>
+          </div>
+        </div>
       </div>
-      <div style="position:absolute;right:16px;bottom:16px;font-family:var(--pixel);font-size:8px;color:#000;background:var(--gold);border:1px solid var(--gold2);padding:8px 16px">PLAY ▶</div>
-    </div>
 
+    </div>
   </div>
 </div>
 
@@ -748,7 +747,7 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 <div id="screen-event" class="screen bg-menu">
   <div class="overlay">
     <div class="menu-panel">
-      <div class="menu-title-bar" id="event-arena-title" style="color:#ff6060">⚔️ COLLAB EVENT</div>
+      <div class="menu-title-bar" id="event-arena-title" style="color:#ff6060">⚔️ RANK EVENT</div>
       <div id="event-arena-desc" style="font-family:var(--vt);font-size:13px;color:#8080b0;text-align:center;margin-bottom:10px"></div>
 
       <!-- NFT Character info -->
@@ -2546,7 +2545,7 @@ function startGame(){
 }
 
 // ============================================================
-// COLLAB EVENT ARENA
+// RANK EVENT ARENA
 // ============================================================
 const EVENT_CONTRACT_ADDRESS = '0xc06D367E65Fcc8D87E4Df9Be6ff925468F63751B';
 const EVENT_ABI = [
@@ -2565,7 +2564,7 @@ let inEventMode = false;
 // Local event config — show banner even without contract
 const LOCAL_EVENT = {
   active: false,
-  name: 'Collab Event Season 1',
+  name: 'Rank Event Season 1',
   description: 'NFT holders only - compete for the top rank!',
   bannerColor: '#ff4040',
 };
@@ -2618,7 +2617,7 @@ async function loadEventInfo(){
                  startTime:Number(res[4]), endTime:Number(res[5]), totalPlayers:Number(res[6]) };
         document.getElementById('event-banner-players').textContent=info.totalPlayers+' players competing';
         // Sync mode select card
-        var mn=document.getElementById('mode-event-name'); if(mn) mn.textContent=info.name||'COLLAB EVENT';
+        var mn=document.getElementById('mode-event-name'); if(mn) mn.textContent=info.name||'RANK EVENT';
         var md=document.getElementById('mode-event-desc'); if(md) md.textContent=info.description||'NFT holders only';
         // Countdown
         if(info.endTime > 0){
@@ -2661,7 +2660,7 @@ async function enterEventArena(){
   } catch(e){ showToast('❌ Could not verify NFT: '+e.message); return; }
 
   // Load event screen info
-  document.getElementById('event-arena-title').textContent='⚔️ '+(eventInfo?.name||'COLLAB EVENT');
+  document.getElementById('event-arena-title').textContent='⚔️ '+(eventInfo?.name||'RANK EVENT');
   document.getElementById('event-arena-desc').textContent=eventInfo?.description||'NFT holders only — compete for the top rank!';
 
   // Show NFT character in event lobby
