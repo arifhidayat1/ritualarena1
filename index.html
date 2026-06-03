@@ -742,10 +742,6 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
         <button onclick="openDiscModal()" style="background:rgba(150,30,30,0.4);border:1px solid rgba(200,50,50,0.5);color:#ff8080;padding:3px 10px;font-size:6px;cursor:pointer;font-family:var(--pixel);margin-left:8px">⏻ Disconnect</button>
       </div>
       <div id="char-list"></div>
-      <div id="custom-char-section" style="display:none;margin-top:6px">
-        <div style="font-size:6px;color:var(--gold);margin-bottom:6px;letter-spacing:1px;border-top:1px solid #2020a0;padding-top:8px">── CUSTOM CHARACTERS ──</div>
-        <div id="custom-char-list"></div>
-      </div>
       <div class="btn-row" style="margin-top:14px">
         <button class="px-btn px-btn-gold" onclick="startGame()">▶ START BATTLE</button>
         <button class="px-btn px-btn-blue px-btn-sm" onclick="loadLeaderboard();document.getElementById('btn-back-vic').style.display='none';showScreen('leaderboard')">🏅 Ranking</button>
@@ -2509,9 +2505,8 @@ function renderCustomCharList(){
   const saved=loadCustomChars();
   const section=document.getElementById('custom-char-section');
   const list=document.getElementById('custom-char-list');
-  if(!saved.length){ section.style.display='none'; return; }
-  section.style.display='block';
-  list.innerHTML=saved.map((c,i)=>`
+  if(section) section.style.display = saved.length ? 'block' : 'none';
+  if(list) list.innerHTML=saved.map((c,i)=>`
     <div class="custom-saved-item" id="cc_custom_${i}" onclick="selectCustomChar(${i})">
       <img class="custom-saved-avatar" src="${c.avatarUrl||''}" onerror="this.style.display='none'">
       <div style="flex:1">
@@ -2523,6 +2518,8 @@ function renderCustomCharList(){
         <button onclick="event.stopPropagation();deleteCustomChar('${c.username}')" style="background:rgba(150,30,30,0.4);border:1px solid rgba(200,50,50,0.4);color:#ff8080;padding:2px 6px;font-size:8px;cursor:pointer;font-family:var(--pixel)">✕</button>
       </div>
     </div>`).join('');
+  // Also update main menu NFT display
+  updateCreateCharButton();
 }
 
 async function burnNFTChar(username){
