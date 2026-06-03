@@ -147,6 +147,12 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
   padding:20px;
   gap:0;
 }
+#screen-classic .overlay{
+  min-height:100vh;
+  background:rgba(0,0,10,0.6);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:20px;
+}
 #screen-event .overlay,
 #screen-event-victory .overlay{
   min-height:100vh;
@@ -653,7 +659,7 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 
 <!-- ===== SCREEN: MENU ===== -->
 <!-- ===== SCREEN: MODE SELECT ===== -->
-<div id="screen-menu" class="screen" style="position:relative;min-height:100vh;overflow:hidden">
+<div id="screen-menu" class="screen bg-menu" style="position:relative;min-height:100vh;overflow:hidden">
 
   <!-- Wallet status bar -->
   <div style="position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,200,0,0.2);padding:8px 16px;display:flex;align-items:center;gap:8px">
@@ -698,11 +704,15 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
         </div>
       </div>
 
+      <!-- CREATE CHARACTER NFT — only shows if no NFT yet -->
+      <div id="btn-create-char-wrapper" style="display:none;text-align:center">
+        <button id="btn-create-char" class="px-btn px-btn-blue" onclick="openCustomModal()" style="width:100%">✨ Create NFT Character</button>
+        <div style="font-family:var(--vt);font-size:11px;color:#4040a0;margin-top:6px">Create your X profile character to access Rank Event</div>
+      </div>
+
     </div>
   </div>
 </div>
-
-<!-- ===== SCREEN: DEMO SELECT CHARACTER ===== -->
 <div id="screen-demo-select" class="screen" style="background:linear-gradient(135deg,#050520,#0a0a1e)">
   <div class="overlay">
     <div class="menu-panel">
@@ -735,7 +745,6 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
       </div>
       <div class="btn-row" style="margin-top:14px">
         <button class="px-btn px-btn-gold" onclick="startGame()">▶ START BATTLE</button>
-        <button id="btn-create-char" class="px-btn px-btn-blue px-btn-sm" onclick="openCustomModal()">✨ Create Character</button>
         <button class="px-btn px-btn-blue px-btn-sm" onclick="loadLeaderboard();document.getElementById('btn-back-vic').style.display='none';showScreen('leaderboard')">🏅 Ranking</button>
         <button class="px-btn px-btn-red px-btn-sm" onclick="showScreen('menu')">← Back</button>
       </div>
@@ -2319,6 +2328,10 @@ async function mintCharacterNFT(){
 function updateCreateCharButton(){
   const saved = loadCustomChars();
   const hasNFT = saved.some(c=>c.isNFT);
+  // Main menu button
+  var wrapper = document.getElementById('btn-create-char-wrapper');
+  if(wrapper) wrapper.style.display = hasNFT ? 'none' : 'block';
+  // Classic screen button (if still there)
   var btnCreate = document.getElementById('btn-create-char');
   if(btnCreate) btnCreate.style.display = hasNFT ? 'none' : '';
 }
