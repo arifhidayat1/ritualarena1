@@ -710,6 +710,9 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
         <div style="font-family:var(--vt);font-size:11px;color:#4040a0;margin-top:6px">Create your X profile character to access Rank Event</div>
       </div>
 
+      <!-- NFT CHARACTER — shows if has NFT -->
+      <div id="menu-nft-section" style="display:none"></div>
+
     </div>
   </div>
 </div>
@@ -2328,10 +2331,36 @@ async function mintCharacterNFT(){
 function updateCreateCharButton(){
   const saved = loadCustomChars();
   const hasNFT = saved.some(c=>c.isNFT);
-  // Main menu button
+
+  // Main menu create button
   var wrapper = document.getElementById('btn-create-char-wrapper');
-  if(wrapper) wrapper.style.display = hasNFT ? 'none' : 'block';
-  // Classic screen button (if still there)
+  if(wrapper) wrapper.style.display = (!hasNFT && wallet.address && !wallet.isDemo) ? 'block' : 'none';
+
+  // Main menu NFT display
+  var nftSection = document.getElementById('menu-nft-section');
+  if(nftSection){
+    if(hasNFT){
+      const nftChar = saved.find(c=>c.isNFT);
+      nftSection.style.display = 'block';
+      nftSection.innerHTML = `
+        <div style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.4);padding:12px;border-radius:4px">
+          <div style="font-size:6px;color:#a855f7;font-family:var(--pixel);margin-bottom:8px;letter-spacing:1px">── YOUR NFT CHARACTER ──</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <img src="${nftChar.avatarUrl||''}" style="width:48px;height:48px;border-radius:6px;object-fit:cover;border:2px solid #a855f7" onerror="this.style.display='none'">
+            <div style="flex:1">
+              <div style="font-family:var(--pixel);font-size:7px;color:#a855f7">${nftChar.name||nftChar.username} <span style="background:#a855f7;color:#fff;font-size:5px;padding:1px 4px">NFT</span></div>
+              <div style="font-family:var(--vt);font-size:12px;color:#8080b0">${nftChar.cls||'NFT Fighter'} · HP ${nftChar.hp} · ATK ${nftChar.atk}</div>
+              <div style="font-family:var(--vt);font-size:11px;color:#6060a0">@${nftChar.username}</div>
+            </div>
+            <button onclick="burnNFTChar('${nftChar.username}')" style="background:rgba(120,0,120,0.4);border:1px solid rgba(180,0,180,0.5);color:#ff80ff;padding:4px 8px;font-size:7px;cursor:pointer;font-family:var(--pixel)" title="Burn NFT">🔥 Burn</button>
+          </div>
+        </div>`;
+    } else {
+      nftSection.style.display = 'none';
+    }
+  }
+
+  // Classic screen button (legacy)
   var btnCreate = document.getElementById('btn-create-char');
   if(btnCreate) btnCreate.style.display = hasNFT ? 'none' : '';
 }
