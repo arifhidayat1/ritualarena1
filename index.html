@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ritual Arena — Testnet</title>
-<script src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.13.0/dist/umd/index.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
 <style>
@@ -618,11 +617,6 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
         <div><div class="wname">Rabby Wallet</div><div class="wsub">Multi-chain friendly</div></div>
         <span id="rabby-status" style="font-size:7px;color:#5DCAA5;margin-left:auto"></span>
       </button>
-      <button class="wallet-btn" id="btn-wc" onclick="connectWalletConnect()">
-        <div class="wicon" style="background:#3B99FC22;border:1px solid #3B99FC40">🔗</div>
-        <div><div class="wname">WalletConnect</div><div class="wsub">Scan QR — mobile wallet</div></div>
-        <span id="wc-status" style="font-size:7px;color:#6060a0;margin-left:auto">v2</span>
-      </button>
       <div class="divider-line">or</div>
       <button class="wallet-btn" onclick="connectDemo()" style="border-color:rgba(240,192,64,0.3)">
         <div class="wicon" style="background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.3)">🎮</div>
@@ -658,43 +652,84 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 </div>
 
 <!-- ===== SCREEN: MENU ===== -->
-<div id="screen-menu" class="screen bg-menu">
-  <div class="overlay">
+<!-- ===== SCREEN: MODE SELECT ===== -->
+<div id="screen-menu" class="screen" style="position:relative;min-height:100vh;overflow:hidden">
 
-    <!-- TOP: COLLAB EVENT BANNER (exclusive, full width) -->
-    <div id="event-banner" style="display:none;width:100%;max-width:520px;cursor:pointer;margin-bottom:16px" onclick="enterEventArena()">
-      <div id="event-banner-inner" style="border:2px solid #ff4040;background:linear-gradient(135deg,rgba(40,0,0,0.95),rgba(100,0,0,0.6));padding:18px 20px;position:relative;overflow:hidden;box-shadow:0 0 30px rgba(255,40,40,0.3);background-image:url('https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/bg_event.webp');background-size:cover;background-position:center">
-        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.55)"></div>
-        <div style="position:relative">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-            <span style="font-size:10px;background:#ff4040;color:#fff;font-family:var(--pixel);padding:3px 8px;letter-spacing:1px">🔥 LIVE EVENT</span>
-            <span id="event-banner-players" style="font-family:var(--vt);font-size:12px;color:#ffaaaa"></span>
-          </div>
-          <div id="event-banner-name" style="font-family:var(--pixel);font-size:12px;color:#fff;letter-spacing:2px;text-shadow:0 0 20px #ff4040,0 0 40px #ff2020;margin-bottom:6px">COLLAB EVENT</div>
-          <div id="event-banner-desc" style="font-family:var(--vt);font-size:14px;color:#ffaaaa;margin-bottom:10px">NFT holders only - compete for the top rank!</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-            <!-- Countdown -->
-            <div id="event-countdown" style="display:none;font-family:var(--pixel);font-size:7px;color:#ffd700;background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.4);padding:4px 10px;letter-spacing:1px">
-              ⏱ --D --H --M --S
-            </div>
-            <div style="font-family:var(--pixel);font-size:7px;color:#fff;background:rgba(255,40,40,0.5);border:1px solid #ff4040;padding:6px 14px;animation:vsPulse 1s ease-in-out infinite">ENTER ▶</div>
-          </div>
-        </div>
+  <!-- Wallet status bar -->
+  <div style="position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,200,0,0.2);padding:8px 16px;display:flex;align-items:center;gap:8px">
+    <div class="dot" id="menu-dot"></div>
+    <span id="menu-addr" style="font-family:monospace;font-size:11px;color:#40d0ff">—</span>
+    <span id="menu-net" style="font-family:var(--pixel);font-size:6px;color:#6060a0;margin-left:4px">—</span>
+    <span style="margin-left:auto;font-family:var(--pixel);font-size:6px;color:#ffd700">⚔ RITUAL ARENA</span>
+    <button onclick="openDiscModal()" style="background:rgba(150,30,30,0.4);border:1px solid rgba(200,50,50,0.5);color:#ff8080;padding:3px 8px;font-size:6px;cursor:pointer;font-family:var(--pixel)">⏻</button>
+  </div>
+
+  <!-- 2 fullscreen mode cards -->
+  <div style="display:flex;flex-direction:column;min-height:100vh;padding-top:44px">
+
+    <!-- EVENT MODE -->
+    <div id="mode-event-card" onclick="selectModeEvent()" style="flex:1;position:relative;cursor:pointer;overflow:hidden;min-height:50vh;transition:flex 0.4s ease" onmouseover="this.style.flex='1.5'" onmouseout="this.style.flex='1'">
+      <div style="position:absolute;inset:0;background-image:url('https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/bg_event.webp');background-size:cover;background-position:center;filter:brightness(0.6)"></div>
+      <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(120,0,0,0.7),rgba(0,0,0,0.4))"></div>
+      <div id="event-card-locked" style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;flex-direction:column;gap:6px">
+        <span style="font-size:32px">🔒</span>
+        <span style="font-family:var(--pixel);font-size:7px;color:#ff6060">NFT REQUIRED</span>
       </div>
+      <div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;padding:24px 20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="background:#ff4040;color:#fff;font-family:var(--pixel);font-size:6px;padding:3px 8px">🔥 LIVE</span>
+          <div id="event-countdown-mini" style="display:none;font-family:var(--pixel);font-size:6px;color:#ffd700;background:rgba(0,0,0,0.5);padding:3px 8px;border:1px solid rgba(255,215,0,0.3)"></div>
+        </div>
+        <div style="font-family:var(--pixel);font-size:clamp(14px,4vw,22px);color:#fff;text-shadow:0 0 20px #ff4040;margin-bottom:6px" id="mode-event-name">COLLAB EVENT</div>
+        <div style="font-family:var(--vt);font-size:14px;color:#ffaaaa;margin-bottom:12px" id="mode-event-desc">NFT holders only</div>
+        <div style="font-family:var(--pixel);font-size:7px;color:#ff6060;letter-spacing:1px">⚔ EXCLUSIVE PvP ARENA</div>
+      </div>
+      <div style="position:absolute;right:16px;bottom:16px;font-family:var(--pixel);font-size:8px;color:#fff;background:rgba(255,40,40,0.6);border:1px solid #ff4040;padding:8px 16px">ENTER ▶</div>
     </div>
 
-    <!-- BOTTOM: CHARACTER SELECT -->
-    <div class="menu-panel">
-      <div class="menu-title-bar">— SELECT CHARACTER —</div>
-      <div class="status-pill">
-        <div class="dot" id="menu-dot"></div>
-        <span id="menu-addr">—</span>
-        <span style="margin-left:auto;font-family:var(--vt);font-size:14px;color:#6060a0" id="menu-net">Ritual Testnet</span>
-        <button onclick="openDiscModal()" style="background:rgba(150,30,30,0.4);border:1px solid rgba(200,50,50,0.5);color:#ff8080;padding:3px 10px;font-size:6px;cursor:pointer;font-family:var(--pixel);margin-left:8px;transition:all 0.15s" onmouseover="this.style.background='rgba(200,50,50,0.6)'" onmouseout="this.style.background='rgba(150,30,30,0.4)'">⏻ Disconnect</button>
+    <!-- CLASSIC MODE -->
+    <div onclick="selectModeClassic()" style="flex:1;position:relative;cursor:pointer;overflow:hidden;min-height:50vh;transition:flex 0.4s ease" onmouseover="this.style.flex='1.5'" onmouseout="this.style.flex='1'">
+      <div style="position:absolute;inset:0;background:linear-gradient(135deg,#0a0a2e,#050520);"></div>
+      <div style="position:absolute;inset:0;background-image:url('https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/jezzCharArena.gif');background-size:auto 80%;background-repeat:no-repeat;background-position:right 20px center;opacity:0.15"></div>
+      <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(5,5,30,0.95) 50%,transparent)"></div>
+      <div style="position:relative;height:100%;display:flex;flex-direction:column;justify-content:center;padding:24px 20px">
+        <div style="font-family:var(--pixel);font-size:clamp(14px,4vw,22px);color:var(--gold);text-shadow:0 0 20px var(--gold);margin-bottom:6px">CLASSIC BATTLE</div>
+        <div style="font-family:var(--vt);font-size:14px;color:#a0a0d0;margin-bottom:12px">Connect wallet · Choose your fighter</div>
+        <div style="font-family:var(--pixel);font-size:7px;color:var(--cyan);letter-spacing:1px">⚡ ON-CHAIN LEADERBOARD</div>
       </div>
+      <div style="position:absolute;right:16px;bottom:16px;font-family:var(--pixel);font-size:8px;color:#000;background:var(--gold);border:1px solid var(--gold2);padding:8px 16px">PLAY ▶</div>
+    </div>
 
+  </div>
+</div>
+
+<!-- ===== SCREEN: DEMO SELECT CHARACTER ===== -->
+<div id="screen-demo-select" class="screen" style="background:linear-gradient(135deg,#050520,#0a0a1e)">
+  <div class="overlay">
+    <div class="menu-panel">
+      <div class="menu-title-bar" style="color:#40d0ff">🎮 DEMO MODE</div>
+      <div style="font-family:var(--vt);font-size:13px;color:#6060a0;text-align:center;margin-bottom:12px">Choose your fighter and battle!</div>
+      <div id="char-list-demo"></div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="px-btn px-btn-gold" onclick="startDemoFromSelect()">▶ START BATTLE</button>
+        <button class="px-btn px-btn-red px-btn-sm" onclick="showScreen('connect')">← Back</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: CLASSIC — SELECT CHARACTER ===== -->
+<div id="screen-classic" class="screen bg-menu">
+  <div class="overlay">
+    <div class="menu-panel">
+      <div class="menu-title-bar">⚔ CLASSIC BATTLE</div>
+      <div class="status-pill">
+        <div class="dot" id="classic-dot"></div>
+        <span id="classic-addr">—</span>
+        <span style="margin-left:auto;font-family:var(--vt);font-size:14px;color:#6060a0" id="classic-net">Ritual Testnet</span>
+        <button onclick="openDiscModal()" style="background:rgba(150,30,30,0.4);border:1px solid rgba(200,50,50,0.5);color:#ff8080;padding:3px 10px;font-size:6px;cursor:pointer;font-family:var(--pixel);margin-left:8px">⏻ Disconnect</button>
+      </div>
       <div id="char-list"></div>
-      <!-- Custom characters saved -->
       <div id="custom-char-section" style="display:none;margin-top:6px">
         <div style="font-size:6px;color:var(--gold);margin-bottom:6px;letter-spacing:1px;border-top:1px solid #2020a0;padding-top:8px">── CUSTOM CHARACTERS ──</div>
         <div id="custom-char-list"></div>
@@ -703,9 +738,9 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
         <button class="px-btn px-btn-gold" onclick="startGame()">▶ START BATTLE</button>
         <button id="btn-create-char" class="px-btn px-btn-blue px-btn-sm" onclick="openCustomModal()">✨ Create Character</button>
         <button class="px-btn px-btn-blue px-btn-sm" onclick="loadLeaderboard();document.getElementById('btn-back-vic').style.display='none';showScreen('leaderboard')">🏅 Ranking</button>
+        <button class="px-btn px-btn-red px-btn-sm" onclick="showScreen('menu')">← Back</button>
       </div>
     </div>
-
   </div>
 </div>
 
@@ -1300,8 +1335,39 @@ function connectDemo() {
   wallet.isDemo = true;
   wallet.chainId = RITUAL_CHAIN_ID;
   wallet.provider = null;
-  showToast('🎮 Demo Mode active!');
-  onConnected();
+  showToast('🎮 Demo Mode — Choose your character!');
+
+  // Render demo char list
+  S.selectedChar = 0;
+  const demoList = document.getElementById('char-list-demo');
+  if(demoList){
+    demoList.innerHTML = CHARS.map((c,i)=>`
+      <div class="char-card" id="dcc${i}" onclick="selectDemoCharCard(${i})">
+        <div class="char-icon-box">${c.icon}</div>
+        <div>
+          <div class="char-name">${c.name}</div>
+          <div class="char-meta">${c.cls} · HP ${c.maxhp} · ATK ${c.atk} · DEF ${c.def}</div>
+        </div>
+      </div>`).join('');
+    // Auto-select first
+    const first = document.getElementById('dcc0');
+    if(first){ first.classList.add('selected'); const b=document.createElement('span'); b.className='sel-badge'; b.textContent='Selected'; first.appendChild(b); }
+  }
+  showScreen('demo-select');
+}
+
+function selectDemoCharCard(i){
+  document.querySelectorAll('[id^="dcc"]').forEach(el=>{
+    el.classList.remove('selected');
+    const b=el.querySelector('.sel-badge'); if(b) b.remove();
+  });
+  const el=document.getElementById('dcc'+i);
+  if(el){ el.classList.add('selected'); const b=document.createElement('span'); b.className='sel-badge'; b.textContent='Selected'; el.appendChild(b); }
+  S.selectedChar=i;
+}
+
+function startDemoFromSelect(){
+  startGame();
 }
 
 // ============================================================
@@ -1326,6 +1392,11 @@ function onConnected() {
     loadNFTCharacter();
     loadPvpEnemyPool();
     loadEventInfo();
+    updateEventCardLock();
+    // Sync wallet bar on mode select
+    var md=document.getElementById('menu-dot'); if(md) md.className='dot green';
+    var ma=document.getElementById('menu-addr'); if(ma) ma.textContent=wallet.address?wallet.address.slice(0,6)+'...'+wallet.address.slice(-4):'—';
+    var mn=document.getElementById('menu-net'); if(mn) mn.textContent=wallet.isDemo?'Demo':'Ritual';
   }
 }
 
@@ -1940,7 +2011,17 @@ function doFlee(){
   addLog('🏃 Kabur! Wave reset. New enemy: '+S.enemy.icon+' '+S.enemy.name,'sys');
 }
 
-function goMenu(){S.char=null;S.enemy=null;S.busy=false;S.defending=false;S.wave=1;var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';showScreen('menu');renderCustomCharList();updateCreateCharButton();}
+function goMenu(){
+  S.char=null;S.enemy=null;S.busy=false;S.defending=false;S.wave=1;inEventMode=false;
+  var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
+  if(wallet.isDemo){
+    showScreen('demo-select');
+  } else {
+    showScreen('menu');
+    renderCustomCharList();
+    updateCreateCharButton();
+  }
+}
 
 function getBestScore(){
   const key = 'bestScore_'+(wallet.address||'demo').toLowerCase();
@@ -2066,7 +2147,7 @@ function updateReviveUI(){
   }
 }
 
-function goMenu(){S.char=null;S.enemy=null;S.busy=false;S.defending=false;var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';showScreen('menu');}
+function goMenu(){S.char=null;S.enemy=null;S.busy=false;S.defending=false;inEventMode=false;var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';showScreen('menu');}
 
 function switchTab(name,el){
   ['skills','log'].forEach(t=>document.getElementById('tab-'+t).style.display=t===name?'':'none');
@@ -2074,8 +2155,87 @@ function switchTab(name,el){
 }
 
 // ============================================================
-// CUSTOM CHARACTER — via VPS Backend
+// MODE SELECTION
 // ============================================================
+function selectModeEvent(){
+  if(!wallet.address || wallet.isDemo){
+    showToast('❌ Connect a real wallet first!');
+    return;
+  }
+  enterEventArena();
+}
+
+function selectModeClassic(){
+  if(!wallet.address){
+    showToast('❌ Connect wallet first!');
+    return;
+  }
+  // Sync status pill in classic screen
+  var cd=document.getElementById('classic-dot');
+  var ca=document.getElementById('classic-addr');
+  var cn=document.getElementById('classic-net');
+  if(cd) cd.className=document.getElementById('menu-dot').className;
+  if(ca) ca.textContent=wallet.address?wallet.address.slice(0,6)+'...'+wallet.address.slice(-4):'—';
+  if(cn) cn.textContent=wallet.isDemo?'Demo':'Ritual Testnet';
+  showScreen('classic');
+  renderCharList();
+  renderCustomCharList();
+  updateCreateCharButton();
+}
+
+function selectModeDemo(){
+  // Demo mode — connect as demo if not connected
+  if(!wallet.connected){
+    wallet={connected:true,address:'0xDEMO'+Math.random().toString(16).slice(2,8).toUpperCase()+'429D',
+      chainId:RITUAL_CHAIN_ID,isDemo:true,provider:null,wcProvider:null};
+    sessionStorage.removeItem('wallet_disconnected');
+  }
+  renderDemoCharList();
+  showScreen('demo');
+}
+
+function renderDemoCharList(){
+  const list = document.getElementById('demo-char-list');
+  if(!list) return;
+  list.innerHTML = CHARS.map((c,i)=>`
+    <div class="char-card" id="dc${i}" onclick="selectDemoChar(${i})" style="border-color:#2d4d2d">
+      <div class="char-icon-box">${c.icon}</div>
+      <div>
+        <div class="char-name" style="color:#40ff80">${c.name}</div>
+        <div class="char-meta">${c.cls} · HP ${c.maxhp} · ATK ${c.atk} · DEF ${c.def}</div>
+      </div>
+    </div>`).join('');
+  selectDemoChar(0);
+}
+
+function selectDemoChar(i){
+  document.querySelectorAll('[id^="dc"]').forEach(el=>{
+    el.classList.remove('selected');
+    const b=el.querySelector('.sel-badge'); if(b) b.remove();
+  });
+  const el=document.getElementById('dc'+i);
+  if(el){ el.classList.add('selected'); const b=document.createElement('span'); b.className='sel-badge'; b.textContent='Selected'; el.appendChild(b); }
+  S.selectedChar=i;
+}
+
+function startDemoGame(){
+  S.selectedChar = S.selectedChar||0;
+  startGame();
+}
+
+// Update event card lock/unlock based on NFT
+function updateEventCardLock(){
+  const lockEl = document.getElementById('event-card-locked');
+  if(!lockEl) return;
+  if(wallet.address && !wallet.isDemo){
+    const saved = loadCustomChars();
+    const hasNFT = saved.some(c=>c.isNFT);
+    lockEl.style.display = hasNFT ? 'none' : 'none'; // hide lock if connected (check on enter)
+    lockEl.style.display = 'none'; // always hide — check happens on click
+  }
+}
+
+
 const BACKEND_URL = 'https://ritualarena1.vercel.app';
 let generatedChar = null;
 
@@ -2431,7 +2591,10 @@ function startEventCountdown(endTime){
     const h = Math.floor((diff%86400)/3600);
     const m = Math.floor((diff%3600)/60);
     const s = diff%60;
-    el.innerHTML=`⏱ ${d}D ${String(h).padStart(2,'0')}H ${String(m).padStart(2,'0')}M ${String(s).padStart(2,'0')}S`;
+    const txt = `⏱ ${d}D ${String(h).padStart(2,'0')}H ${String(m).padStart(2,'0')}M ${String(s).padStart(2,'0')}S`;
+    el.innerHTML=txt;
+    const miniEl=document.getElementById('event-countdown-mini');
+    if(miniEl) miniEl.textContent=txt;
   }
   update();
   countdownInterval = setInterval(update, 1000);
@@ -2454,12 +2617,17 @@ async function loadEventInfo(){
         info = { active:res[0], name:res[1], description:res[2], bannerColor:res[3],
                  startTime:Number(res[4]), endTime:Number(res[5]), totalPlayers:Number(res[6]) };
         document.getElementById('event-banner-players').textContent=info.totalPlayers+' players competing';
-
-        // Ritual Testnet timestamps are in milliseconds — convert to seconds
+        // Sync mode select card
+        var mn=document.getElementById('mode-event-name'); if(mn) mn.textContent=info.name||'COLLAB EVENT';
+        var md=document.getElementById('mode-event-desc'); if(md) md.textContent=info.description||'NFT holders only';
+        // Countdown
         if(info.endTime > 0){
           const endTimeSec = Math.floor(info.endTime / 1000);
           startEventCountdown(endTimeSec);
           document.getElementById('event-countdown').style.display='block';
+          // Mini countdown on mode card
+          const miniEl = document.getElementById('event-countdown-mini');
+          if(miniEl){ miniEl.style.display='block'; }
         } else {
           document.getElementById('event-countdown').style.display='none';
         }
