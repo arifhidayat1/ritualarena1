@@ -4,581 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ritual Arena — Testnet</title>
+
+<!-- External Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
-<style>
 
-
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --pixel:'Press Start 2P',monospace;
-  --vt:'VT323',monospace;
-  --gold:#f0c040;
-  --gold2:#ffd700;
-  --blue:#4080ff;
-  --cyan:#40d0ff;
-  --red:#ff4040;
-  --green:#40c040;
-  --dark:#080818;
-  --panel:rgba(8,8,30,0.92);
-  --border:#2a2a6a;
-  --text:#e0d8ff;
-  --shadow:0 0 20px rgba(80,80,255,0.5);
-}
-
-html,body{min-height:100vh;overflow-x:hidden}
-body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:pixelated}
-
-/* ===== PIXEL BORDER MIXIN ===== */
-.pxborder{
-  border:3px solid var(--gold);
-  box-shadow:0 0 0 1px #000,0 0 0 4px rgba(240,192,64,0.2),inset 0 0 0 1px rgba(240,192,64,0.15);
-  image-rendering:pixelated;
-}
-.pxborder-blue{
-  border:3px solid var(--cyan);
-  box-shadow:0 0 0 1px #000,0 0 0 4px rgba(64,208,255,0.2);
-}
-
-/* ===== GLOBAL BG SCREENS ===== */
-.bg-menu{
-  background:url('bg_menu.webp') center center / cover no-repeat fixed;
-  min-height:100vh;
-}
-.bg-battle{
-  background:url('bg_battle.webp') center center / cover no-repeat fixed;
-  min-height:100vh;
-}
-
-/* ===== SCREENS ===== */
-.screen{display:none;width:100%;min-height:100vh}
-.screen.active{display:block}
-
-/* ===== HUD HEADER (battle only) ===== */
-.jrpg-header{
-  position:fixed;top:0;left:0;right:0;z-index:100;
-  background:rgba(8,8,24,0.95);
-  border-bottom:2px solid var(--gold);
-  padding:6px 14px;
-  display:flex;align-items:center;gap:10px;
-  font-family:var(--pixel);font-size:7px;
-}
-.hdr-title{color:var(--gold);font-size:9px;letter-spacing:1px}
-.hdr-net{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:7px;color:var(--cyan)}
-.dot{width:6px;height:6px;border-radius:50%;background:#1D9E75;animation:blink 2s infinite;flex-shrink:0}
-.dot.red{background:#E24B4A}.dot.yellow{background:#EF9F27}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
-.hdr-wallet{font-size:7px;color:#a0a0c0;font-family:monospace}
-
-/* ===== CONNECT SCREEN ===== */
-#screen-connect .overlay{
-  min-height:100vh;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:rgba(0,0,20,0.65);
-  padding:20px;
-}
-.game-title{
-  font-family:var(--pixel);font-size:clamp(14px,4vw,28px);
-  color:var(--gold);
-  text-align:center;
-  margin-bottom:4px;
-  text-shadow:0 0 20px var(--gold),0 0 40px rgba(240,192,64,0.4),3px 3px 0 #000;
-  letter-spacing:2px;
-  animation:titlePulse 3s ease-in-out infinite;
-}
-@keyframes titlePulse{0%,100%{text-shadow:0 0 20px var(--gold),3px 3px 0 #000}50%{text-shadow:0 0 40px var(--gold),0 0 80px rgba(240,192,64,0.5),3px 3px 0 #000}}
-.game-sub{font-family:var(--vt);font-size:18px;color:var(--cyan);text-align:center;margin-bottom:30px;letter-spacing:2px}
-
-.connect-box{
-  width:100%;max-width:360px;
-  background:var(--panel);
-  border:2px solid var(--gold);
-  box-shadow:0 0 0 1px #000,0 0 30px rgba(240,192,64,0.2),inset 0 0 20px rgba(64,64,128,0.3);
-  padding:24px;
-}
-.connect-box-title{
-  font-size:9px;color:var(--gold);text-align:center;
-  margin-bottom:20px;letter-spacing:1px;
-  border-bottom:1px solid rgba(240,192,64,0.3);padding-bottom:12px;
-}
-.wallet-btn{
-  display:flex;align-items:center;gap:12px;
-  width:100%;padding:12px 14px;margin-bottom:10px;
-  background:rgba(20,20,60,0.8);
-  border:2px solid rgba(80,80,180,0.5);
-  color:var(--text);cursor:pointer;
-  font-family:var(--pixel);font-size:7px;
-  transition:all 0.15s;text-align:left;
-  position:relative;overflow:hidden;
-}
-.wallet-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,0.03));pointer-events:none}
-.wallet-btn:hover:not(:disabled){border-color:var(--gold);background:rgba(40,40,100,0.9);transform:translateX(2px)}
-.wallet-btn:active:not(:disabled){transform:scale(0.98)}
-.wallet-btn:disabled{opacity:0.4;cursor:not-allowed}
-.wicon{width:32px;height:32px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.wname{font-size:8px;font-weight:bold;color:var(--gold)}
-.wsub{font-size:7px;color:#8080b0;margin-top:3px;font-family:var(--vt);font-size:14px}
-
-.divider-line{display:flex;align-items:center;gap:10px;color:#444;font-family:var(--vt);font-size:14px;margin:8px 0}
-.divider-line::before,.divider-line::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.1)}
-
-/* ===== WRONG NETWORK ===== */
-#screen-wrongnet .overlay{
-  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:rgba(0,0,20,0.7);padding:20px;
-}
-.wrongnet-box{
-  width:100%;max-width:380px;background:var(--panel);
-  border:2px solid var(--red);
-  box-shadow:0 0 30px rgba(255,64,64,0.2);
-  padding:24px;text-align:center;
-}
-.wrongnet-title{font-size:11px;color:var(--red);margin-bottom:12px}
-.net-info{background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);padding:12px;margin:14px 0;text-align:left}
-.net-row{display:flex;justify-content:space-between;font-size:7px;color:#8080b0;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
-.net-row:last-child{border:none}
-.net-val{color:var(--cyan);font-family:monospace;font-size:8px}
-
-/* ===== MENU SCREEN ===== */
-#screen-menu .overlay{
-  min-height:100vh;
-  background:rgba(0,0,10,0.6);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:20px;
-  gap:0;
-}
-#screen-classic .overlay{
-  min-height:100vh;
-  background:rgba(0,0,10,0.6);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:20px;
-}
-#screen-event .overlay,
-#screen-event-victory .overlay{
-  min-height:100vh;
-  background:rgba(10,0,0,0.7);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:20px;
-}
-.menu-panel{
-  width:100%;max-width:420px;
-  background:var(--panel);
-  border:2px solid var(--gold);
-  box-shadow:0 0 0 1px #000,0 0 40px rgba(240,192,64,0.25),inset 0 0 30px rgba(40,40,80,0.5);
-  padding:20px;
-}
-.menu-title-bar{
-  font-size:8px;color:var(--gold);text-align:center;
-  padding-bottom:12px;border-bottom:1px solid rgba(240,192,64,0.3);
-  margin-bottom:16px;letter-spacing:1px;
-}
-.status-pill{
-  display:inline-flex;align-items:center;gap:6px;
-  background:rgba(29,158,117,0.15);border:1px solid rgba(29,158,117,0.4);
-  padding:5px 12px;font-size:7px;color:#5DCAA5;margin-bottom:16px;
-  width:100%;
-}
-
-/* ===== CHARACTER CARDS ===== */
-.char-card{
-  display:flex;align-items:center;gap:10px;
-  padding:10px 12px;margin-bottom:8px;
-  background:rgba(20,20,60,0.7);
-  border:2px solid rgba(60,60,120,0.6);
-  cursor:pointer;transition:all 0.12s;
-  position:relative;
-}
-.char-card:hover{border-color:var(--gold);background:rgba(40,40,100,0.8)}
-.char-card.selected{border-color:var(--gold);background:rgba(60,50,20,0.6);box-shadow:0 0 0 1px rgba(240,192,64,0.3)}
-.char-icon-box{font-size:24px;width:48px;height:48px;text-align:center;flex-shrink:0;display:flex;align-items:center;justify-content:center}
-.char-name{font-size:8px;color:var(--gold)}
-.char-meta{font-family:var(--vt);font-size:14px;color:#8080b0;margin-top:2px}
-.sel-badge{position:absolute;right:10px;font-size:7px;color:#000;background:var(--gold);padding:2px 8px}
-
-/* ===== PIXEL BUTTONS ===== */
-.px-btn{
-  font-family:var(--pixel);font-size:8px;
-  border:0;cursor:pointer;
-  padding:10px 16px;
-  position:relative;
-  transition:all 0.1s;
-  letter-spacing:0.5px;
-}
-.px-btn-gold{
-  background:var(--gold);color:#000;
-  box-shadow:3px 3px 0 #7a6000,0 0 0 2px #000;
-}
-.px-btn-gold:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 #7a6000,0 0 0 2px #000}
-.px-btn-gold:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #7a6000,0 0 0 2px #000}
-.px-btn-blue{
-  background:#1a3080;color:var(--cyan);
-  border:2px solid var(--cyan);
-  box-shadow:2px 2px 0 #000;
-}
-.px-btn-blue:hover{background:#2040a0}
-.px-btn-red{
-  background:#600;color:#ff8080;
-  border:2px solid var(--red);
-  box-shadow:2px 2px 0 #000;
-}
-.px-btn-red:hover{background:#800}
-.px-btn-sm{padding:7px 12px;font-size:7px}
-.px-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none!important;box-shadow:2px 2px 0 #000!important}
-
-/* ===== BATTLE SCREEN ===== */
-#screen-battle{
-  padding-top:44px;
-  min-height:100vh;
-}
-.battle-layout{
-  min-height:calc(100vh - 44px);
-  display:flex;flex-direction:column;
-  position:relative;
-}
-
-/* BATTLE TOP — hidden, moved to bottom */
-.battle-status-bar{ display:none; }
-
-/* bars available for updateBars() JS */
-.stat-label{font-size:6px;color:#6060a0;width:16px;flex-shrink:0;font-family:var(--vt);font-size:11px}
-.hp-bar-wrap{flex:1;height:7px;background:#0a0a1a;border:1px solid rgba(255,255,255,0.1);overflow:hidden;image-rendering:pixelated}
-.hp-bar-fill{height:100%;transition:width 0.3s;background:linear-gradient(90deg,#10a040,#40d040);image-rendering:pixelated}
-.hp-bar-fill.low{background:linear-gradient(90deg,#a04010,#ff6020)}
-.mp-bar-fill{height:100%;transition:width 0.3s;background:linear-gradient(90deg,#1030a0,#4060ff)}
-.stat-val{font-family:var(--vt);font-size:13px;color:#c0c0e0;width:46px;flex-shrink:0}
-
-/* TURN indicator — dipakai di bawah */
-.turn-indicator{display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:7px;padding:4px;}
-.turn-arrow{font-size:14px;animation:bounce 0.8s infinite}
-@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-.turn-label{font-size:6px;color:#8080b0;margin-top:2px;font-family:var(--vt);font-size:12px}
-
-/* BATTLEFIELD — full visible height tanpa status bar di atas */
-.battlefield{
-  flex:1;
-  display:flex;align-items:center;justify-content:center;
-  position:relative;
-  min-height:240px;
-  gap:0;
-}
-
-/* Player side */
-.player-sprite{
-  text-align:center;
-  animation:playerFloat 3.5s ease-in-out infinite;
-  position:relative;
-  flex:1;
-  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
-  padding-bottom:10px;
-}
-@keyframes playerFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-.player-sprite-img{
-  width:150px;
-  height:auto;
-  image-rendering:pixelated;
-  filter:drop-shadow(0 0 18px rgba(80,160,255,0.65));
-  display:block;
-}
-.player-name-tag{
-  font-size:7px;color:var(--cyan);
-  background:rgba(0,0,0,0.8);border:1px solid var(--cyan);
-  padding:3px 10px;margin-top:6px;
-  display:inline-block;
-}
-
-/* Wave badge */
-.wave-badge{
-  position:absolute;top:10px;left:50%;transform:translateX(-50%);
-  font-family:var(--pixel);font-size:8px;
-  color:var(--gold);
-  background:rgba(0,0,0,0.75);
-  border:1px solid var(--gold);
-  padding:4px 14px;
-  letter-spacing:2px;
-  text-shadow:0 0 8px var(--gold);
-  white-space:nowrap;
-  z-index:2;
-}
-.wave-badge .wave-stars{letter-spacing:1px;font-size:9px}
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  flex-shrink:0;
-  padding:0 8px;
-}
-.vs-text{
-  font-family:var(--pixel);
-  font-size:clamp(14px,3vw,22px);
-  color:var(--gold);
-  text-shadow:0 0 12px var(--gold),2px 2px 0 #000;
-  letter-spacing:2px;
-  animation:vsPulse 1.5s ease-in-out infinite;
-}
-@keyframes vsPulse{0%,100%{opacity:1;text-shadow:0 0 12px var(--gold),2px 2px 0 #000}50%{opacity:0.7;text-shadow:0 0 24px var(--gold2),2px 2px 0 #000}}
-.vs-line{width:2px;height:30px;background:linear-gradient(to bottom,transparent,var(--gold),transparent);margin:4px auto}
-
-.enemy-sprite{
-  text-align:center;
-  animation:enemyFloat 3s ease-in-out infinite;
-  position:relative;
-  flex:1;
-  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
-  padding-bottom:10px;
-}
-@keyframes enemyFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-.enemy-emoji-big{
-  font-size:120px;
-  filter:drop-shadow(0 0 24px rgba(255,80,80,0.6));
-  display:block;line-height:1;
-}
-.enemy-name-tag{
-  font-size:7px;color:var(--red);
-  background:rgba(0,0,0,0.8);border:1px solid var(--red);
-  padding:3px 10px;margin-top:6px;
-  display:inline-block;
-}
-.enemy-type-tag{font-family:var(--vt);font-size:14px;color:#8080b0;margin-top:2px}
-
-.xp-reward{
-  font-family:var(--vt);font-size:15px;color:#ffd040;
-  margin-top:4px;display:block;
-}
-
-/* BATTLE BOTTOM PANEL */
-.battle-bottom{
-  background:rgba(4,4,20,0.97);
-  border-top:2px solid var(--gold);
-}
-
-/* STATUS BAWAH — player kiri, turn tengah, enemy kanan */
-.bottom-status-bar{
-  display:grid;grid-template-columns:1fr auto 1fr;
-  align-items:center;gap:6px;
-  padding:6px 10px;
-  border-bottom:1px solid rgba(240,192,64,0.2);
-  background:rgba(0,0,10,0.5);
-}
-.bstat-player{flex:1}
-.bstat-enemy{flex:1;text-align:right}
-.bstat-name{font-size:7px;color:var(--gold);margin-bottom:3px}
-.bstat-name.enemy{color:var(--red)}
-.bstat-row{display:flex;align-items:center;gap:4px;margin-bottom:2px}
-.bstat-enemy .bstat-row{flex-direction:row-reverse}
-.bstat-lbl{font-family:var(--vt);font-size:11px;color:#5050a0;width:14px;flex-shrink:0}
-.bstat-val{font-family:var(--vt);font-size:11px;color:#b0b0d0;width:44px;flex-shrink:0;text-align:right}
-.bstat-enemy .bstat-val{text-align:left}
-.bstat-icon{font-size:18px;margin-right:4px;flex-shrink:0}
-.bstat-enemy-icon{font-size:18px;margin-left:4px;flex-shrink:0}
-
-/* turn badge tengah */
-.turn-badge{
-  display:flex;flex-direction:column;align-items:center;gap:2px;
-  padding:0 6px;
-}
-.turn-badge-arrow{font-size:12px;animation:bounce 0.8s infinite}
-.turn-badge-lbl{font-family:var(--vt);font-size:11px;color:#8080b0}
-
-/* COMMAND WINDOW */
-.command-window{padding:6px 10px 4px}
-.command-title{font-size:6px;color:var(--gold);margin-bottom:5px;border-bottom:1px solid rgba(240,192,64,0.2);padding-bottom:4px}
-.command-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:6px}
-.cmd-btn{
-  font-family:var(--pixel);font-size:6px;
-  border:0;cursor:pointer;
-  padding:7px 4px 5px;
-  background:rgba(20,20,60,0.9);
-  border-top:2px solid rgba(120,120,200,0.4);
-  border-left:2px solid rgba(120,120,200,0.4);
-  border-bottom:2px solid rgba(20,20,60,0.9);
-  border-right:2px solid rgba(20,20,60,0.9);
-  color:var(--text);
-  transition:all 0.1s;
-  text-align:center;
-  line-height:1.4;
-  position:relative;
-}
-.cmd-btn::before{display:none}
-.cmd-btn:hover:not(:disabled){
-  border-top-color:var(--gold);border-left-color:var(--gold);
-  border-bottom-color:rgba(120,100,0,0.8);border-right-color:rgba(120,100,0,0.8);
-  background:rgba(40,35,5,0.9);
-}
-.cmd-btn:active:not(:disabled){transform:translate(1px,1px)}
-.cmd-btn:disabled{opacity:0.3;cursor:not-allowed}
-.cmd-icon{font-size:14px;display:block;margin-bottom:1px}
-.cmd-name{color:var(--gold);font-size:6px}
-.cmd-sub{display:none}
-.cmd-btn.atk:hover:not(:disabled){background:rgba(30,20,60,0.95)}
-.cmd-btn.def:hover:not(:disabled){background:rgba(10,40,20,0.95)}
-.cmd-btn.heal-btn:hover:not(:disabled){background:rgba(10,40,30,0.95)}
-.cmd-btn.flee:hover:not(:disabled){background:rgba(50,10,10,0.95)}
-
-/* SKILLS PANEL — compact 4 kolom */
-.skills-panel{padding:0 10px 8px}
-.skill-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
-.skill-btn{
-  font-family:var(--pixel);font-size:5px;
-  background:rgba(10,10,40,0.9);
-  border:1px solid rgba(60,60,150,0.5);
-  color:var(--text);padding:5px 4px;
-  cursor:pointer;text-align:center;transition:all 0.1s;
-  line-height:1.4;
-}
-.skill-btn:hover:not(:disabled){border-color:var(--cyan);background:rgba(10,20,60,0.95)}
-.skill-btn:disabled{opacity:0.3;cursor:not-allowed}
-.sk-name{color:var(--cyan);font-size:6px;display:block}
-.sk-desc{display:none}
-.sk-cost{color:var(--gold);font-family:var(--vt);font-size:11px;margin-top:1px}
-
-/* ===== SCREEN OVERLAYS ===== */
-.victory-overlay, .dead-overlay, .leaderboard-overlay, .wrongnet-overlay{
-  min-height:100vh;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:rgba(0,0,20,0.8);
-  padding:20px;
-}
-.result-panel{
-  width:100%;max-width:400px;
-  background:var(--panel);
-  border:2px solid var(--gold);
-  box-shadow:0 0 0 1px #000,0 0 40px rgba(240,192,64,0.3);
-  padding:24px;text-align:center;
-}
-.result-icon{font-size:52px;margin-bottom:10px;display:block}
-.result-title{font-size:12px;color:var(--gold);margin-bottom:6px}
-.result-sub{font-family:var(--vt);font-size:18px;color:#8080b0;margin-bottom:18px}
-
-.reward-table{background:rgba(0,0,0,0.4);border:1px solid rgba(240,192,64,0.2);padding:12px;text-align:left;margin-bottom:16px}
-.reward-row{display:flex;justify-content:space-between;font-size:7px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
-.reward-row:last-child{border:none}
-.reward-val{color:var(--green);font-family:var(--vt);font-size:14px}
-
-.submit-box{
-  background:rgba(40,20,80,0.5);border:1px solid rgba(127,119,221,0.4);
-  padding:14px;margin-bottom:14px;text-align:left;
-}
-.submit-title{font-size:7px;color:#b0a8f0;margin-bottom:6px}
-.submit-sub{font-family:var(--vt);font-size:14px;color:#6060a0;margin-bottom:10px;line-height:1.5}
-#submit-status{font-family:var(--vt);font-size:14px;margin-bottom:8px;min-height:16px;line-height:1.4}
-#submit-tx-info{display:none;background:rgba(0,0,0,0.4);padding:10px;margin-bottom:10px;font-size:6px}
-#submit-tx-hash{font-family:monospace;color:var(--blue);word-break:break-all;font-size:8px}
-#submit-explorer-link{color:var(--cyan);text-decoration:none;font-size:7px;font-family:var(--pixel)}
-
-.btn-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px}
-
-/* LEADERBOARD */
-.lb-panel{width:100%;max-width:420px;background:var(--panel);border:2px solid var(--gold);box-shadow:0 0 40px rgba(240,192,64,0.2);padding:20px}
-.lb-title{font-size:10px;color:var(--gold);text-align:center;margin-bottom:14px;border-bottom:1px solid rgba(240,192,64,0.3);padding-bottom:10px}
-.lb-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid rgba(60,60,120,0.4);margin-bottom:6px;background:rgba(10,10,30,0.6)}
-.lb-row.me{border-color:var(--gold);background:rgba(40,30,5,0.6)}
-.lb-rank{width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;background:rgba(40,40,80,0.8)}
-.lb-rank.gold{background:var(--gold);color:#000}
-.lb-rank.silver{background:#9EA3B0;color:#000}
-.lb-rank.bronze{background:#CD7F32;color:#000}
-.lb-info{flex:1;min-width:0}
-.lb-addr{font-family:monospace;font-size:8px;color:var(--cyan)}
-.lb-meta{font-family:var(--vt);font-size:13px;color:#6060a0;margin-top:2px}
-.lb-score{font-family:var(--vt);font-size:16px;color:var(--green);flex-shrink:0}
-.lb-char{font-size:16px;flex-shrink:0}
-.lb-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid #3030a0;flex-shrink:0;background:#050510}
-.lb-avatar.nft{border-color:var(--gold);box-shadow:0 0 6px rgba(255,200,0,0.4)}
-.lb-username{font-family:var(--pixel);font-size:6px;color:var(--gold);margin-top:2px}
-.my-score-box{background:rgba(40,30,5,0.7);border:1px solid var(--gold);padding:10px;margin-bottom:12px}
-
-/* MODAL */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1000;align-items:center;justify-content:center}
-.modal-overlay.show{display:flex}
-.modal-box{background:#0a0a20;border:2px solid var(--gold);box-shadow:0 0 40px rgba(240,192,64,0.3);padding:24px;max-width:320px;width:90%;text-align:center}
-.modal-title{font-size:9px;color:var(--gold);margin-bottom:8px}
-.modal-sub{font-family:var(--vt);font-size:15px;color:#8080b0;margin-bottom:16px;line-height:1.5}
-#qr-container{background:#fff;padding:10px;display:inline-block;margin-bottom:14px}
-#qr-container canvas{display:block}
-.modal-uri{font-family:monospace;font-size:9px;background:rgba(0,0,0,0.5);padding:8px;color:#8080b0;word-break:break-all;max-height:60px;overflow-y:auto;margin-bottom:12px;text-align:left}
-
-/* TOAST */
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0a0a30;border:2px solid var(--gold);color:var(--text);padding:10px 20px;z-index:9999;font-size:8px;animation:toastIn 0.2s;pointer-events:none;white-space:nowrap}
-@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-
-/* SPINNER */
-.spinner{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* SHAKE */
-.shake{animation:shk 0.35s}
-@keyframes shk{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
-
-/* DISCONNECT MODAL */
-.disc-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s}
-.disc-modal-overlay.show{opacity:1;pointer-events:all}
-.disc-modal-box{background:#0a0a1e;border:2px solid rgba(200,50,50,0.6);width:85%;max-width:300px;padding:24px;text-align:center}
-.disc-modal-icon{font-size:36px;margin-bottom:10px}
-.disc-modal-title{font-family:var(--pixel);font-size:9px;color:#ff6060;letter-spacing:2px;margin-bottom:6px}
-.disc-modal-addr{font-family:var(--pixel);font-size:7px;color:#6060a0;margin-bottom:16px;word-break:break-all}
-.disc-btn-row{display:flex;gap:10px;justify-content:center}
-.custom-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:8000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s}
-.custom-modal-overlay.show{opacity:1;pointer-events:all}
-.custom-modal-box{background:#0a0a1e;border:2px solid var(--gold);width:90%;max-width:360px;padding:20px;max-height:85vh;overflow-y:auto}
-.custom-modal-title{font-family:var(--pixel);font-size:9px;color:var(--gold);text-align:center;margin-bottom:4px;letter-spacing:2px}
-.custom-modal-sub{font-family:var(--vt);font-size:12px;color:#6060a0;text-align:center;margin-bottom:16px}
-.x-input-row{display:flex;gap:8px;align-items:center;margin-bottom:12px}
-.x-input{flex:1;background:#050510;border:1px solid #3030a0;color:var(--cyan);padding:8px 12px;font-family:var(--pixel);font-size:8px;outline:none}
-.x-input:focus{border-color:var(--gold)}
-.x-input::placeholder{color:#3030a0}
-.custom-char-preview{background:#050520;border:1px solid #2020a0;padding:14px;margin-bottom:14px;display:none}
-.custom-char-preview.show{display:block}
-.preview-header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
-.preview-avatar{width:64px;height:64px;border-radius:4px;border:2px solid var(--gold);object-fit:cover}
-.preview-name{font-family:var(--pixel);font-size:9px;color:var(--gold);margin-bottom:2px}
-.preview-class{font-family:var(--vt);font-size:12px;color:var(--cyan);margin-bottom:4px}
-.preview-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:8px}
-.pstat{background:#0a0a30;border:1px solid #2020a0;padding:4px;text-align:center}
-.pstat-val{font-family:var(--pixel);font-size:9px;color:var(--text)}
-.pstat-lbl{font-family:var(--vt);font-size:10px;color:#6060a0}
-.preview-lore{font-family:var(--vt);font-size:11px;color:#8080b0;line-height:1.5;border-top:1px solid #1a1a40;padding-top:8px}
-.custom-gen-status{font-family:var(--vt);font-size:12px;text-align:center;padding:8px;color:var(--cyan);min-height:20px}
-.custom-saved-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--gold);margin-bottom:6px;cursor:pointer;background:#050510}
-.custom-saved-item.selected{background:#0a0a30}
-.custom-saved-avatar{width:36px;height:36px;border-radius:2px;object-fit:cover;border:1px solid var(--gold)}
-.custom-saved-name{font-family:var(--pixel);font-size:7px;color:var(--gold)}
-.custom-saved-meta{font-family:var(--vt);font-size:11px;color:#6060a0}
-/* PROJECTILE EFFECTS */
-.projectile{position:fixed;pointer-events:none;z-index:9999;font-size:28px;line-height:1;transform:translate(-50%,-50%)}
-@keyframes hitBurst{0%{opacity:1;transform:translate(-50%,-50%) scale(0.5)}50%{opacity:1;transform:translate(-50%,-50%) scale(2)}100%{opacity:0;transform:translate(-50%,-50%) scale(2.5)}}
-.hit-burst{position:fixed;pointer-events:none;z-index:9999;font-size:36px;line-height:1;transform:translate(-50%,-50%);animation:hitBurst 0.35s ease-out forwards}
-
-::-webkit-scrollbar{width:3px}
-::-webkit-scrollbar-track{background:rgba(0,0,0,0.3)}
-::-webkit-scrollbar-thumb{background:var(--gold)}
-
-/* FLICKER animation for battles */
-@keyframes scanline{
-  0%{background-position:0 0}
-  100%{background-position:0 4px}
-}
-
-
-</style>
+<!-- Local Stylesheet -->
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+
+<!-- ===== AUDIO ===== -->
 <audio id="bg-music" loop>
   <source src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/backsound.mp3" type="audio/mpeg">
 </audio>
 
-<!-- Music toggle button -->
+<!-- Music Toggle -->
 <button id="music-btn" onclick="toggleMusic()" style="position:fixed;bottom:16px;right:16px;z-index:9999;background:rgba(10,10,30,0.85);border:1px solid var(--gold);color:var(--gold);font-family:'Press Start 2P',monospace;font-size:8px;padding:6px 10px;cursor:pointer;border-radius:4px">🎵 ON</button>
 
-
-<!-- ===== PIXEL SCANLINE OVERLAY ===== -->
+<!-- Pixel Scanline Overlay -->
 <div style="position:fixed;inset:0;pointer-events:none;z-index:9990;background:repeating-linear-gradient(0deg,rgba(0,0,0,0.03) 0px,rgba(0,0,0,0.03) 1px,transparent 1px,transparent 4px);"></div>
-
-<!-- HEADER HUD (persistent) -->
-<div class="jrpg-header" id="main-header" style="display:none">
-  <span class="hdr-title">⚔ RITUAL ARENA</span>
-  <span style="font-family:monospace;font-size:6px;color:#4040a0">TESTNET</span>
-  <div class="hdr-net">
-    <div class="dot red" id="hdr-dot"></div>
-    <span id="hdr-net" style="font-size:7px">—</span>
-    <span class="hdr-wallet" id="hdr-wallet">—</span>
-  </div>
-</div>
 
 <!-- ===== QR MODAL ===== -->
 <div class="modal-overlay" id="qr-modal">
@@ -607,6 +52,74 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
     </div>
   </div>
 </div>
+
+<!-- ===== DISCONNECT MODAL ===== -->
+<div class="disc-modal-overlay" id="disc-modal">
+  <div class="disc-modal-box">
+    <div id="disc-confirm-view">
+      <div class="disc-modal-icon">⏻</div>
+      <div class="disc-modal-title">DISCONNECT WALLET?</div>
+      <div class="disc-modal-addr" id="disc-modal-addr">—</div>
+      <div class="disc-btn-row">
+        <button class="px-btn px-btn-red px-btn-sm" onclick="confirmDisconnect()">⏻ Disconnect</button>
+        <button class="px-btn px-btn-blue px-btn-sm" onclick="closeDiscModal()">✕ Cancel</button>
+      </div>
+    </div>
+    <div id="disc-success-view" style="display:none">
+      <div class="disc-modal-icon">✅</div>
+      <div class="disc-modal-title" style="color:var(--cyan)">DISCONNECTED</div>
+      <div style="font-family:var(--vt);font-size:12px;color:#8080b0;margin:10px 0 14px;line-height:1.6">
+        To fully remove this site from your wallet, revoke permission manually:<br><br>
+        <span style="color:var(--gold)">MetaMask:</span> ⋮ Menu → Connected Sites → ritualarena1.vercel.app → Disconnect<br><br>
+        <span style="color:var(--gold)">Rabby:</span> Settings → Connected Dapps → Remove
+      </div>
+      <div class="disc-btn-row">
+        <button class="px-btn px-btn-blue px-btn-sm" onclick="closeDiscModal()">✕ Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CUSTOM CHARACTER MODAL ===== -->
+<div class="custom-modal-overlay" id="custom-modal">
+  <div class="custom-modal-box">
+    <div class="custom-modal-title">✨ CREATE CHARACTER FROM X</div>
+    <div class="custom-modal-sub">Enter your X username — we'll generate a unique warrior!</div>
+    <div class="x-input-row">
+      <span style="font-family:var(--pixel);font-size:10px;color:var(--gold)">@</span>
+      <input class="x-input" id="x-username-input" placeholder="your_username" maxlength="50">
+      <button class="px-btn px-btn-gold px-btn-sm" id="btn-gen-char" onclick="generateCustomChar()">⚡ Generate</button>
+    </div>
+    <div class="custom-gen-status" id="gen-status"></div>
+    <div class="custom-char-preview" id="char-preview">
+      <div class="preview-header">
+        <img class="preview-avatar" id="preview-avatar" src="" alt="avatar" onerror="this.style.display='none'">
+        <div>
+          <div class="preview-name" id="preview-name">—</div>
+          <div class="preview-class" id="preview-class">—</div>
+        </div>
+      </div>
+      <div class="preview-stats">
+        <div class="pstat"><div class="pstat-val" id="preview-hp">—</div><div class="pstat-lbl">HP</div></div>
+        <div class="pstat"><div class="pstat-val" id="preview-atk">—</div><div class="pstat-lbl">ATK</div></div>
+        <div class="pstat"><div class="pstat-val" id="preview-def">—</div><div class="pstat-lbl">DEF</div></div>
+        <div class="pstat"><div class="pstat-val" id="preview-mp">—</div><div class="pstat-lbl">MP</div></div>
+        <div class="pstat"><div class="pstat-val" id="preview-heal">—</div><div class="pstat-lbl">HEAL</div></div>
+        <div class="pstat"><div class="pstat-val" id="preview-cls">—</div><div class="pstat-lbl">CLASS</div></div>
+      </div>
+      <div class="preview-lore" id="preview-lore">—</div>
+      <div style="font-size:7px;color:var(--cyan);margin:8px 0 4px;border-bottom:1px solid rgba(64,208,255,0.2);padding-bottom:2px">── SKILLS ──</div>
+      <div id="preview-skills"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px">
+      <button class="px-btn px-btn-gold" id="btn-save-char" onclick="saveCustomChar()" style="display:none">💾 Save</button>
+      <button class="px-btn px-btn-gold" id="btn-mint-char" onclick="mintCharacterNFT()" style="display:none;background:linear-gradient(135deg,#a855f7,#7c3aed);border-color:#a855f7">🎖 Mint as NFT</button>
+      <button class="px-btn px-btn-red px-btn-sm" onclick="closeCustomModal()">✕ Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: CONNECT ===== -->
 <div id="screen-connect" class="screen active bg-menu">
   <div class="overlay">
     <div class="game-title">RITUAL ARENA</div>
@@ -657,10 +170,8 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
   </div>
 </div>
 
-<!-- ===== SCREEN: MENU ===== -->
-<!-- ===== SCREEN: MODE SELECT ===== -->
+<!-- ===== SCREEN: MENU (MODE SELECT) ===== -->
 <div id="screen-menu" class="screen bg-menu" style="position:relative;min-height:100vh;overflow:hidden">
-
   <!-- Wallet status bar -->
   <div style="position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,200,0,0.2);padding:8px 16px;display:flex;align-items:center;gap:8px">
     <div class="dot" id="menu-dot"></div>
@@ -670,13 +181,13 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
     <button onclick="openDiscModal()" style="background:rgba(150,30,30,0.4);border:1px solid rgba(200,50,50,0.5);color:#ff8080;padding:3px 8px;font-size:6px;cursor:pointer;font-family:var(--pixel)">⏻</button>
   </div>
 
-  <!-- 2 mode cards — centered, mobile friendly -->
   <div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 44px);padding:16px;padding-top:60px">
     <div style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px">
 
-      <!-- RANK EVENT -->
-      <div id="mode-event-card" onclick="selectModeEvent()" style="cursor:pointer;border:2px solid #ff4040;background:linear-gradient(135deg,rgba(40,0,0,0.95),rgba(100,0,0,0.6));background-image:url('https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/bg_event.webp');background-size:cover;background-position:center;position:relative;overflow:hidden;border-radius:4px;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 0 20px rgba(255,40,40,0.3)" onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 0 30px rgba(255,40,40,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='0 0 20px rgba(255,40,40,0.3)'">
+      <!-- RANK EVENT Card -->
+      <div id="mode-event-card" onclick="selectModeEvent()" style="cursor:pointer;border:2px solid #ff4040;background:linear-gradient(135deg,rgba(40,0,0,0.95),rgba(100,0,0,0.6));background-image:url('https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/bg_event.webp');background-size:cover;background-position:center;position:relative;overflow:hidden;border-radius:4px;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 0 20px rgba(255,40,40,0.3)" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform=''">
         <div style="position:absolute;inset:0;background:rgba(0,0,0,0.55)"></div>
+        <div id="event-card-locked" style="display:none"></div>
         <div style="position:relative;padding:20px">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
             <span style="background:#ff4040;color:#fff;font-family:var(--pixel);font-size:6px;padding:3px 8px">🔥 LIVE</span>
@@ -691,31 +202,33 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
         </div>
       </div>
 
-      <!-- CLASSIC MODE -->
-      <div onclick="selectModeClassic()" style="cursor:pointer;border:2px solid var(--gold);background:linear-gradient(135deg,#0a0a2e,#050520);position:relative;overflow:hidden;border-radius:4px;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 0 20px rgba(255,200,0,0.15)" onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 0 30px rgba(255,200,0,0.3)'" onmouseout="this.style.transform='';this.style.boxShadow='0 0 20px rgba(255,200,0,0.15)'">
+      <!-- CLASSIC MODE Card -->
+      <div onclick="selectModeClassic()" style="cursor:pointer;border:2px solid var(--gold);background:linear-gradient(135deg,#0a0a2e,#050520);position:relative;overflow:hidden;border-radius:4px;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 0 20px rgba(255,200,0,0.15)" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform=''">
         <div style="position:absolute;right:0;top:0;bottom:0;width:40%;background-image:url('https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/jezzCharArena.gif');background-size:auto 90%;background-repeat:no-repeat;background-position:right center;opacity:0.2"></div>
         <div style="position:relative;padding:20px">
           <div style="font-family:var(--pixel);font-size:clamp(12px,3vw,18px);color:var(--gold);text-shadow:0 0 20px var(--gold);margin-bottom:4px">CLASSIC BATTLE</div>
           <div style="font-family:var(--vt);font-size:13px;color:#a0a0d0;margin-bottom:10px">Choose your fighter · Battle on-chain</div>
           <div style="display:flex;align-items:center;justify-content:space-between">
             <div style="font-family:var(--pixel);font-size:6px;color:var(--cyan)">⚡ ON-CHAIN LEADERBOARD</div>
-            <div style="font-family:var(--pixel);font-size:7px;color:#000;background:var(--gold);border:1px solid var(--gold2);padding:6px 14px">PLAY ▶</div>
+            <div style="font-family:var(--pixel);font-size:7px;color:#000;background:var(--gold);padding:6px 14px">PLAY ▶</div>
           </div>
         </div>
       </div>
 
-      <!-- CREATE CHARACTER NFT — only shows if no NFT yet -->
+      <!-- Create NFT Character button (shown if no NFT) -->
       <div id="btn-create-char-wrapper" style="display:none;text-align:center">
         <button id="btn-create-char" class="px-btn px-btn-blue" onclick="openCustomModal()" style="width:100%">✨ Create NFT Character</button>
         <div style="font-family:var(--vt);font-size:11px;color:#4040a0;margin-top:6px">Create your X profile character to access Rank Event</div>
       </div>
 
-      <!-- NFT CHARACTER — shows if has NFT -->
+      <!-- NFT Character display (shown if has NFT) -->
       <div id="menu-nft-section" style="display:none"></div>
 
     </div>
   </div>
 </div>
+
+<!-- ===== SCREEN: DEMO SELECT ===== -->
 <div id="screen-demo-select" class="screen" style="background:linear-gradient(135deg,#050520,#0a0a1e)">
   <div class="overlay">
     <div class="menu-panel">
@@ -730,7 +243,7 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
   </div>
 </div>
 
-<!-- ===== SCREEN: CLASSIC — SELECT CHARACTER ===== -->
+<!-- ===== SCREEN: CLASSIC SELECT ===== -->
 <div id="screen-classic" class="screen bg-menu">
   <div class="overlay">
     <div class="menu-panel">
@@ -742,6 +255,11 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
         <button onclick="openDiscModal()" style="background:rgba(150,30,30,0.4);border:1px solid rgba(200,50,50,0.5);color:#ff8080;padding:3px 10px;font-size:6px;cursor:pointer;font-family:var(--pixel);margin-left:8px">⏻ Disconnect</button>
       </div>
       <div id="char-list"></div>
+      <!-- Custom characters -->
+      <div id="custom-char-section" style="display:none;margin-top:12px">
+        <div style="font-size:6px;color:#a855f7;letter-spacing:1px;margin-bottom:8px;border-bottom:1px solid rgba(168,85,247,0.3);padding-bottom:4px">── YOUR CHARACTERS ──</div>
+        <div id="custom-char-list"></div>
+      </div>
       <div class="btn-row" style="margin-top:14px">
         <button class="px-btn px-btn-gold" onclick="startGame()">▶ START BATTLE</button>
         <button class="px-btn px-btn-blue px-btn-sm" onclick="loadLeaderboard();document.getElementById('btn-back-vic').style.display='none';showScreen('leaderboard')">🏅 Ranking</button>
@@ -757,17 +275,11 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
     <div class="menu-panel">
       <div class="menu-title-bar" id="event-arena-title" style="color:#ff6060">⚔️ RANK EVENT</div>
       <div id="event-arena-desc" style="font-family:var(--vt);font-size:13px;color:#8080b0;text-align:center;margin-bottom:10px"></div>
-
-      <!-- NFT Character info -->
       <div id="event-nft-info" style="display:none;margin-bottom:8px"></div>
-
-      <!-- Event leaderboard -->
       <div style="font-size:6px;color:#ff6060;letter-spacing:1px;margin-bottom:6px;border-bottom:1px solid rgba(255,60,60,0.3);padding-bottom:4px">── EVENT RANKING ──</div>
       <div id="event-lb-list" style="max-height:260px;overflow-y:auto;margin-bottom:10px">
         <div style="font-family:var(--vt);font-size:12px;color:#4040a0;text-align:center;padding:10px">Loading...</div>
       </div>
-
-      <!-- My event score -->
       <div id="event-my-score" style="background:rgba(255,40,40,0.08);border:1px solid rgba(255,60,60,0.3);padding:8px 12px;margin-bottom:10px;display:none">
         <div style="font-size:6px;color:#ff6060;margin-bottom:4px">── YOUR BEST ──</div>
         <div style="display:flex;justify-content:space-between;font-family:var(--vt);font-size:13px">
@@ -775,7 +287,6 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
           <span id="event-my-score-val" style="color:#ff6060;font-family:var(--pixel);font-size:8px"></span>
         </div>
       </div>
-
       <div class="btn-row">
         <button class="px-btn" style="background:linear-gradient(135deg,#7f0000,#cc0000);border-color:#ff4040;color:#fff" onclick="startEventBattle()">⚔️ Enter Battle</button>
         <button class="px-btn px-btn-blue px-btn-sm" onclick="showScreen('menu')">← Back</button>
@@ -784,104 +295,9 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
   </div>
 </div>
 
-<!-- ===== SCREEN: EVENT VICTORY ===== -->
-<div id="screen-event-victory" class="screen bg-menu">
-  <div class="overlay">
-    <div class="result-box">
-      <div style="font-size:40px;margin-bottom:8px">🏆</div>
-      <div class="result-title" style="color:#ff6060" id="ev-title">EVENT ROUND COMPLETE!</div>
-      <div class="result-sub" id="ev-msg"></div>
-      <div class="reward-table" style="border-color:rgba(255,60,60,0.4)">
-        <div style="font-size:6px;color:#ff6060;margin-bottom:8px;letter-spacing:1px">── EVENT RESULTS ──</div>
-        <div class="reward-row"><span>Wave</span><span class="reward-val" id="ev-wave" style="color:#ff6060"></span></div>
-        <div class="reward-row"><span>Score</span><span class="reward-val" id="ev-score" style="color:#ff6060;font-family:var(--pixel);font-size:8px"></span></div>
-        <div class="reward-row"><span>Best Score</span><span class="reward-val" id="ev-best" style="color:var(--gold)"></span></div>
-      </div>
-
-      <!-- Submit event score -->
-      <div id="ev-submit-box" style="background:rgba(255,40,40,0.08);border:1px solid rgba(255,60,60,0.4);padding:12px;margin:10px 0;text-align:center">
-        <div style="font-family:var(--vt);font-size:12px;color:#8080b0;margin-bottom:8px">Submit your score to the Event Leaderboard</div>
-        <div id="ev-submit-status" style="font-family:var(--vt);font-size:12px;min-height:18px;margin-bottom:6px"></div>
-        <button class="px-btn" id="btn-ev-submit" style="background:linear-gradient(135deg,#7f0000,#cc0000);border-color:#ff4040;color:#fff" onclick="submitEventScore()">🏆 Submit to Event Board</button>
-      </div>
-
-      <div class="btn-row" style="margin-top:8px">
-        <button class="px-btn" style="background:linear-gradient(135deg,#7f0000,#cc0000);border-color:#ff4040" onclick="continueEventBattle()">⚔️ Next Wave</button>
-        <button class="px-btn px-btn-blue px-btn-sm" onclick="showScreen('event');loadEventLeaderboard()">🏆 Rankings</button>
-        <button class="px-btn px-btn-red px-btn-sm" onclick="exitEvent()">🏠 Menu</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== CUSTOM CHARACTER MODAL ===== -->
-<div class="custom-modal-overlay" id="custom-modal">
-  <div class="custom-modal-box">
-    <div class="custom-modal-title">✨ CREATE CHARACTER FROM X</div>
-    <div class="custom-modal-sub">Enter your X username — we'll generate a unique warrior!</div>
-    <div class="x-input-row">
-      <span style="font-family:var(--pixel);font-size:10px;color:var(--gold)">@</span>
-      <input class="x-input" id="x-username-input" placeholder="your_username" maxlength="50">
-      <button class="px-btn px-btn-gold px-btn-sm" id="btn-gen-char" onclick="generateCustomChar()">⚡ Generate</button>
-    </div>
-    <div class="custom-gen-status" id="gen-status"></div>
-    <div class="custom-char-preview" id="char-preview">
-      <div class="preview-header">
-        <img class="preview-avatar" id="preview-avatar" src="" alt="avatar" onerror="this.style.display='none'">
-        <div>
-          <div class="preview-name" id="preview-name">—</div>
-          <div class="preview-class" id="preview-class">—</div>
-        </div>
-      </div>
-      <div class="preview-stats">
-        <div class="pstat"><div class="pstat-val" id="preview-hp">—</div><div class="pstat-lbl">HP</div></div>
-        <div class="pstat"><div class="pstat-val" id="preview-atk">—</div><div class="pstat-lbl">ATK</div></div>
-        <div class="pstat"><div class="pstat-val" id="preview-def">—</div><div class="pstat-lbl">DEF</div></div>
-        <div class="pstat"><div class="pstat-val" id="preview-mp">—</div><div class="pstat-lbl">MP</div></div>
-        <div class="pstat"><div class="pstat-val" id="preview-heal">—</div><div class="pstat-lbl">HEAL</div></div>
-        <div class="pstat"><div class="pstat-val" id="preview-cls">—</div><div class="pstat-lbl">CLASS</div></div>
-      </div>
-      <div class="preview-lore" id="preview-lore">—</div>
-      <div style="font-size:7px;color:var(--cyan);margin:8px 0 4px;border-bottom:1px solid rgba(64,208,255,0.2);padding-bottom:2px">── SKILLS ──</div>
-      <div id="preview-skills"></div>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px">
-      <button class="px-btn px-btn-gold" id="btn-save-char" onclick="saveCustomChar()" style="display:none">💾 Save</button>
-      <button class="px-btn px-btn-gold" id="btn-mint-char" onclick="mintCharacterNFT()" style="display:none;background:linear-gradient(135deg,#a855f7,#7c3aed);border-color:#a855f7">🎖 Mint as NFT</button>
-      <button class="px-btn px-btn-red px-btn-sm" onclick="closeCustomModal()">✕ Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== DISCONNECT MODAL ===== -->
-<div class="disc-modal-overlay" id="disc-modal">
-  <div class="disc-modal-box">
-    <div id="disc-confirm-view">
-      <div class="disc-modal-icon">⏻</div>
-      <div class="disc-modal-title">DISCONNECT WALLET?</div>
-      <div class="disc-modal-addr" id="disc-modal-addr">—</div>
-      <div class="disc-btn-row">
-        <button class="px-btn px-btn-red px-btn-sm" onclick="confirmDisconnect()">⏻ Disconnect</button>
-        <button class="px-btn px-btn-blue px-btn-sm" onclick="closeDiscModal()">✕ Cancel</button>
-      </div>
-    </div>
-    <div id="disc-success-view" style="display:none">
-      <div class="disc-modal-icon">✅</div>
-      <div class="disc-modal-title" style="color:var(--cyan)">DISCONNECTED</div>
-      <div style="font-family:var(--vt);font-size:12px;color:#8080b0;margin:10px 0 14px;line-height:1.6">
-        To fully remove this site from your wallet, revoke permission manually:<br><br>
-        <span style="color:var(--gold)">MetaMask:</span> ⋮ Menu → Connected Sites → ritualarena1.vercel.app → Disconnect<br><br>
-        <span style="color:var(--gold)">Rabby:</span> Settings → Connected Dapps → Remove
-      </div>
-      <div class="disc-btn-row">
-        <button class="px-btn px-btn-blue px-btn-sm" onclick="closeDiscModal()">✕ Close</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- ===== SCREEN: BATTLE ===== -->
 <div id="screen-battle" class="screen bg-battle">
+  <!-- Battle HUD Header -->
   <div class="jrpg-header" style="position:fixed;top:0;left:0;right:0;z-index:100">
     <span class="hdr-title" style="font-size:7px">⚔ RITUAL ARENA</span>
     <span style="font-size:6px;color:#4040a0;font-family:var(--pixel)">TESTNET</span>
@@ -889,35 +305,30 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
       <div class="dot" id="battle-dot"></div>
       <span style="font-size:6px;font-family:var(--pixel)" id="battle-net">—</span>
       <span class="hdr-wallet" id="battle-wallet">—</span>
-      <button onclick="openDiscModal()" title="Disconnect wallet" style="background:none;border:none;color:#ff6060;font-size:10px;cursor:pointer;padding:0 2px;line-height:1;opacity:0.7" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">⏻</button>
+      <button onclick="openDiscModal()" title="Disconnect wallet" style="background:none;border:none;color:#ff6060;font-size:10px;cursor:pointer;padding:0 2px;opacity:0.7">⏻</button>
     </div>
   </div>
 
   <div class="battle-layout" style="padding-top:44px">
-    <!-- STATUS BARS TOP -->
-    <div class="battle-status-bar">
-    </div>
+    <div class="battle-status-bar"></div>
 
     <!-- BATTLEFIELD -->
     <div class="battlefield" id="battlefield">
-      <!-- Wave badge -->
       <div class="wave-badge" id="wave-badge">WAVE 1 ⭐</div>
-      <!-- Player side -->
+      <!-- Player -->
       <div class="player-sprite" id="player-sprite">
         <img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/jezzCharArena.gif" alt="Jezz" class="player-sprite-img" id="player-gif">
         <img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/madCharArena.gif" alt="Mad Steel" class="player-sprite-img" id="mad-gif" style="display:none">
         <img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/flashCharArena.gif" alt="Flash Shadow" class="player-sprite-img" id="flash-gif" style="display:none">
         <div class="player-name-tag" id="p-battle-name">JEZZ</div>
       </div>
-
-      <!-- VS badge -->
+      <!-- VS -->
       <div class="vs-badge">
         <div class="vs-line"></div>
         <div class="vs-text">VS</div>
         <div class="vs-line"></div>
       </div>
-
-      <!-- Enemy side -->
+      <!-- Enemy -->
       <div class="enemy-sprite" id="enemy-sprite">
         <span class="enemy-emoji-big" id="e-icon">🤖</span>
         <div class="enemy-name-tag" id="e-name-tag">—</div>
@@ -926,9 +337,8 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
 
     <!-- BATTLE BOTTOM PANEL -->
     <div class="battle-bottom">
-      <!-- Status bawah: player | turn | enemy -->
       <div class="bottom-status-bar">
-        <!-- Player -->
+        <!-- Player stats -->
         <div class="bstat-player">
           <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
             <span class="bstat-icon" id="p-sprite">⚙️</span>
@@ -936,7 +346,7 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
               <div class="bstat-name" id="p-name">—</div>
               <div style="display:flex;align-items:center;gap:4px">
                 <span style="font-family:var(--vt);font-size:11px;color:var(--cyan);background:rgba(0,80,120,0.4);border:1px solid rgba(0,150,200,0.4);padding:0 4px">Lv <span id="p-level">1</span></span>
-                <span class="def-badge" id="def-badge">🛡️</span>
+                <span class="def-badge" id="def-badge" style="display:none">🛡️</span>
               </div>
             </div>
           </div>
@@ -956,14 +366,12 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
             <span class="bstat-val" style="font-size:10px;color:#a08000" id="p-xp-txt">0/100</span>
           </div>
         </div>
-
-        <!-- Turn indicator tengah -->
+        <!-- Turn indicator -->
         <div class="turn-badge">
           <div class="turn-badge-arrow" id="turn-arrow" style="color:var(--gold)">⚔</div>
           <div class="turn-badge-lbl" id="turn-label">YOUR TURN</div>
         </div>
-
-        <!-- Enemy -->
+        <!-- Enemy stats -->
         <div class="bstat-enemy">
           <div style="display:flex;align-items:center;justify-content:flex-end;gap:4px;margin-bottom:3px">
             <div style="text-align:right">
@@ -981,26 +389,14 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
         </div>
       </div>
 
-      <!-- Command buttons -->
+      <!-- Command Buttons -->
       <div class="command-window">
         <div class="command-title">── COMMANDS ──</div>
         <div class="command-grid">
-          <button class="cmd-btn atk" id="btn-atk" onclick="doAction('attack')">
-            <span class="cmd-icon">⚔️</span>
-            <span class="cmd-name">ATTACK</span>
-          </button>
-          <button class="cmd-btn def" id="btn-def" onclick="doAction('defend')">
-            <span class="cmd-icon">🛡️</span>
-            <span class="cmd-name">DEFEND</span>
-          </button>
-          <button class="cmd-btn heal-btn" id="btn-heal" onclick="doAction('heal')">
-            <span class="cmd-icon">💊</span>
-            <span class="cmd-name">HEAL</span>
-          </button>
-          <button class="cmd-btn flee" id="btn-flee" onclick="confirmFlee()">
-            <span class="cmd-icon">🏃</span>
-            <span class="cmd-name">FLEE</span>
-          </button>
+          <button class="cmd-btn atk" id="btn-atk" onclick="doAction('attack')"><span class="cmd-icon">⚔️</span><span class="cmd-name">ATTACK</span></button>
+          <button class="cmd-btn def" id="btn-def" onclick="doAction('defend')"><span class="cmd-icon">🛡️</span><span class="cmd-name">DEFEND</span></button>
+          <button class="cmd-btn heal-btn" id="btn-heal" onclick="doAction('heal')"><span class="cmd-icon">💊</span><span class="cmd-name">HEAL</span></button>
+          <button class="cmd-btn flee" id="btn-flee" onclick="confirmFlee()"><span class="cmd-icon">🏃</span><span class="cmd-name">FLEE</span></button>
         </div>
         <!-- Skills -->
         <div class="skills-panel" style="padding:0">
@@ -1048,7 +444,7 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
   </div>
 </div>
 
-<!-- ===== SCREEN: DEAD ===== -->
+<!-- ===== SCREEN: GAME OVER ===== -->
 <div id="screen-dead" class="screen bg-battle">
   <div class="dead-overlay">
     <div class="result-panel">
@@ -1059,6 +455,33 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
       <div class="btn-row" style="margin-top:16px">
         <button class="px-btn px-btn-gold" id="btn-revive" onclick="revive()">💊 Revive</button>
         <button class="px-btn px-btn-red px-btn-sm" onclick="goMenu()">🏠 Menu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: EVENT VICTORY ===== -->
+<div id="screen-event-victory" class="screen bg-menu">
+  <div class="overlay">
+    <div class="result-panel" style="max-width:420px">
+      <div style="font-size:40px;margin-bottom:8px">🏆</div>
+      <div class="result-title" style="color:#ff6060" id="ev-title">EVENT ROUND COMPLETE!</div>
+      <div class="result-sub" id="ev-msg"></div>
+      <div class="reward-table" style="border-color:rgba(255,60,60,0.4)">
+        <div style="font-size:6px;color:#ff6060;margin-bottom:8px;letter-spacing:1px">── EVENT RESULTS ──</div>
+        <div class="reward-row"><span>Wave</span><span class="reward-val" id="ev-wave" style="color:#ff6060"></span></div>
+        <div class="reward-row"><span>Score</span><span class="reward-val" id="ev-score" style="color:#ff6060;font-family:var(--pixel);font-size:8px"></span></div>
+        <div class="reward-row"><span>Best Score</span><span class="reward-val" id="ev-best" style="color:var(--gold)"></span></div>
+      </div>
+      <div id="ev-submit-box" style="background:rgba(255,40,40,0.08);border:1px solid rgba(255,60,60,0.4);padding:12px;margin:10px 0;text-align:center">
+        <div style="font-family:var(--vt);font-size:12px;color:#8080b0;margin-bottom:8px">Submit your score to the Event Leaderboard</div>
+        <div id="ev-submit-status" style="font-family:var(--vt);font-size:12px;min-height:18px;margin-bottom:6px"></div>
+        <button class="px-btn" id="btn-ev-submit" style="background:linear-gradient(135deg,#7f0000,#cc0000);border-color:#ff4040;color:#fff" onclick="submitEventScore()">🏆 Submit to Event Board</button>
+      </div>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="px-btn" style="background:linear-gradient(135deg,#7f0000,#cc0000);border-color:#ff4040" onclick="continueEventBattle()">⚔️ Next Wave</button>
+        <button class="px-btn px-btn-blue px-btn-sm" onclick="showScreen('event');loadEventLeaderboard()">🏆 Rankings</button>
+        <button class="px-btn px-btn-red px-btn-sm" onclick="exitEvent()">🏠 Menu</button>
       </div>
     </div>
   </div>
@@ -1092,2274 +515,14 @@ body{font-family:var(--pixel);color:var(--text);background:#000;image-rendering:
   </div>
 </div>
 
+<!-- ===== JS MODULES ===== -->
+<script src="js/config.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/wallet.js"></script>
+<script src="js/battle.js"></script>
+<script src="js/nft.js"></script>
+<script src="js/leaderboard.js"></script>
+<script src="js/event.js"></script>
 
-<script>
-
-// ============================================================
-// RITUAL CHAIN CONFIG
-// ============================================================
-const RITUAL_CHAIN_ID = '0x7BB'; // 1979
-const RITUAL_CHAIN_PARAMS = {
-  chainId: RITUAL_CHAIN_ID,
-  chainName: 'Ritual Testnet',
-  nativeCurrency: { name: 'RITUAL', symbol: 'RITUAL', decimals: 18 },
-  rpcUrls: ['https://rpc.ritualfoundation.org'],
-  blockExplorerUrls: ['https://explorer.ritualfoundation.org']
-};
-
-// WalletConnect Project ID — replace with your project ID from cloud.walletconnect.com
-const WC_PROJECT_ID = 'b56e18d47c72ab683b10814fe9495694';
-
-// ============================================================
-// WALLET STATE
-// ============================================================
-let wallet = { connected: false, address: null, chainId: null, isDemo: false, provider: null, wcProvider: null };
-let wcURIValue = '';
-
-// ============================================================
-// METAMASK
-// ============================================================
-// ============================================================
-// HELPER: cari provider yang tepat
-// ============================================================
-function getProvider(preferRabby = false) {
-  // If window.ethereum.providers exists (multiple wallets active)
-  if (window.ethereum && window.ethereum.providers && window.ethereum.providers.length) {
-    const providers = window.ethereum.providers;
-    if (preferRabby) {
-      const rabby = providers.find(p => p.isRabby);
-      if (rabby) return rabby;
-    } else {
-      const mm = providers.find(p => p.isMetaMask && !p.isRabby);
-      if (mm) return mm;
-    }
-    return providers[0];
-  }
-  // Single provider
-  if (preferRabby && window.rabby) return window.rabby;
-  return window.ethereum || null;
-}
-
-async function connectWithProvider(provider, btnId, btnLabel) {
-  const btn = document.getElementById(btnId);
-  btn.disabled = true;
-  btn.querySelector('.wname').innerHTML = '<span class="spinner"></span>Connecting...';
-  try {
-    // Force wallet to show account selection prompt every time
-    await provider.request({
-      method: 'wallet_requestPermissions',
-      params: [{ eth_accounts: {} }]
-    });
-    const accounts = await provider.request({ method: 'eth_accounts' });
-    if (!accounts || !accounts.length) {
-      showToast('❌ No account selected');
-      resetBtn(btn, btnLabel); return;
-    }
-    // Clear disconnected flag
-    sessionStorage.removeItem('wallet_disconnected');
-    wallet.address = accounts[0];
-    wallet.connected = true;
-    wallet.isDemo = false;
-    wallet.provider = provider;
-    wallet.chainId = await provider.request({ method: 'eth_chainId' });
-    resetBtn(btn, btnLabel);
-
-    // Listen events
-    provider.on('accountsChanged', (a) => {
-      if (!a.length) { disconnectWallet(); return; }
-      wallet.address = a[0]; updateHeader(); showToast('🔄 Account changed');
-    });
-    provider.on('chainChanged', (id) => {
-      wallet.chainId = id; updateHeader();
-      if (id.toLowerCase() !== RITUAL_CHAIN_ID.toLowerCase()) {
-        showScreen('wrongnet'); setDot('yellow'); showToast('⚠️ Network changed!');
-      } else { showScreen('menu'); setDot('green'); showToast('✅ Back on Ritual Testnet'); }
-    });
-
-    onConnected();
-  } catch (e) {
-    resetBtn(btn, btnLabel);
-    if (e.code === 4001) showToast('❌ Rejected by user');
-    else { console.error(e); showToast('❌ Error: ' + (e.message || 'Unknown')); }
-  }
-}
-
-async function connectMetaMask() {
-  const provider = getProvider(false);
-  if (!provider) {
-    showToast('❌ MetaMask not found! Please install it.');
-    setTimeout(() => window.open('https://metamask.io/download/', '_blank'), 1200);
-    return;
-  }
-  await connectWithProvider(provider, 'btn-metamask', 'MetaMask');
-}
-
-// ============================================================
-// RABBY WALLET
-// ============================================================
-async function connectRabby() {
-  // Rabby bisa ada di window.rabby, or window.ethereum.providers, or window.ethereum dengan isRabby
-  const provider = getProvider(true);
-  if (!provider) {
-    showToast('❌ Rabby Wallet not found! Please install it.');
-    setTimeout(() => window.open('https://rabby.io/', '_blank'), 1200);
-    return;
-  }
-  await connectWithProvider(provider, 'btn-rabby', 'Rabby Wallet');
-}
-
-
-async function connectWalletConnect() {
-  // Check if library loaded successfully
-  if (typeof window.EthereumProvider === 'undefined' && typeof window.WalletConnectProvider === 'undefined') {
-    showToast('⏳ WalletConnect library loading, try again...');
-    return;
-  }
-
-  const btn = document.getElementById('btn-wc');
-  btn.disabled = true;
-  btn.querySelector('.wname').innerHTML = '<span class="spinner"></span>Initializing...';
-
-  try {
-    // Coba gunakan @walletconnect/ethereum-provider
-    const EthProvider = window.EthereumProvider || window.WalletConnectEthereumProvider;
-
-    const wcProvider = await EthProvider.init({
-      projectId: WC_PROJECT_ID,
-      chains: [1979],
-      optionalChains: [1, 137, 56],
-      showQrModal: false, // kita buat QR sendiri
-      metadata: {
-        name: 'Ritual Arena',
-        description: 'Turn-based game on Ritual Chain Testnet',
-        url: window.location.origin,
-        icons: ['https://avatars.githubusercontent.com/u/37784886']
-      }
-    });
-
-    // Tangkap URI untuk QR code
-    wcProvider.on('display_uri', (uri) => {
-      wcURIValue = uri;
-      showQRModal(uri);
-      btn.querySelector('.wname').innerHTML = 'WalletConnect';
-      btn.disabled = false;
-    });
-
-    // Saat session terhubung
-    wcProvider.on('connect', async () => {
-      closeQRModal();
-      // If user intentionally disconnected, reject auto-reconnect
-      if (sessionStorage.getItem('wallet_disconnected') === '1') {
-        try { wcProvider.disconnect(); } catch(e) {}
-        return;
-      }
-      sessionStorage.removeItem('wallet_disconnected');
-      const accounts = await wcProvider.request({ method: 'eth_accounts' });
-      wallet.address = accounts[0];
-      wallet.connected = true;
-      wallet.isDemo = false;
-      wallet.wcProvider = wcProvider;
-      wallet.chainId = '0x' + wcProvider.chainId.toString(16);
-      resetBtn(btn, 'WalletConnect');
-      onConnected();
-    });
-
-    wcProvider.on('disconnect', () => {
-      showToast('🔌 WalletConnect disconnected');
-      disconnectWallet();
-    });
-
-    await wcProvider.connect();
-
-  } catch (e) {
-    resetBtn(btn, 'WalletConnect');
-    console.error('WC Error:', e);
-    // Fallback: tampilkan instruksi manual
-    showWCFallback();
-  }
-}
-
-function showWCFallback() {
-  document.getElementById('qr-container').innerHTML = `
-    <div style="padding:20px;color:#a8a0d0;font-size:13px;line-height:1.7">
-      <div style="font-size:24px;margin-bottom:10px">📱</div>
-      <b style="color:#fff">Manual WalletConnect:</b><br><br>
-      1. Open your mobile wallet<br>
-      2. Select "Connect Wallet" or scan QR<br>
-      3. Enter URL: <span style="color:#7F77DD">${window.location.href}</span><br><br>
-      <small>Or use MetaMask Extension / Demo Mode</small>
-    </div>`;
-  document.getElementById('qr-modal').classList.add('show');
-  document.getElementById('wc-uri').textContent = 'Use MetaMask Extension for the best experience.';
-}
-
-// ============================================================
-// QR CODE — menggunakan QRCode.js via CDN (lazy load)
-// ============================================================
-function showQRModal(uri) {
-  document.getElementById('wc-uri').textContent = uri;
-  document.getElementById('qr-modal').classList.add('show');
-
-  // Load QRCode.js jika belum ada
-  if (typeof QRCode === 'undefined') {
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
-    script.onload = () => renderQR(uri);
-    document.head.appendChild(script);
-  } else {
-    renderQR(uri);
-  }
-}
-
-function renderQR(uri) {
-  const container = document.getElementById('qr-container');
-  if(container) container.innerHTML = '';
-  new QRCode(container, {
-    text: uri,
-    width: 220,
-    height: 220,
-    colorDark: '#000000',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.M
-  });
-}
-
-function closeQRModal() {
-  document.getElementById('qr-modal').classList.remove('show');
-}
-
-function copyURI() {
-  if (!wcURIValue) return;
-  navigator.clipboard.writeText(wcURIValue).then(() => showToast('✅ URI copied!'));
-}
-
-// ============================================================
-// DEMO MODE
-// ============================================================
-function connectDemo() {
-  wallet.address = '0xDEMO' + Math.random().toString(16).slice(2, 10).toUpperCase();
-  wallet.connected = true;
-  wallet.isDemo = true;
-  wallet.chainId = RITUAL_CHAIN_ID;
-  wallet.provider = null;
-  showToast('🎮 Demo Mode — Choose your character!');
-
-  // Render demo char list
-  S.selectedChar = 0;
-  const demoList = document.getElementById('char-list-demo');
-  if(demoList){
-    demoList.innerHTML = CHARS.map((c,i)=>`
-      <div class="char-card" id="dcc${i}" onclick="selectDemoCharCard(${i})">
-        <div class="char-icon-box">${c.icon}</div>
-        <div>
-          <div class="char-name">${c.name}</div>
-          <div class="char-meta">${c.cls} · HP ${c.maxhp} · ATK ${c.atk} · DEF ${c.def}</div>
-        </div>
-      </div>`).join('');
-    // Auto-select first
-    const first = document.getElementById('dcc0');
-    if(first){ first.classList.add('selected'); const b=document.createElement('span'); b.className='sel-badge'; b.textContent='Selected'; first.appendChild(b); }
-  }
-  showScreen('demo-select');
-}
-
-function selectDemoCharCard(i){
-  document.querySelectorAll('[id^="dcc"]').forEach(el=>{
-    el.classList.remove('selected');
-    const b=el.querySelector('.sel-badge'); if(b) b.remove();
-  });
-  const el=document.getElementById('dcc'+i);
-  if(el){ el.classList.add('selected'); const b=document.createElement('span'); b.className='sel-badge'; b.textContent='Selected'; el.appendChild(b); }
-  S.selectedChar=i;
-}
-
-function startDemoFromSelect(){
-  startGame();
-}
-
-// ============================================================
-// SHARED CONNECT LOGIC
-// ============================================================
-function onConnected() {
-  updateHeader();
-  // Case-insensitive compare
-  const isCorrectNet = wallet.isDemo || (wallet.chainId && wallet.chainId.toLowerCase() === RITUAL_CHAIN_ID.toLowerCase());
-  if (!isCorrectNet) {
-    showScreen('wrongnet');
-    setDot('yellow');
-    showToast('⚠️ Switch to Ritual Testnet! (Chain: ' + wallet.chainId + ')');
-  } else {
-    showScreen('menu');
-    setDot('green');
-    const rb=document.getElementById('ritual-bal'); if(rb) rb.style.display = 'block';
-    showToast('✅ Wallet connected!' + (wallet.isDemo ? ' (Demo)' : ''));
-    renderCustomCharList();
-    clearOldNFTData();
-    updateCreateCharButton();
-    loadNFTCharacter();
-    loadPvpEnemyPool();
-    loadEventInfo();
-    updateEventCardLock();
-    // Sync wallet bar on mode select
-    var md=document.getElementById('menu-dot'); if(md) md.className='dot green';
-    var ma=document.getElementById('menu-addr'); if(ma) ma.textContent=wallet.address?wallet.address.slice(0,6)+'...'+wallet.address.slice(-4):'—';
-    var mn=document.getElementById('menu-net'); if(mn) mn.textContent=wallet.isDemo?'Demo':'Ritual';
-  }
-}
-
-async function addRitualNetwork() {
-  const provider = wallet.provider || getProvider(false);
-  if (wallet.isDemo || !provider) {
-    showToast('⚠️ Wallet required to add network');
-    return;
-  }
-  try {
-    await provider.request({ method: 'wallet_addEthereumChain', params: [RITUAL_CHAIN_PARAMS] });
-    showToast('✅ Ritual Testnet added!');
-    wallet.chainId = await provider.request({ method: 'eth_chainId' });
-    onConnected();
-  } catch (e) {
-    showToast('❌ Failed: ' + e.message);
-  }
-}
-
-
-function openDiscModal(){
-  const addr = wallet.address ? wallet.address.slice(0,8)+'...'+wallet.address.slice(-6) : (wallet.isDemo ? '0xDEMO (Demo Mode)' : '—');
-  document.getElementById('disc-modal-addr').textContent = addr;
-  document.getElementById('disc-confirm-view').style.display = 'block';
-  document.getElementById('disc-success-view').style.display = 'none';
-  document.getElementById('disc-modal').classList.add('show');
-}
-function closeDiscModal(){
-  document.getElementById('disc-modal').classList.remove('show');
-}
-function confirmDisconnect(){
-  disconnectWallet();
-  // Show guide view inside modal before closing
-  document.getElementById('disc-confirm-view').style.display = 'none';
-  document.getElementById('disc-success-view').style.display = 'block';
-  showScreen('connect');
-}
-
-function disconnectWallet() {
-  if (wallet.wcProvider) { try { wallet.wcProvider.disconnect(); } catch(e){} }
-
-  // Attempt to revoke permissions (supported in MetaMask 11.3+ and Rabby)
-  if (wallet.provider) {
-    try {
-      wallet.provider.request({
-        method: 'wallet_revokePermissions',
-        params: [{ eth_accounts: {} }]
-      });
-    } catch(e) {}
-  }
-
-  // Mark as intentionally disconnected — prevents auto-reconnect on refresh
-  sessionStorage.setItem('wallet_disconnected', '1');
-  wallet = { connected: false, address: null, chainId: null, isDemo: false, provider: null, wcProvider: null };
-  updateHeader();
-  setDot('red');
-  const rb2=document.getElementById('ritual-bal'); if(rb2) rb2.style.display = 'none';
-  showScreen('connect');
-  showToast('🔌 Wallet disconnected');
-}
-
-// ============================================================
-// UI HELPERS
-// ============================================================
-function updateHeader() {
-  const wEl = document.getElementById('hdr-wallet');
-  const nEl = document.getElementById('hdr-net');
-  const mEl = document.getElementById('menu-addr');
-  const mnEl = document.getElementById('menu-net');
-  if (wallet.address) {
-    const short = wallet.address.slice(0,6)+'...'+wallet.address.slice(-4);
-    if(wEl) wEl.textContent = short;
-    if(nEl) nEl.textContent = wallet.isDemo ? 'Demo Mode' : 'Ritual Testnet';
-    if(mEl) mEl.textContent = short + (wallet.isDemo ? ' (Demo)' : '');
-    if(mnEl) mnEl.textContent = wallet.isDemo ? 'Demo Mode' : 'Ritual Testnet';
-  } else {
-    if(wEl) wEl.textContent = '—';
-    if(nEl) nEl.textContent = 'Not connected';
-  }
-}
-
-function setDot(color) {
-  const dot = document.getElementById('hdr-dot');
-  dot.className = 'dot' + (color === 'red' ? ' red' : color === 'yellow' ? ' yellow' : '');
-}
-
-function resetBtn(btn, name) {
-  btn.disabled = false;
-  btn.querySelector('.wname').textContent = name;
-}
-
-function showToast(msg) {
-  const old = document.querySelector('.toast');
-  if (old) old.remove();
-  const t = document.createElement('div');
-  t.className = 'toast';
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
-}
-
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + id).classList.add('active');
-}
-
-// Check wallet on load — 600ms delay for extension to inject
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    const allProviders = (window.ethereum && window.ethereum.providers) || [];
-    const hasRabby = !!window.rabby || !!(window.ethereum && window.ethereum.isRabby) || allProviders.some(p => p.isRabby);
-    const hasMM = !!(window.ethereum && window.ethereum.isMetaMask && !window.ethereum.isRabby) || allProviders.some(p => p.isMetaMask && !p.isRabby) || (!hasRabby && !!window.ethereum);
-    const mmEl = document.getElementById('mm-status');
-    if(mmEl){mmEl.textContent = hasMM ? '✓' : '✗'; mmEl.style.color = hasMM ? '#5DCAA5' : '#f09595';}
-    const rabbyEl = document.getElementById('rabby-status');
-    if(rabbyEl){rabbyEl.textContent = hasRabby ? '✓' : '✗'; rabbyEl.style.color = hasRabby ? '#5DCAA5' : '#f09595';}
-
-    // Auto-reconnect on refresh if not intentionally disconnected
-    if(sessionStorage.getItem('wallet_disconnected') !== '1' && window.ethereum){
-      window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
-        if(accounts && accounts.length > 0){
-          wallet.address = accounts[0];
-          wallet.connected = true;
-          wallet.isDemo = false;
-          wallet.provider = window.ethereum;
-          window.ethereum.request({ method: 'eth_chainId' }).then(chainId => {
-            wallet.chainId = chainId;
-            onConnected();
-          }).catch(()=>{});
-          // Listen for account/chain changes
-          window.ethereum.on('accountsChanged', (a) => {
-            if(!a.length){ disconnectWallet(); return; }
-            wallet.address = a[0]; updateHeader(); showToast('🔄 Account changed');
-          });
-          window.ethereum.on('chainChanged', (id) => {
-            wallet.chainId = id; updateHeader();
-            if(id.toLowerCase() !== RITUAL_CHAIN_ID.toLowerCase()){
-              showScreen('wrongnet'); setDot('yellow');
-            } else { showScreen('menu'); setDot('green'); }
-          });
-        }
-      }).catch(()=>{});
-    }
-  }, 600);
-  if(document.getElementById('lb-list')) loadLeaderboard();
-});
-
-// ============================================================
-// GAME DATA
-// ============================================================
-const CHARS = [
-  {id:'node',name:'Jez Runner',cls:'Strong Fighter',hp:130,maxhp:130,mp:80,maxmp:80,atk:18,def:8,healPow:30,icon:'<img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/jezzCharArena.gif" style="width:48px;height:48px;image-rendering:pixelated">',
-   skills:[
-    {id:'s1',name:'Infernet Strike',desc:'Infernet node strike',dmg:28,mpCost:15,type:'dmg'},
-    {id:'s2',name:'AI Compute',desc:'Summon AI model — massive damage',dmg:50,mpCost:30,type:'dmg'},
-    {id:'s3',name:'Regen Node',desc:'Restore HP and refill mana at once — 9 turn cooldown',heal:25,manaHeal:15,mpCost:0,cooldown:9,type:'cooldown'},
-    {id:'s4',name:'Fork Network',desc:'Attack twice in a row',dmg:22,mpCost:25,type:'multi'}
-  ]},
-  {id:'val',name:'Mad Steel',cls:'Strong Guardian',hp:170,maxhp:170,mp:60,maxmp:60,atk:22,def:16,healPow:40,icon:'<img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/madCharArena.gif" style="width:48px;height:48px;image-rendering:pixelated">',
-   skills:[
-    {id:'s1',name:'Slash TX',desc:'Punish enemy with a rogue transaction',dmg:32,mpCost:18,type:'dmg'},
-    {id:'s2',name:'Consensus Blast',desc:'Consensus power explosion',dmg:55,mpCost:35,type:'dmg'},
-    {id:'s3',name:'Epoch Regen',desc:'Fully restore HP & Mana, 12 turn cooldown',heal:50,manaHeal:40,mpCost:0,cooldown:12,type:'cooldown'},
-    {id:'s4',name:'Finality Strike',desc:'Always hits, never misses',dmg:38,mpCost:28,type:'sure'}
-  ]},
-  {id:'mage',name:'Flash Shadow',cls:'Strong Mage',hp:95,maxhp:95,mp:130,maxmp:130,atk:29,def:5,healPow:20,icon:'<img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/flashCharArena.gif" style="width:48px;height:48px;image-rendering:pixelated">',
-   skills:[
-    {id:'s1',name:'Deploy Contract',desc:'Throw a smart contract as a bomb',dmg:22,mpCost:10,type:'dmg'},
-    {id:'s2',name:'Reentrancy Bug',desc:'Exploit a vulnerability — massive damage',dmg:65,mpCost:40,type:'dmg'},
-    {id:'s3',name:'Audit Shield',desc:'Code audit protection',heal:18,mpCost:12,type:'heal'},
-    {id:'s4',name:'MEV Drain',desc:'Drain enemy HP, restore your mana',dmg:32,manaHeal:20,mpCost:18,type:'drain'}
-  ]}
-];
-
-const ENEMIES = [
-  {name:'Sybil Bot',type:'Spam Attacker',hp:85,maxhp:85,atk:13,def:4,xp:30,icon:'🤖',moves:['Spam Flood','Bot Attack','Network Noise']},
-  {name:'Double Signer',type:'Byzantine Node',hp:120,maxhp:120,atk:19,def:9,xp:50,icon:'⚡',moves:['Double Sign','Fork Chaos','Byzantine Strike']},
-  {name:'Rug Puller',type:'Malicious DEX',hp:155,maxhp:155,atk:26,def:13,xp:80,icon:'💸',moves:['Liquidity Drain','Exit Scam','Rug Pull!']},
-  {name:'51% Attacker',type:'Chain Threat',hp:210,maxhp:210,atk:33,def:19,xp:120,icon:'💀',moves:['Reorg Attack','Double Spend','Chain Takeover']},
-  {name:'Flash Loan Bot',type:'DeFi Predator',hp:140,maxhp:140,atk:29,def:7,xp:70,icon:'🌊',moves:['Flash Loan','Arbitrage Strike','Price Manipulation']}
-];
-
-let S = {char:null,enemy:null,totalXP:0,block:100234,defending:false,isPlayerTurn:true,busy:false,selectedChar:0,skillCooldowns:{},wave:1};
-
-function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
-function fakeTx(){return '0x'+Array.from({length:16},()=>rnd(0,15).toString(16)).join('')+'...';}
-function fakeBlock(){S.block+=rnd(1,5);return '#'+S.block;}
-
-function renderCharList(){
-  var cl=document.getElementById('char-list'); if(cl) cl.innerHTML=CHARS.map((c,i)=>`
-    <div class="char-card ${i===0?'selected':''}" id="cc${i}" onclick="selectChar(${i})">
-      <div class="char-icon-box">${c.icon}</div>
-      <div style="flex:1"><div class="char-name">${c.name}</div><div class="char-meta">${c.cls} · HP ${c.hp} · ATK ${c.atk} · DEF ${c.def}</div></div>
-      ${i===0?'<span class="sel-badge">Selected</span>':''}
-    </div>`).join('');
-  S.selectedChar=0;
-}
-
-function selectChar(i){
-  S.selectedChar=i;
-  CHARS.forEach((_,idx)=>{const el=document.getElementById('cc'+idx);el.className='char-card'+(idx===i?' selected':'');const b=el.querySelector('.sel-badge');if(b)b.remove();});
-  const badge=document.createElement('span');badge.className='sel-badge';badge.textContent='Selected';
-  document.getElementById('cc'+i).appendChild(badge);
-}
-
-function pickEnemy(){
-  const wave=S.wave||1;
-
-  // Every 3rd wave — fight an NFT character from another player
-  const isPvpWave = wave>1 && wave%3===0 && pvpEnemyPool.length>0;
-
-  if(isPvpWave){
-    const nft = pvpEnemyPool[Math.floor(Math.random()*pvpEnemyPool.length)];
-    // Use exact NFT stats — same as when the player uses this character
-    const e = {
-      name: '@'+nft.username,
-      icon: '👤',
-      type: 'NFT Player',
-      hp:      Number(nft.hp),
-      maxhp:   Number(nft.hp),
-      atk:     Number(nft.atk),
-      def:     Number(nft.def),
-      mp:      Number(nft.mp),
-      maxmp:   Number(nft.mp),
-      healPow: Number(nft.healPow),
-      xp:      Math.floor(120 * Math.pow(1.30, wave-1)),
-      avatarUrl: nft.avatarUrl,
-      cls:     nft.cls,
-      isPvp:   true,
-      wave:    wave,
-      moves:   ['Timeline Strike','Viral Burst','Retweet Drain','Echo Chamber'],
-    };
-    S.enemy=e;
-    return;
-  }
-
-  // Normal enemy with wave scaling
-  const e=JSON.parse(JSON.stringify(ENEMIES[rnd(0,ENEMIES.length-1)]));
-  if(wave>1){
-    const hpMult  = Math.pow(1.22, wave-1);
-    const atkMult = Math.pow(1.12, wave-1);
-    const defMult = Math.pow(1.08, wave-1);
-    const xpMult  = Math.pow(1.30, wave-1);
-    e.hp   = Math.floor(e.hp   * hpMult);
-    e.maxhp= e.hp;
-    e.atk  = Math.floor(e.atk  * atkMult);
-    e.def  = Math.floor(e.def  * defMult);
-    e.xp   = Math.floor(e.xp   * xpMult);
-    if(wave>=5)  e.name='⚡ '+e.name;
-    if(wave>=10){ e.name='💀 '+e.name; e.icon='💀'; e.atk=Math.floor(e.atk*1.15); }
-    if(wave>=15){ e.hp=Math.floor(e.hp*1.3); e.maxhp=e.hp; e.def=Math.floor(e.def*1.2); }
-  }
-  e.wave=wave;
-  S.enemy=e;
-}
-
-function renderBattle(){
-  const p=S.char,e=S.enemy;
-  var pnEl=document.getElementById('p-name'); if(pnEl) pnEl.textContent=p.name||p.username||'Player';
-  var pcEl=document.getElementById('p-class'); if(pcEl) pcEl.textContent=p.cls||p.charName||'NFT Fighter';
-  var eiEl=document.getElementById('e-icon'); if(eiEl) eiEl.textContent=e.isPvp?'':e.icon;
-  var eibEl=document.getElementById('e-icon-bottom'); if(eibEl) eibEl.textContent=e.isPvp?'':e.icon;
-
-  // PvP enemy — show avatar photo
-  var enemySprite=document.getElementById('enemy-sprite');
-  var pvpAvEl=document.getElementById('pvp-enemy-avatar');
-  if(enemySprite){
-    if(pvpAvEl) pvpAvEl.remove();
-    if(e.isPvp && e.avatarUrl){
-      var pbnEn=document.getElementById('e-name-tag');
-      var pvpImg=document.createElement('img');
-      pvpImg.id='pvp-enemy-avatar';
-      pvpImg.src=e.avatarUrl;
-      pvpImg.style.cssText='width:150px;height:150px;border-radius:8px;object-fit:cover;border:2px solid #ff4040;filter:drop-shadow(0 0 18px rgba(255,60,60,0.6));display:block;image-rendering:pixelated';
-      pvpImg.onerror=function(){this.style.display='none';};
-      enemySprite.insertBefore(pvpImg, pbnEn);
-      // Show PvP badge on wave badge
-      var wb=document.getElementById('wave-badge');
-      if(wb) wb.style.borderColor='#ff4040';
-    } else {
-      var wb=document.getElementById('wave-badge');
-      if(wb) wb.style.borderColor='var(--gold)';
-    }
-  }
-  document.getElementById('e-name').textContent=e.name;
-  document.getElementById('e-type').textContent=e.type;
-  document.getElementById('e-reward').textContent='+'+e.xp+' XP';
-  var haEl=document.getElementById('heal-amt'); if(haEl) haEl.textContent=p.healPow;
-  updateBars();renderSkills();
-  // sync
-  var nt=document.getElementById('e-name-tag'); if(nt) nt.textContent=e.name||'Enemy';
-  var ps=document.getElementById('p-sprite'); if(ps) ps.innerHTML=p.icon||'';
-  var pn=document.getElementById('p-name'); if(pn) pn.textContent=p.name||p.username||'Player';
-  var pl=document.getElementById('p-level'); if(pl) pl.textContent=p.level||1;
-  var bw=document.getElementById('battle-wallet'); if(bw) bw.textContent=wallet.address?wallet.address.slice(0,6)+'...'+wallet.address.slice(-4):'—';
-  var bn=document.getElementById('battle-net'); if(bn) bn.textContent=wallet.isDemo?'Demo':'Ritual';
-  // Update wave badge
-  var wb=document.getElementById('wave-badge');
-  if(wb){
-    var wave=S.wave||1;
-    var stars='⭐'.repeat(Math.min(wave,5))+(wave>5?'+'+(wave-5):'');
-    if(e.isPvp){
-      wb.innerHTML='WAVE '+wave+' <span style="color:#ff6060;font-size:7px">⚔ PvP</span> '+stars;
-      wb.style.borderColor='#ff4040';
-      wb.style.color='#ff8080';
-    } else {
-      wb.innerHTML='WAVE '+wave+' <span class="wave-stars">'+stars+'</span>';
-      wb.style.borderColor='var(--gold)';
-      wb.style.color='var(--gold)';
-    }
-  }
-  // Update player name tag bawah gif
-  var pbn=document.getElementById('p-battle-name'); if(pbn) pbn.textContent=p.name||p.username||'Player';
-  // Show/hide sprite based on character
-  var gifEl=document.getElementById('player-gif');
-  var madGifEl=document.getElementById('mad-gif');
-  var flashGifEl=document.getElementById('flash-gif');
-  var psSprite=document.getElementById('player-sprite');
-  if(psSprite){
-    // Hide all first
-    if(gifEl) gifEl.style.display='none';
-    if(madGifEl) madGifEl.style.display='none';
-    if(flashGifEl) flashGifEl.style.display='none';
-    var eo=document.getElementById('player-emoji-big'); if(eo) eo.remove();
-    var customAvEl=document.getElementById('custom-avatar-battle'); if(customAvEl) customAvEl.remove();
-    if(p.isCustom && p.avatarUrl){
-      // Custom X character — tampilkan foto profil
-      var pbn2=document.getElementById('p-battle-name');
-      var cImg=document.createElement('img');
-      cImg.id='custom-avatar-battle';
-      cImg.src=p.avatarUrl;
-      cImg.className='player-sprite-img';
-      cImg.style.cssText='border-radius:8px;border:2px solid var(--gold);filter:drop-shadow(0 0 18px rgba(255,200,0,0.5));width:150px;height:150px;object-fit:cover;';
-      cImg.onerror=function(){this.style.display='none';};
-      psSprite.insertBefore(cImg, pbn2);
-    } else if(p.id==='node'){
-      if(gifEl) gifEl.style.display='block';
-    } else if(p.id==='val'){
-      if(madGifEl) madGifEl.style.display='block';
-    } else if(p.id==='mage'){
-      if(flashGifEl) flashGifEl.style.display='block';
-    }
-  }
-}
-
-function updateBars(){
-  const p=S.char,e=S.enemy;
-  // Player bars
-  var phb=document.getElementById('p-hp-bar'); if(phb){phb.style.width=(Math.max(0,p.hp)/p.maxhp*100)+'%';if(p.hp/p.maxhp<0.25)phb.classList.add('low');else phb.classList.remove('low');}
-  var pht=document.getElementById('p-hp-txt'); if(pht) pht.textContent=p.hp+'/'+p.maxhp;
-  var mpb=document.getElementById('p-mp-bar'); if(mpb) mpb.style.width=(p.mp/p.maxmp*100)+'%';
-  var mpt=document.getElementById('p-mp-txt'); if(mpt) mpt.textContent=p.mp+'/'+p.maxmp;
-  var xpb=document.getElementById('p-xp-bar'); if(xpb) xpb.style.width=Math.min(100,p.xp/p.xpNext*100)+'%';
-  var xpt=document.getElementById('p-xp-txt'); if(xpt) xpt.textContent=p.xp+'/'+p.xpNext;
-  var plv=document.getElementById('p-level'); if(plv) plv.textContent=p.level;
-  // Enemy bars
-  var ehb=document.getElementById('e-hp-bar'); if(ehb){ehb.style.width=(Math.max(0,e.hp)/e.maxhp*100)+'%';if(e.hp/e.maxhp<0.25)ehb.classList.add('low');else ehb.classList.remove('low');}
-  var eht=document.getElementById('e-hp-txt'); if(eht) eht.textContent=Math.max(0,e.hp)+'/'+e.maxhp;
-  // Defend badge
-  var db=document.getElementById('def-badge'); if(db) db.style.display=S.defending?'inline-block':'none';
-}
-
-function renderSkills(){
-  const p=S.char;
-  var sl=document.getElementById('skill-list'); if(!sl) return;
-  sl.innerHTML=p.skills.map(s=>{
-    const cd=S.skillCooldowns[s.id]||0;
-    const isCooldown=s.type==='cooldown';
-    const disabled=!S.isPlayerTurn||S.busy||(isCooldown?cd>0:p.mp<s.mpCost);
-    const costLabel=isCooldown
-      ? (cd>0?'⏳ '+cd+' turn':'Ready!')
-      : (s.mpCost>0?'MP:'+s.mpCost:'Free');
-    const costColor=isCooldown
-      ? (cd>0?'color:#ff8080':'color:#40ff80')
-      : 'color:var(--gold)';
-    return `<button class="skill-btn" onclick="useSkill('${s.id}')" ${disabled?'disabled':''}>
-      <div class="sk-name">${s.name}</div>
-      <div class="sk-cost" style="${costColor}">${costLabel}</div>
-    </button>`;
-  }).join('');
-}
-
-function setButtonsDisabled(v){
-  ['btn-atk','btn-def','btn-heal','btn-flee'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=v;});
-}
-
-function setTurnUI(isPlayer){
-  S.isPlayerTurn=isPlayer;
-  const banner=document.getElementById('turn-banner');
-  const turnText=document.getElementById('turn-text');
-  if(turnText) turnText.textContent=isPlayer?'Your turn — choose an action!':S.enemy.name+' is attacking...';
-  if(banner) banner.className='turn-banner '+(isPlayer?'player-turn':'enemy-turn');
-  setButtonsDisabled(!isPlayer);
-  if(isPlayer&&S.char&&S.char.mp<20)document.getElementById('btn-heal').disabled=true;
-  renderSkills();
-  // JRPG turn indicator
-  var arrow=document.getElementById('turn-arrow'),label=document.getElementById('turn-label');
-  if(arrow&&label){
-    if(isPlayer){arrow.textContent='⚔';arrow.style.color='var(--gold)';label.textContent='YOUR TURN';label.style.color='var(--gold)';label.style.animation='';}
-    else{arrow.textContent='!';arrow.style.color='var(--red)';label.textContent='ENEMY';label.style.color='var(--red)';label.style.animation='blink 0.8s infinite';}
-  }
-}
-
-function addLog(msg,type){
-  const el=document.getElementById('battle-log');
-  if(!el) return;
-  const d=document.createElement('div');
-  d.className='log-line log-'+(type||'');
-  d.textContent='› '+msg;
-  el.appendChild(d);el.scrollTop=el.scrollHeight;
-}
-
-function shakeEl(id){
-  var target=id;
-  if(id==='e-icon') target='enemy-sprite';
-  else if(id==='player-card'){
-    // Shake the player sprite in the battlefield
-    var ps=document.getElementById('player-sprite');
-    if(ps){ps.classList.remove('shake');void ps.offsetWidth;ps.classList.add('shake');setTimeout(function(){ps.classList.remove('shake');},400);}
-    var strip=document.querySelector('.player-sprite-row');
-    if(strip){strip.classList.remove('shake');void strip.offsetWidth;strip.classList.add('shake');setTimeout(function(){strip.classList.remove('shake');},400);}
-    return;
-  }
-  const el=document.getElementById(target);if(!el)return;
-  el.classList.remove('shake');void el.offsetWidth;
-  el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),400);
-}
-
-function endPlayerTurn(){S.busy=false;tickCooldowns();setTurnUI(false);setTimeout(enemyTurn,800);}
-
-// ============================================================
-// PROJECTILE ATTACK EFFECTS
-// ============================================================
-function getCharProjectile(charId, skillType){
-  // Per-character projectile config
-  const configs = {
-    node:  { normal:'⚙️', dmg:'⚡', heal:'💚', drain:'🔋', multi:'⚙️', sure:'🎯', color:'#40d0ff' },
-    val:   { normal:'🔩', dmg:'💥', heal:'🛡️', drain:'⚔️', multi:'🔩', sure:'💢', color:'#ff8040' },
-    mage:  { normal:'✨', dmg:'🌟', heal:'💫', drain:'🌀', multi:'✨', sure:'🎯', color:'#c040ff' },
-  };
-  const custom = { normal:'💫', dmg:'⚡', heal:'💚', drain:'🌀', multi:'💥', sure:'🎯', color:'#ffd700' };
-  const p = S.char;
-  const cfg = configs[p.id] || custom;
-  return { emoji: cfg[skillType]||cfg.normal, color: cfg.color };
-}
-
-function fireProjectile(skillType, onHit){
-  const playerEl = document.getElementById('player-sprite');
-  const enemyEl  = document.getElementById('enemy-sprite');
-  if(!playerEl || !enemyEl){ onHit(); return; }
-
-  const pr = playerEl.getBoundingClientRect();
-  const er = enemyEl.getBoundingClientRect();
-
-  // Start: center of player, End: center of enemy
-  const startX = pr.left + pr.width/2;
-  const startY = pr.top  + pr.height/2;
-  const endX   = er.left + er.width/2;
-  const endY   = er.top  + er.height/2;
-
-  const { emoji, color } = getCharProjectile(S.char.id, skillType);
-
-  // Create projectile element
-  const proj = document.createElement('div');
-  proj.className = 'projectile';
-  proj.textContent = emoji;
-  proj.style.left = startX+'px';
-  proj.style.top  = startY+'px';
-  proj.style.filter = `drop-shadow(0 0 10px ${color})`;
-  document.body.appendChild(proj);
-
-  // Animate with requestAnimationFrame
-  const duration = 380; // ms
-  const start = performance.now();
-
-  function animate(now){
-    const t = Math.min((now - start) / duration, 1);
-    // Ease in-out + arc
-    const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
-    const x = startX + (endX - startX) * ease;
-    const y = startY + (endY - startY) * ease - Math.sin(Math.PI * t) * 40;
-    const scale = 1 + Math.sin(Math.PI * t) * 0.4;
-    proj.style.left = x+'px';
-    proj.style.top  = y+'px';
-    proj.style.transform = `translate(-50%,-50%) scale(${scale})`;
-    if(t < 1){
-      requestAnimationFrame(animate);
-    } else {
-      proj.remove();
-      // Hit burst effect at enemy
-      const burst = document.createElement('div');
-      burst.className = 'hit-burst';
-      burst.textContent = skillType==='heal' ? '💚' : '💥';
-      burst.style.left = endX+'px';
-      burst.style.top  = endY+'px';
-      burst.style.filter = `drop-shadow(0 0 14px ${color})`;
-      document.body.appendChild(burst);
-      setTimeout(()=>burst.remove(), 400);
-      onHit();
-    }
-  }
-  requestAnimationFrame(animate);
-}
-
-function fireAndAttack(skillType, dmgFn){
-  fireProjectile(skillType, ()=>{
-    dmgFn();
-  });
-}
-
-function doAction(type){
-  if(!S.isPlayerTurn||S.busy)return;
-  S.busy=true;setButtonsDisabled(true);
-  const p=S.char,e=S.enemy;
-  if(type==='attack'){
-    let dmg=Math.max(1,p.atk-e.def+rnd(-4,6));const crit=rnd(1,10)>8;if(crit)dmg=Math.floor(dmg*1.6);
-    fireProjectile('normal',()=>{
-      e.hp=Math.max(0,e.hp-dmg);addLog('⚔️ Attack: -'+dmg+' enemy HP'+(crit?' ⚡ CRITICAL!':''),'hit');shakeEl('e-icon');updateBars();
-      if(e.hp<=0){setTimeout(victory,300);return;}setTimeout(endPlayerTurn,400);
-    });
-  }else if(type==='defend'){
-    S.defending=true;addLog('🛡️ Defend — -60% damage this turn!','def');updateBars();setTimeout(endPlayerTurn,400);
-  }else if(type==='heal'){
-    if(p.mp<20){S.busy=false;setTurnUI(true);return;}
-    p.mp=Math.max(0,p.mp-20);const h=p.healPow+rnd(0,8);
-    fireProjectile('heal',()=>{
-      p.hp=Math.min(p.maxhp,p.hp+h);
-      addLog('💊 Heal: +'+h+' HP restored','heal');updateBars();setTimeout(endPlayerTurn,400);
-    });
-  }
-}
-
-function useSkill(id){
-  if(!S.isPlayerTurn||S.busy)return;
-  const p=S.char,e=S.enemy;const s=p.skills.find(x=>x.id===id);
-  if(!s)return;
-  if(s.type==='cooldown'&&S.skillCooldowns[id]>0)return;
-  if(s.type!=='cooldown'&&p.mp<s.mpCost)return;
-  S.busy=true;setButtonsDisabled(true);
-  if(s.type!=='cooldown') p.mp=Math.max(0,p.mp-s.mpCost);
-
-  const isDmg = ['dmg','multi','sure','drain'].includes(s.type);
-  const isHeal = ['heal','special','cooldown'].includes(s.type);
-  const projType = s.type;
-
-  fireProjectile(projType, ()=>{
-    if(s.type==='dmg'){let d=s.dmg+rnd(-5,10);const c=rnd(1,10)>9;if(c)d=Math.floor(d*1.5);e.hp=Math.max(0,e.hp-d);addLog('⚡ '+s.name+': -'+d+' HP'+(c?' CRITICAL!':''),'hit');shakeEl('e-icon');}
-    else if(s.type==='heal'){const h=s.heal+rnd(0,6);p.hp=Math.min(p.maxhp,p.hp+h);addLog('💚 '+s.name+': +'+h+' HP','heal');}
-    else if(s.type==='multi'){let d1=s.dmg+rnd(-3,6),d2=s.dmg+rnd(-3,6);e.hp=Math.max(0,e.hp-d1-d2);addLog('⚡ '+s.name+': -'+d1+' & -'+d2+' HP','hit');shakeEl('e-icon');}
-    else if(s.type==='sure'){e.hp=Math.max(0,e.hp-s.dmg);addLog('🎯 '+s.name+': -'+s.dmg+' HP (sure hit!)','hit');shakeEl('e-icon');}
-    else if(s.type==='drain'){let d=s.dmg+rnd(-5,6);const mg=s.manaHeal||0;e.hp=Math.max(0,e.hp-d);p.mp=Math.min(p.maxmp,p.mp+mg);addLog('🌀 '+s.name+': -'+d+' HP, +'+mg+' Mana','hit');shakeEl('e-icon');}
-    else if(s.type==='special'){const h=s.heal+rnd(0,5);const mg=s.manaHeal||0;p.hp=Math.min(p.maxhp,p.hp+h);p.mp=Math.min(p.maxmp,p.mp+mg);addLog('✨ '+s.name+': +'+h+' HP, +'+mg+' Mana','heal');}
-    else if(s.type==='cooldown'){
-      const h=s.heal+rnd(0,8);const mg=s.manaHeal||0;
-      p.hp=Math.min(p.maxhp,p.hp+h);p.mp=Math.min(p.maxmp,p.mp+mg);
-      S.skillCooldowns[id]=s.cooldown;
-    addLog('🔄 '+s.name+': +'+h+' HP, +'+mg+' Mana — cooldown '+s.cooldown+' turn','heal');
-  }
-    updateBars();
-    if(e.hp<=0){setTimeout(victory,300);return;}
-    tickCooldowns();
-    renderSkills();
-    setTimeout(endPlayerTurn,400);
-  }); // end fireProjectile
-}
-
-function tickCooldowns(){
-  for(const key in S.skillCooldowns){
-    if(S.skillCooldowns[key]>0) S.skillCooldowns[key]--;
-  }
-}
-
-function enemyTurn(){
-  const e=S.enemy,p=S.char;
-  // PvP enemies don't have moves array — use default PvP moves
-  const defaultMoves = e.isPvp
-    ? ['Timeline Strike','Viral Burst','Retweet Drain','Echo Chamber']
-    : (e.moves||['Strike']);
-  const move=defaultMoves[rnd(0,defaultMoves.length-1)];
-  const t=rnd(1,10);const defR=S.defending?0.6:0;
-  let dmg;
-  if(t>=9){dmg=Math.max(1,Math.floor((e.atk+rnd(5,12))*1.5*(1-defR))-p.def);addLog('💥 '+e.name+' "'+move+'" — CRITICAL! -'+dmg+' HP','dmg');}
-  else if(t<=2){dmg=Math.max(1,Math.floor(e.atk*0.5*(1-defR))-p.def+rnd(0,2));addLog('😤 '+e.name+' "'+move+'" (weak): -'+dmg+' HP','enemy');}
-  else{dmg=Math.max(1,Math.floor((e.atk+rnd(-3,4))*(1-defR))-p.def);addLog('🗡️ '+e.name+' "'+move+'": -'+dmg+' HP','dmg');}
-  p.hp=Math.max(0,p.hp-dmg);shakeEl('player-card');
-  if(S.defending){S.defending=false;addLog('🛡️ Defense ended','sys');}
-  if(e.hp<e.maxhp*0.3&&rnd(1,4)===1){
-    const healAmt = e.isPvp ? rnd(e.healPow||15, (e.healPow||15)+10) : rnd(10,22);
-    e.hp=Math.min(e.maxhp,e.hp+healAmt);
-    addLog('🔄 '+e.name+' recovered '+healAmt+' HP!','enemy');
-  }
-  updateBars();
-  if(p.hp<=0){setTimeout(()=>{updateReviveUI();showScreen('dead');},500);return;}
-  setTimeout(()=>{addLog('── Your Turn ──','sys');S.busy=false;setTurnUI(true);renderSkills();},600);
-}
-
-function confirmFlee(){
-  if(!S.isPlayerTurn||S.busy)return;
-  document.getElementById('flee-modal').classList.add('show');
-}
-
-function closeFlee(){
-  document.getElementById('flee-modal').classList.remove('show');
-}
-
-function doFlee(){
-  closeFlee();
-  S.defending=false;S.busy=false;S.skillCooldowns={};S.wave=1;
-  pickEnemy();renderBattle();
-  var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
-  setTurnUI(true);
-  addLog('🏃 Kabur! Wave reset. New enemy: '+S.enemy.icon+' '+S.enemy.name,'sys');
-}
-
-function goMenu(){
-  S.char=null;S.enemy=null;S.busy=false;S.defending=false;S.wave=1;inEventMode=false;
-  var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
-  if(wallet.isDemo){
-    showScreen('demo-select');
-  } else {
-    showScreen('menu');
-    renderCustomCharList();
-    updateCreateCharButton();
-  }
-}
-
-function getBestScore(){
-  const key = 'bestScore_'+(wallet.address||'demo').toLowerCase();
-  return parseInt(localStorage.getItem(key)||'0');
-}
-function saveBestScore(score){
-  const key = 'bestScore_'+(wallet.address||'demo').toLowerCase();
-  localStorage.setItem(key, score.toString());
-}
-
-function victory(){
-  if(inEventMode){ eventVictory(); return; }
-  const e=S.enemy,p=S.char;
-  p.xp+=e.xp;
-  S.totalXP+=e.xp;
-  totalWins++;
-  let lu=false;
-  while(p.xp>=p.xpNext){p.xp-=p.xpNext;p.level++;p.xpNext=Math.floor(p.xpNext*1.4);p.maxhp=Math.floor(p.maxhp*1.1);p.hp=p.maxhp;p.maxmp=Math.floor(p.maxmp*1.1);p.mp=p.maxmp;p.atk+=3;p.def+=2;p.healPow+=5;lu=true;}
-  document.getElementById('vic-msg').textContent=e.name+' defeated! (Wave '+S.wave+')'+(lu?' 🎉 Level Up! '+p.level+'!':'');
-  var vw=document.getElementById('vic-wave'); if(vw) vw.textContent='Wave '+S.wave+' '+'⭐'.repeat(Math.min(S.wave,5))+(S.wave>5?'+'+(S.wave-5):'');
-  document.getElementById('vic-xp').textContent='+'+e.xp+' XP';
-  document.getElementById('vic-total-xp').textContent=S.totalXP+' XP';
-  document.getElementById('vic-wins').textContent=totalWins+' victories';
-  const score = calcScore(S.totalXP, p.level, totalWins);
-  document.getElementById('vic-score').textContent=score.toLocaleString()+' pts';
-  document.getElementById('vic-wallet').textContent=wallet.address?wallet.address.slice(0,6)+'...'+wallet.address.slice(-4):'—';
-
-  // Check if score improved from best
-  const bestScore = getBestScore();
-  const isNewBest = score > bestScore;
-  const submitBox = document.getElementById('submit-score-box');
-  const statusEl = document.getElementById('submit-status');
-  const btn = document.getElementById('btn-submit');
-
-  if(isNewBest){
-    // New best — clear old submitted flag, save new best
-    saveBestScore(score);
-    const submittedKey = 'submittedScore_'+(wallet.address||'').toLowerCase();
-    const alreadySubmitted = localStorage.getItem(submittedKey) === score.toString();
-    // Remove old submitted flag since score changed
-    if(!alreadySubmitted) localStorage.removeItem(submittedKey);
-    btn.disabled = alreadySubmitted;
-    btn.innerHTML = alreadySubmitted ? '✅ Submitted to Chain!' : '🚀 Submit Score to Ritual Chain';
-    if(alreadySubmitted){ btn.style.background='rgba(29,158,117,0.3)'; btn.style.borderColor='#5DCAA5'; btn.onclick=null; }
-    else { btn.style.background=''; btn.style.borderColor=''; btn.onclick=submitScoreOnChain; }
-    statusEl.textContent='';statusEl.className='';
-    document.getElementById('submit-tx-info').style.display='none';
-    submitBox.style.display=wallet.isDemo?'none':'block';
-    // Show new best badge
-    var sbEl=document.getElementById('vic-score');
-    if(sbEl) sbEl.innerHTML=score.toLocaleString()+' pts <span style="background:#ffd700;color:#000;font-size:6px;padding:2px 6px;font-family:var(--pixel);vertical-align:middle">NEW BEST!</span>';
-  } else {
-    // Not a new best — hide submit, show message
-    submitBox.style.display='none';
-    var notBestEl=document.getElementById('vic-not-best');
-    if(!notBestEl){
-      notBestEl=document.createElement('div');
-      notBestEl.id='vic-not-best';
-      notBestEl.style.cssText='background:rgba(40,40,80,0.6);border:1px solid #3030a0;padding:10px;margin-top:8px;text-align:center;font-family:var(--vt);font-size:13px;color:#6060a0';
-      submitBox.parentNode.insertBefore(notBestEl, submitBox);
-    }
-    notBestEl.style.display='block';
-    notBestEl.innerHTML='📊 Current score: <span style="color:var(--cyan)">'+ score.toLocaleString() +'</span> pts<br>Best score: <span style="color:var(--gold)">'+ bestScore.toLocaleString() +'</span> pts<br><span style="font-size:11px;color:#4040a0">Beat your best score to submit on-chain!</span>';
-  }
-
-  showScreen('victory');
-}
-
-function nextBattle(){
-  S.wave=(S.wave||1)+1;
-  S.defending=false;S.busy=false;pickEnemy();renderBattle();showScreen('battle');
-  var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';setTurnUI(true);
-  if(S.enemy.isPvp){
-    addLog('⚔️ WAVE '+S.wave+' — PvP! Fighting '+S.enemy.name+'!','sys');
-    addLog('🔴 This is a real player\'s NFT character!','sys');
-  } else {
-    addLog('⚔️ WAVE '+S.wave+'! Enemy: '+S.enemy.icon+' '+S.enemy.name,'sys');
-    addLog('Enemies grow stronger! Your turn!','sys');
-  }
-}
-
-function revive(){
-  const btn = document.getElementById('btn-revive');
-  const counter = document.getElementById('revive-counter');
-
-  if(inEventMode){
-    // Event mode: max 3 revives
-    S.reviveCount = (S.reviveCount||0) + 1;
-    const remaining = 3 - S.reviveCount;
-    if(remaining >= 0){
-      S.char.hp=Math.floor(S.char.maxhp*0.5);
-      S.char.mp=Math.floor(S.char.maxmp*0.5);
-      S.defending=false;S.busy=false;updateBars();showScreen('battle');setTurnUI(true);
-      addLog('💊 Revive! HP & Mana 50% recovered ('+remaining+' revives left)','heal');
-    }
-  } else {
-    // Normal mode: unlimited revive
-    S.char.hp=Math.floor(S.char.maxhp*0.5);
-    S.char.mp=Math.floor(S.char.maxmp*0.5);
-    S.defending=false;S.busy=false;updateBars();showScreen('battle');setTurnUI(true);
-    addLog('💊 Revive! HP & Mana 50% recovered','heal');
-  }
-}
-
-function updateReviveUI(){
-  const btn = document.getElementById('btn-revive');
-  const counter = document.getElementById('revive-counter');
-  if(!btn||!counter) return;
-  if(inEventMode){
-    const used = S.reviveCount||0;
-    const remaining = 3 - used;
-    if(remaining <= 0){
-      btn.style.display='none';
-      counter.innerHTML='<span style="color:#ff6060">No revives left!</span>';
-    } else {
-      btn.style.display='';
-      const dots = '💊'.repeat(remaining)+'🩶'.repeat(3-remaining);
-      counter.textContent='Revives: '+dots;
-    }
-  } else {
-    btn.style.display='';
-    counter.textContent='';
-  }
-}
-
-function goMenu(){S.char=null;S.enemy=null;S.busy=false;S.defending=false;inEventMode=false;var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';showScreen('menu');}
-
-function switchTab(name,el){
-  ['skills','log'].forEach(t=>document.getElementById('tab-'+t).style.display=t===name?'':'none');
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
-}
-
-// ============================================================
-// MODE SELECTION
-// ============================================================
-function selectModeEvent(){
-  if(!wallet.address || wallet.isDemo){
-    showToast('❌ Connect a real wallet first!');
-    return;
-  }
-  enterEventArena();
-}
-
-function selectModeClassic(){
-  if(!wallet.address){
-    showToast('❌ Connect wallet first!');
-    return;
-  }
-  // Sync status pill in classic screen
-  var cd=document.getElementById('classic-dot');
-  var ca=document.getElementById('classic-addr');
-  var cn=document.getElementById('classic-net');
-  if(cd) cd.className=document.getElementById('menu-dot').className;
-  if(ca) ca.textContent=wallet.address?wallet.address.slice(0,6)+'...'+wallet.address.slice(-4):'—';
-  if(cn) cn.textContent=wallet.isDemo?'Demo':'Ritual Testnet';
-  showScreen('classic');
-  renderCharList();
-  renderCustomCharList();
-  updateCreateCharButton();
-}
-
-function selectModeDemo(){
-  // Demo mode — connect as demo if not connected
-  if(!wallet.connected){
-    wallet={connected:true,address:'0xDEMO'+Math.random().toString(16).slice(2,8).toUpperCase()+'429D',
-      chainId:RITUAL_CHAIN_ID,isDemo:true,provider:null,wcProvider:null};
-    sessionStorage.removeItem('wallet_disconnected');
-  }
-  renderDemoCharList();
-  showScreen('demo');
-}
-
-function renderDemoCharList(){
-  const list = document.getElementById('demo-char-list');
-  if(!list) return;
-  list.innerHTML = CHARS.map((c,i)=>`
-    <div class="char-card" id="dc${i}" onclick="selectDemoChar(${i})" style="border-color:#2d4d2d">
-      <div class="char-icon-box">${c.icon}</div>
-      <div>
-        <div class="char-name" style="color:#40ff80">${c.name}</div>
-        <div class="char-meta">${c.cls} · HP ${c.maxhp} · ATK ${c.atk} · DEF ${c.def}</div>
-      </div>
-    </div>`).join('');
-  selectDemoChar(0);
-}
-
-function selectDemoChar(i){
-  document.querySelectorAll('[id^="dc"]').forEach(el=>{
-    el.classList.remove('selected');
-    const b=el.querySelector('.sel-badge'); if(b) b.remove();
-  });
-  const el=document.getElementById('dc'+i);
-  if(el){ el.classList.add('selected'); const b=document.createElement('span'); b.className='sel-badge'; b.textContent='Selected'; el.appendChild(b); }
-  S.selectedChar=i;
-}
-
-function startDemoGame(){
-  S.selectedChar = S.selectedChar||0;
-  startGame();
-}
-
-// Update event card lock/unlock based on NFT
-function updateEventCardLock(){
-  const lockEl = document.getElementById('event-card-locked');
-  if(!lockEl) return;
-  if(wallet.address && !wallet.isDemo){
-    const saved = loadCustomChars();
-    const hasNFT = saved.some(c=>c.isNFT);
-    lockEl.style.display = hasNFT ? 'none' : 'none'; // hide lock if connected (check on enter)
-    lockEl.style.display = 'none'; // always hide — check happens on click
-  }
-}
-
-
-const BACKEND_URL = 'https://ritualarena1.vercel.app';
-let generatedChar = null;
-
-function openCustomModal(){
-  document.getElementById('custom-modal').classList.add('show');
-  document.getElementById('gen-status').textContent='';
-  document.getElementById('char-preview').classList.remove('show');
-  document.getElementById('btn-save-char').style.display='none';
-  document.getElementById('x-username-input').value='';
-  generatedChar=null;
-}
-function closeCustomModal(){ document.getElementById('custom-modal').classList.remove('show'); }
-
-// NFT CONTRACT
-const NFT_CONTRACT_ADDRESS = '0x592d75AC5aB1B04cA4109FBa9f08A69fDc2D566C';
-const NFT_ABI = [
-  'function mintCharacter(string username, string avatarUrl, string charName, string cls, string lore, uint16 hp, uint16 atk, uint16 def, uint16 mp, uint16 healPow) external',
-  'function hasCharacter(address wallet) external view returns (bool)',
-  'function usernameTaken(string username) external view returns (bool)',
-  'function getCharacterByWallet(address wallet) external view returns (tuple(string username, string avatarUrl, string charName, string cls, string lore, uint16 hp, uint16 atk, uint16 def, uint16 mp, uint16 healPow, uint256 mintedAt, address owner))',
-  'function getAllCharacters() external view returns (tuple(string username, string avatarUrl, string charName, string cls, string lore, uint16 hp, uint16 atk, uint16 def, uint16 mp, uint16 healPow, uint256 mintedAt, address owner)[])',
-  'function getRandomEnemies(address caller, uint256 count) external view returns (tuple(string username, string avatarUrl, string charName, string cls, string lore, uint16 hp, uint16 atk, uint16 def, uint16 mp, uint16 healPow, uint256 mintedAt, address owner)[])',
-  'function burnCharacter() external',
-];
-
-// PvP enemy pool — fetched from chain
-let pvpEnemyPool = [];
-let pvpPoolLoaded = false;
-
-async function loadPvpEnemyPool(){
-  if(!wallet.address || wallet.isDemo) return;
-  try {
-    const provider = new ethers.providers.Web3Provider(wallet.provider);
-    const contract = new ethers.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, provider);
-    const enemies = await contract.getRandomEnemies(wallet.address, 10);
-    pvpEnemyPool = enemies.filter(e => e.username && e.username.length > 0);
-    pvpPoolLoaded = true;
-    console.log('PvP pool loaded:', pvpEnemyPool.length, 'enemies');
-  } catch(err){
-    console.log('PvP pool load failed:', err.message);
-    pvpEnemyPool = [];
-  }
-}
-
-async function mintCharacterNFT(){
-  if(!generatedChar){ showToast('❌ Generate a character first!'); return; }
-  if(!wallet.address || wallet.isDemo){ showToast('❌ Connect a real wallet first!'); return; }
-  const btn=document.getElementById('btn-mint-char');
-  btn.disabled=true; btn.textContent='⏳ Checking...';
-  try {
-    const provider=new ethers.providers.Web3Provider(wallet.provider);
-    const signer=provider.getSigner();
-    const contract=new ethers.Contract(NFT_CONTRACT_ADDRESS,NFT_ABI,signer);
-    const c=generatedChar;
-
-    // Check if username already taken on-chain
-    const taken = await contract.usernameTaken(c.username);
-    if(taken){
-      showToast('❌ @'+c.username+' is already minted by another player!');
-      btn.disabled=false; btn.textContent='🎖 Mint as NFT';
-      return;
-    }
-
-    btn.textContent='⏳ Minting...';
-    const tx=await contract.mintCharacter(c.username,c.avatarUrl||'',c.name,c.cls,c.lore||'',c.hp,c.atk,c.def,c.mp,c.healPow);
-    document.getElementById('gen-status').innerHTML='<span class="spinner"></span> Waiting for confirmation...';
-    await tx.wait();
-    saveCustomChar();
-    showToast('🎖 NFT minted! Character saved on-chain!');
-    document.getElementById('gen-status').textContent='🎖 NFT minted on Ritual Chain!';
-    btn.textContent='✅ Minted!';
-    // Hide Create Character button
-    var btnCreate = document.getElementById('btn-create-char');
-    if(btnCreate) btnCreate.style.display='none';
-  } catch(err){
-    if(err.message&&err.message.includes('Already have')) showToast('❌ Wallet already has a character NFT!');
-    else showToast('❌ Mint failed: '+(err.reason||err.message));
-    btn.disabled=false; btn.textContent='🎖 Mint as NFT';
-  }
-}
-
-function updateCreateCharButton(){
-  const saved = loadCustomChars();
-  const hasNFT = saved.some(c=>c.isNFT);
-
-  // Main menu create button
-  var wrapper = document.getElementById('btn-create-char-wrapper');
-  if(wrapper) wrapper.style.display = (!hasNFT && wallet.address && !wallet.isDemo) ? 'block' : 'none';
-
-  // Main menu NFT display
-  var nftSection = document.getElementById('menu-nft-section');
-  if(nftSection){
-    if(hasNFT){
-      const nftChar = saved.find(c=>c.isNFT);
-      nftSection.style.display = 'block';
-      nftSection.innerHTML = `
-        <div style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.4);padding:12px;border-radius:4px">
-          <div style="font-size:6px;color:#a855f7;font-family:var(--pixel);margin-bottom:8px;letter-spacing:1px">── YOUR NFT CHARACTER ──</div>
-          <div style="display:flex;align-items:center;gap:10px">
-            <img src="${nftChar.avatarUrl||''}" style="width:48px;height:48px;border-radius:6px;object-fit:cover;border:2px solid #a855f7" onerror="this.style.display='none'">
-            <div style="flex:1">
-              <div style="font-family:var(--pixel);font-size:7px;color:#a855f7">${nftChar.name||nftChar.username} <span style="background:#a855f7;color:#fff;font-size:5px;padding:1px 4px">NFT</span></div>
-              <div style="font-family:var(--vt);font-size:12px;color:#8080b0">${nftChar.cls||'NFT Fighter'} · HP ${nftChar.hp} · ATK ${nftChar.atk}</div>
-              <div style="font-family:var(--vt);font-size:11px;color:#6060a0">@${nftChar.username}</div>
-            </div>
-            <button onclick="burnNFTChar('${nftChar.username}')" style="background:rgba(120,0,120,0.4);border:1px solid rgba(180,0,180,0.5);color:#ff80ff;padding:4px 8px;font-size:7px;cursor:pointer;font-family:var(--pixel)" title="Burn NFT">🔥 Burn</button>
-          </div>
-        </div>`;
-    } else {
-      nftSection.style.display = 'none';
-    }
-  }
-
-  // Classic screen button (legacy)
-  var btnCreate = document.getElementById('btn-create-char');
-  if(btnCreate) btnCreate.style.display = hasNFT ? 'none' : '';
-}
-
-function clearOldNFTData(){
-  // Remove NFT characters from localStorage that came from old contracts
-  // Keep only non-NFT custom chars
-  const key='customChars_'+(wallet.address||'demo').toLowerCase();
-  try {
-    let saved=JSON.parse(localStorage.getItem(key)||'[]');
-    // Remove entries flagged as NFT — will be re-fetched from new contract
-    const filtered=saved.filter(c=>!c.isNFT);
-    localStorage.setItem(key, JSON.stringify(filtered));
-  } catch(e){}
-}
-
-async function loadNFTCharacter(){
-  if(!wallet.address||wallet.isDemo) return;
-  try {
-    const provider=new ethers.providers.Web3Provider(wallet.provider);
-    const contract=new ethers.Contract(NFT_CONTRACT_ADDRESS,NFT_ABI,provider);
-    const hasNFT=await contract.hasCharacter(wallet.address);
-    if(!hasNFT) return;
-    const data=await contract.getCharacterByWallet(wallet.address);
-    const nftChar={
-      id:'nft_'+data.username.toLowerCase(),
-      username:data.username, name:data.charName||data.username,
-      avatarUrl:data.avatarUrl, cls:data.cls||'NFT Fighter', lore:data.lore||'',
-      hp:Number(data.hp), maxhp:Number(data.hp),
-      atk:Number(data.atk), def:Number(data.def),
-      mp:Number(data.mp), maxmp:Number(data.mp),
-      healPow:Number(data.healPow),
-      level:1, xp:0, xpNext:100,
-      isCustom:true, isNFT:true,
-      skills:[
-        {id:'s1',name:'Timeline Strike',desc:'Signature attack',dmg:Math.floor(Number(data.atk)*1.4),mpCost:12,type:'dmg'},
-        {id:'s2',name:'Viral Burst',desc:'Massive follower power',dmg:Math.floor(Number(data.atk)*2.2),mpCost:28,type:'dmg'},
-        {id:'s3',name:'Echo Chamber',desc:'Restore HP',heal:Math.floor(Number(data.healPow)*1.3),mpCost:15,type:'heal'},
-        {id:'s4',name:'Retweet Drain',desc:'Drain enemy restore mana',dmg:Math.floor(Number(data.atk)*1.1),manaHeal:20,mpCost:10,type:'drain'},
-      ]
-    };
-    const key='customChars_'+wallet.address;
-    let saved=[];
-    try{ saved=JSON.parse(localStorage.getItem(key)||'[]'); }catch(e){}
-    const idx=saved.findIndex(c=>c.username===nftChar.username);
-    if(idx>=0) saved[idx]=nftChar; else saved.unshift(nftChar);
-    localStorage.setItem(key,JSON.stringify(saved));
-    renderCustomCharList();
-    showToast('🎖 NFT character loaded: @'+data.username);
-    var btnCreate = document.getElementById('btn-create-char');
-    if(btnCreate) btnCreate.style.display='none';
-  } catch(err){ console.error('NFT load:',err.message); }
-}
-
-async function generateCustomChar(){
-  const username = document.getElementById('x-username-input').value.trim().replace('@','');
-  if(!username){ showToast('❌ Enter your X username first!'); return; }
-  const btn=document.getElementById('btn-gen-char');
-  btn.disabled=true; btn.textContent='⏳...';
-  document.getElementById('gen-status').innerHTML='<span class="spinner"></span> Generating your character...';
-  document.getElementById('char-preview').classList.remove('show');
-  document.getElementById('btn-save-char').style.display='none';
-  generatedChar=null;
-  try {
-    const res = await fetch(BACKEND_URL+'/api/generate', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({username})
-    });
-    const data = await res.json();
-    if(!data.success) throw new Error(data.error||'Failed');
-    const c = data.character;
-    generatedChar = c;
-    document.getElementById('preview-avatar').src = c.avatarUrl||'';
-    document.getElementById('preview-name').textContent = c.name;
-    document.getElementById('preview-class').textContent = c.cls;
-    document.getElementById('preview-hp').textContent = c.hp;
-    document.getElementById('preview-atk').textContent = c.atk;
-    document.getElementById('preview-def').textContent = c.def;
-    document.getElementById('preview-mp').textContent = c.mp;
-    document.getElementById('preview-heal').textContent = c.healPow;
-    document.getElementById('preview-cls').textContent = c.cls.split(' ')[0];
-    document.getElementById('preview-lore').textContent = c.lore;
-    document.getElementById('preview-skills').innerHTML = (c.skills||[]).map(s=>
-      `<div style="font-family:var(--vt);font-size:11px;color:#a0a0d0;margin-bottom:2px">⚡ <b>${s.name}</b> — ${s.desc} (MP:${s.mpCost})</div>`
-    ).join('');
-    document.getElementById('char-preview').classList.add('show');
-    document.getElementById('btn-save-char').style.display='inline-block';
-
-    // Check if username already taken on-chain
-    if(!wallet.isDemo && wallet.address){
-      try {
-        const provider=new ethers.providers.Web3Provider(wallet.provider);
-        const contract=new ethers.Contract(NFT_CONTRACT_ADDRESS,NFT_ABI,provider);
-        const taken=await contract.usernameTaken(username);
-        if(taken){
-          document.getElementById('gen-status').innerHTML='⚠️ <span style="color:#ff8040">@'+username+' is already minted by another player — you can save but cannot mint this username.</span>';
-          document.getElementById('btn-mint-char').style.display='none';
-        } else {
-          document.getElementById('btn-mint-char').style.display='inline-block';
-          document.getElementById('gen-status').textContent='✅ Character generated! Username available to mint.';
-        }
-      } catch(e){
-        document.getElementById('btn-mint-char').style.display= wallet.isDemo ? 'none' : 'inline-block';
-        document.getElementById('gen-status').textContent='✅ Character generated!';
-      }
-    } else {
-      document.getElementById('btn-mint-char').style.display= wallet.isDemo ? 'none' : 'inline-block';
-      document.getElementById('gen-status').textContent='✅ Character generated!';
-    }
-  } catch(err){
-    document.getElementById('gen-status').textContent='❌ Failed: '+err.message;
-  }
-  btn.disabled=false; btn.textContent='⚡ Generate';
-}
-
-function saveCustomChar(){
-  if(!generatedChar) return;
-  const key='customChars_'+(wallet.address||'demo');
-  let saved=[];
-  try{ saved=JSON.parse(localStorage.getItem(key)||'[]'); }catch(e){}
-  const idx=saved.findIndex(c=>c.username===generatedChar.username);
-  if(idx>=0) saved[idx]=generatedChar; else saved.push(generatedChar);
-  localStorage.setItem(key, JSON.stringify(saved));
-  showToast('✅ @'+generatedChar.username+' saved!');
-  closeCustomModal();
-  renderCustomCharList();
-}
-
-function loadCustomChars(){
-  const key='customChars_'+(wallet.address||'demo');
-  try{ return JSON.parse(localStorage.getItem(key)||'[]'); }catch(e){ return []; }
-}
-
-function deleteCustomChar(username){
-  const key='customChars_'+(wallet.address||'demo');
-  const remaining=loadCustomChars().filter(c=>c.username!==username);
-  localStorage.setItem(key, JSON.stringify(remaining));
-  if(typeof S.selectedChar==='string' && S.selectedChar==='custom_'+username) S.selectedChar=0;
-  renderCustomCharList();
-  showToast('🗑️ Character deleted');
-  updateCreateCharButton();
-}
-
-function renderCustomCharList(){
-  const saved=loadCustomChars();
-  const section=document.getElementById('custom-char-section');
-  const list=document.getElementById('custom-char-list');
-  if(section) section.style.display = saved.length ? 'block' : 'none';
-  if(list) list.innerHTML=saved.map((c,i)=>`
-    <div class="custom-saved-item" id="cc_custom_${i}" onclick="selectCustomChar(${i})">
-      <img class="custom-saved-avatar" src="${c.avatarUrl||''}" onerror="this.style.display='none'">
-      <div style="flex:1">
-        <div class="custom-saved-name">${c.name} <span style="color:#6060a0">@${c.username}</span>${c.isNFT?'<span style="background:#a855f7;color:#fff;font-size:5px;padding:2px 5px;font-family:var(--pixel);margin-left:4px">NFT</span>':''}</div>
-        <div class="custom-saved-meta">${c.cls||'NFT Fighter'} · HP ${c.hp} · ATK ${c.atk} · DEF ${c.def}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
-        ${c.isNFT?`<button onclick="event.stopPropagation();burnNFTChar('${c.username}')" style="background:rgba(120,0,120,0.4);border:1px solid rgba(180,0,180,0.5);color:#ff80ff;padding:2px 6px;font-size:7px;cursor:pointer;font-family:var(--pixel)" title="Burn NFT on-chain">🔥</button>`:''}
-        <button onclick="event.stopPropagation();deleteCustomChar('${c.username}')" style="background:rgba(150,30,30,0.4);border:1px solid rgba(200,50,50,0.4);color:#ff8080;padding:2px 6px;font-size:8px;cursor:pointer;font-family:var(--pixel)">✕</button>
-      </div>
-    </div>`).join('');
-  // Also update main menu NFT display
-  updateCreateCharButton();
-}
-
-async function burnNFTChar(username){
-  if(!wallet.address||wallet.isDemo){ showToast('❌ Connect a real wallet first!'); return; }
-  if(!confirm('🔥 Burn NFT @'+username+'?\n\nThis will permanently delete your NFT on-chain and free up the username.\n\nThis cannot be undone!')) return;
-  try {
-    const provider=new ethers.providers.Web3Provider(wallet.provider);
-    const signer=provider.getSigner();
-    const contract=new ethers.Contract(NFT_CONTRACT_ADDRESS,['function burnCharacter() external'],signer);
-    showToast('⏳ Burning NFT...');
-    const tx=await contract.burnCharacter();
-    await tx.wait();
-    // Remove from localStorage
-    deleteCustomChar(username);
-    showToast('🔥 NFT @'+username+' burned! You can now mint a new character.');
-    updateCreateCharButton();
-  } catch(err){
-    showToast('❌ Burn failed: '+(err.reason||err.message));
-  }
-}
-
-function selectCustomChar(i){
-  // Deselect all regular chars
-  document.querySelectorAll('.char-card').forEach(el=>{ el.classList.remove('selected'); const b=el.querySelector('.sel-badge'); if(b)b.remove(); });
-  // Deselect all custom
-  document.querySelectorAll('[id^="cc_custom_"]').forEach(el=>el.classList.remove('selected'));
-  const el=document.getElementById('cc_custom_'+i);
-  if(el) el.classList.add('selected');
-  S.selectedChar='custom_'+i;
-}
-
-const _origStartGame=function(){
-  inEventMode = false;
-  const c=JSON.parse(JSON.stringify(CHARS[S.selectedChar]));
-  c.xp=0;c.level=1;c.xpNext=100;
-  S.char=c;S.defending=false;S.isPlayerTurn=true;S.busy=false;S.skillCooldowns={};S.wave=1;S.totalXP=0;
-  totalWins=0;
-  var nb=document.getElementById('vic-not-best'); if(nb) nb.style.display='none';
-  var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
-  pickEnemy();renderBattle();showScreen('battle');setTurnUI(true);
-  addLog('⚔️ Battle begins on Ritual Testnet!','sys');
-  addLog('Enemy appears: '+S.enemy.icon+' '+S.enemy.name,'sys');
-  addLog('Your turn — choose an action!','sys');
-};
-function startGame(){
-  if(typeof S.selectedChar==='string' && S.selectedChar.startsWith('custom_')){
-    inEventMode = false;
-    const i=parseInt(S.selectedChar.replace('custom_',''));
-    const saved=loadCustomChars();
-    if(!saved[i]){ showToast('❌ Character not found!'); return; }
-    const c=JSON.parse(JSON.stringify(saved[i]));
-    c.xp=0; c.level=1; c.xpNext=100;
-    S.char=c; S.defending=false; S.isPlayerTurn=true; S.busy=false; S.skillCooldowns={}; S.wave=1; S.totalXP=0;
-  totalWins=0;
-  var nb=document.getElementById('vic-not-best'); if(nb) nb.style.display='none';
-    var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
-    pickEnemy(); renderBattle(); showScreen('battle'); setTurnUI(true);
-    addLog('⚔️ @'+c.username+' enters the Ritual Arena!','sys');
-    addLog('Enemy appears: '+S.enemy.icon+' '+S.enemy.name,'sys');
-    addLog('Your turn — choose an action!','sys');
-  } else { _origStartGame(); }
-}
-
-// ============================================================
-// RANK EVENT ARENA
-// ============================================================
-const EVENT_CONTRACT_ADDRESS = '0xc06D367E65Fcc8D87E4Df9Be6ff925468F63751B';
-const EVENT_ABI = [
-  'function getEventInfo() external view returns (bool active, string name, string description, string bannerColor, uint256 startTime, uint256 endTime, uint256 totalPlayers)',
-  'function submitScore(uint256 score, uint256 wave, string username, string avatarUrl, string charName) external',
-  'function getLeaderboard(uint256 limit) external view returns (tuple(address player, string username, string avatarUrl, string charName, uint256 score, uint256 wave, uint256 timestamp)[])',
-  'function getMyScore() external view returns (tuple(address player, string username, string avatarUrl, string charName, uint256 score, uint256 wave, uint256 timestamp))',
-];
-
-let eventInfo = null;
-let eventWave = 0;
-let eventScore = 0;
-let eventBestScore = 0;
-let inEventMode = false;
-
-// Local event config — show banner even without contract
-const LOCAL_EVENT = {
-  active: false,
-  name: 'Rank Event Season 1',
-  description: 'NFT holders only - compete for the top rank!',
-  bannerColor: '#ff4040',
-};
-
-// EVENT COUNTDOWN TIMER
-let countdownInterval = null;
-
-function startEventCountdown(endTime){
-  if(countdownInterval) clearInterval(countdownInterval);
-  const el = document.getElementById('event-countdown');
-  if(!el) return;
-
-  function update(){
-    const now = Math.floor(Date.now()/1000);
-    const diff = endTime - now;
-    if(diff <= 0){
-      el.innerHTML='⏱ EVENT ENDED';
-      el.style.color='#ff4040';
-      clearInterval(countdownInterval);
-      return;
-    }
-    const d = Math.floor(diff/86400);
-    const h = Math.floor((diff%86400)/3600);
-    const m = Math.floor((diff%3600)/60);
-    const s = diff%60;
-    const txt = `⏱ ${d}D ${String(h).padStart(2,'0')}H ${String(m).padStart(2,'0')}M ${String(s).padStart(2,'0')}S`;
-    el.innerHTML=txt;
-    const miniEl=document.getElementById('event-countdown-mini');
-    if(miniEl) miniEl.textContent=txt;
-  }
-  update();
-  countdownInterval = setInterval(update, 1000);
-}
-
-async function loadEventInfo(){
-  // Always show banner if LOCAL_EVENT.active
-  const banner = document.getElementById('event-banner');
-  if(!banner) return;
-
-  let info = LOCAL_EVENT;
-
-  // Try to fetch from contract if available
-  if(EVENT_CONTRACT_ADDRESS && wallet.address && !wallet.isDemo){
-    try {
-      const provider = new ethers.providers.Web3Provider(wallet.provider);
-      const contract = new ethers.Contract(EVENT_CONTRACT_ADDRESS, EVENT_ABI, provider);
-      const res = await contract.getEventInfo();
-      if(res[0]){ // active
-        info = { active:res[0], name:res[1], description:res[2], bannerColor:res[3],
-                 startTime:Number(res[4]), endTime:Number(res[5]), totalPlayers:Number(res[6]) };
-        document.getElementById('event-banner-players').textContent=info.totalPlayers+' players competing';
-        // Sync mode select card
-        var mn=document.getElementById('mode-event-name'); if(mn) mn.textContent=info.name||'RANK EVENT';
-        var md=document.getElementById('mode-event-desc'); if(md) md.textContent=info.description||'NFT holders only';
-        // Countdown
-        if(info.endTime > 0){
-          const endTimeSec = Math.floor(info.endTime / 1000);
-          startEventCountdown(endTimeSec);
-          document.getElementById('event-countdown').style.display='block';
-          // Mini countdown on mode card
-          const miniEl = document.getElementById('event-countdown-mini');
-          if(miniEl){ miniEl.style.display='block'; }
-        } else {
-          document.getElementById('event-countdown').style.display='none';
-        }
-      }
-    } catch(err){ console.log('Event contract not ready, using local config'); }
-  }
-
-  if(info.active){
-    banner.style.display='block';
-    document.getElementById('event-banner-name').textContent='⚔️ '+info.name.toUpperCase();
-    document.getElementById('event-banner-desc').textContent=info.description;
-    document.getElementById('event-banner-inner').style.borderColor=info.bannerColor||'#ff4040';
-    eventInfo = info;
-  } else {
-    banner.style.display='none';
-  }
-}
-
-async function enterEventArena(){
-  if(!wallet.address || wallet.isDemo){ showToast('❌ Connect a real wallet first!'); return; }
-
-  // Check NFT
-  try {
-    const provider = new ethers.providers.Web3Provider(wallet.provider);
-    const nftContract2 = new ethers.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, provider);
-    const hasNFT = await nftContract2.hasCharacter(wallet.address);
-    if(!hasNFT){
-      showToast('❌ You need an NFT character to enter the event!');
-      return;
-    }
-  } catch(e){ showToast('❌ Could not verify NFT: '+e.message); return; }
-
-  // Load event screen info
-  document.getElementById('event-arena-title').textContent='⚔️ '+(eventInfo?.name||'RANK EVENT');
-  document.getElementById('event-arena-desc').textContent=eventInfo?.description||'NFT holders only — compete for the top rank!';
-
-  // Show NFT character in event lobby
-  const saved = loadCustomChars();
-  const nftChar = saved.find(c=>c.isNFT);
-  const nftInfoEl = document.getElementById('event-nft-info');
-  if(nftInfoEl && nftChar){
-    nftInfoEl.style.display='block';
-    nftInfoEl.innerHTML=`
-      <div style="display:flex;align-items:center;gap:10px;background:rgba(255,40,40,0.08);border:1px solid rgba(255,60,60,0.3);padding:10px;margin-bottom:8px">
-        <img src="${nftChar.avatarUrl||''}" style="width:48px;height:48px;border-radius:6px;object-fit:cover;border:2px solid #ff4040" onerror="this.style.display='none'">
-        <div>
-          <div style="font-family:var(--pixel);font-size:7px;color:#ff8080">@${nftChar.username}</div>
-          <div style="font-family:var(--vt);font-size:12px;color:#a0a0d0">${nftChar.cls} · HP ${nftChar.hp} · ATK ${nftChar.atk} · DEF ${nftChar.def}</div>
-          <div style="font-size:6px;background:#a855f7;color:#fff;padding:2px 6px;font-family:var(--pixel);display:inline-block;margin-top:2px">NFT ✓</div>
-        </div>
-      </div>`;
-  }
-
-  await loadEventLeaderboard();
-  await loadMyEventScore();
-  showScreen('event');
-}
-
-async function loadEventLeaderboard(){
-  if(!EVENT_CONTRACT_ADDRESS) return;
-  const lbEl = document.getElementById('event-lb-list');
-  if(!lbEl) return;
-  try {
-    const provider = new ethers.providers.Web3Provider(wallet.provider);
-    const contract = new ethers.Contract(EVENT_CONTRACT_ADDRESS, EVENT_ABI, provider);
-    const scores = await contract.getLeaderboard(20);
-    if(!scores.length){
-      lbEl.innerHTML='<div style="font-family:var(--vt);font-size:12px;color:#4040a0;text-align:center;padding:16px">No scores yet — be the first!</div>';
-      return;
-    }
-    lbEl.innerHTML = scores.map((s,i)=>{
-      const isMe = wallet.address && s.player.toLowerCase()===wallet.address.toLowerCase();
-      const rankLabel = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
-      const avatarHtml = s.avatarUrl
-        ? `<img src="${s.avatarUrl}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid #ff4040;flex-shrink:0" onerror="this.style.display='none'">`
-        : `<div style="width:28px;height:28px;border-radius:50%;background:#1a0000;border:1px solid #ff4040;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">⚔️</div>`;
-      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid ${isMe?'#ff4040':'rgba(255,60,60,0.2)'};margin-bottom:4px;background:${isMe?'rgba(255,40,40,0.1)':'rgba(10,0,0,0.4)'}">
-        <div style="width:20px;text-align:center;font-size:12px;flex-shrink:0">${rankLabel}</div>
-        ${avatarHtml}
-        <div style="flex:1;min-width:0">
-          <div style="font-family:var(--pixel);font-size:6px;color:#ff8080;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@${s.username}${isMe?' ← You':''}</div>
-          <div style="font-family:var(--vt);font-size:11px;color:#6060a0">Wave ${s.wave} · ${s.charName}</div>
-        </div>
-        <div style="font-family:var(--pixel);font-size:7px;color:#ff4040;flex-shrink:0">${Number(s.score).toLocaleString()}</div>
-      </div>`;
-    }).join('');
-  } catch(err){
-    lbEl.innerHTML='<div style="font-family:var(--vt);font-size:12px;color:#4040a0;text-align:center;padding:10px">Failed to load rankings</div>';
-  }
-}
-
-async function loadMyEventScore(){
-  if(!EVENT_CONTRACT_ADDRESS || !wallet.address) return;
-  try {
-    const provider = new ethers.providers.Web3Provider(wallet.provider);
-    const contract = new ethers.Contract(EVENT_CONTRACT_ADDRESS, EVENT_ABI, provider);
-    const myScore = await contract.getMyScore();
-    const el = document.getElementById('event-my-score');
-    if(myScore.score > 0 && el){
-      el.style.display='block';
-      document.getElementById('event-my-wave').textContent='Wave '+myScore.wave+' reached';
-      document.getElementById('event-my-score-val').textContent=Number(myScore.score).toLocaleString()+' pts';
-      eventBestScore = Number(myScore.score);
-    }
-  } catch(e){}
-}
-
-function startEventBattle(){
-  // Use current selected char (must be NFT char)
-  const saved = loadCustomChars();
-  const nftChar = saved.find(c=>c.isNFT);
-  if(!nftChar){ showToast('❌ Select your NFT character first!'); showScreen('menu'); return; }
-
-  inEventMode = true;
-  eventWave = 1;
-  eventScore = 0;
-  S.wave = 1;
-  S.reviveCount = 0;
-
-  const c = JSON.parse(JSON.stringify(nftChar));
-  c.xp=0; c.level=1; c.xpNext=100;
-  S.char=c; S.defending=false; S.isPlayerTurn=true;
-  S.busy=false; S.skillCooldowns={}; S.totalXP=0;
-
-  // Pick PvP enemy
-  pickEventEnemy();
-  renderBattle();
-  showScreen('battle');
-  setTurnUI(true);
-  addLog('⚔️ EVENT BATTLE — Wave '+eventWave+'!','sys');
-  addLog('Fighting: '+S.enemy.name,'sys');
-  addLog('Your turn — choose an action!','sys');
-}
-
-function pickEventEnemy(){
-  // Always PvP in event — pick from pool
-  if(pvpEnemyPool.length>0){
-    const nft = pvpEnemyPool[Math.floor(Math.random()*pvpEnemyPool.length)];
-    const wave = S.wave||1;
-    const hpMult = Math.pow(1.15, wave-1);
-    const atkMult = Math.pow(1.10, wave-1);
-    S.enemy = {
-      name: '@'+nft.username,
-      icon: '👤', type: 'NFT Player',
-      hp: Math.floor(Number(nft.hp)*hpMult), maxhp: Math.floor(Number(nft.hp)*hpMult),
-      atk: Math.floor(Number(nft.atk)*atkMult), def: Number(nft.def),
-      mp: Number(nft.mp), maxmp: Number(nft.mp),
-      healPow: Number(nft.healPow),
-      xp: Math.floor(100 * Math.pow(1.25, wave-1)),
-      avatarUrl: nft.avatarUrl, cls: nft.cls,
-      isPvp: true, wave,
-      moves: ['Timeline Strike','Viral Burst','Retweet Drain','Echo Chamber'],
-    };
-  } else {
-    // Fallback to normal enemy if no PvP pool
-    pickEnemy();
-  }
-}
-
-function eventVictory(){
-  const e=S.enemy, p=S.char;
-  const waveScore = Math.floor(1000 * S.wave * (p.level||1));
-  eventScore += waveScore;
-  const totalEventScore = eventScore * eventWave;
-
-  document.getElementById('ev-msg').textContent=e.name+' defeated! Wave '+S.wave+' complete!';
-  document.getElementById('ev-wave').textContent='Wave '+S.wave+' ⭐'.repeat(Math.min(S.wave,5));
-  document.getElementById('ev-score').textContent=eventScore.toLocaleString()+' pts';
-  document.getElementById('ev-best').textContent=eventBestScore.toLocaleString()+' pts';
-
-  // Show submit if new best
-  const submitBox = document.getElementById('ev-submit-box');
-  const btn = document.getElementById('btn-ev-submit');
-  if(eventScore > eventBestScore && EVENT_CONTRACT_ADDRESS){
-    submitBox.style.display='block';
-    btn.disabled=false;
-    btn.innerHTML='🏆 Submit to Event Board';
-    document.getElementById('ev-submit-status').textContent='';
-  } else {
-    submitBox.style.display='none';
-  }
-  showScreen('event-victory');
-}
-
-function continueEventBattle(){
-  S.wave=(S.wave||1)+1;
-  eventWave=S.wave;
-  S.defending=false; S.busy=false;
-  pickEventEnemy();
-  renderBattle();
-  showScreen('battle');
-  var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
-  setTurnUI(true);
-  addLog('⚔️ EVENT Wave '+S.wave+'!','sys');
-  addLog('Fighting: '+S.enemy.name,'sys');
-}
-
-async function submitEventScore(){
-  if(!EVENT_CONTRACT_ADDRESS){ showToast('⚠️ Event contract not deployed!'); return; }
-  const btn=document.getElementById('btn-ev-submit');
-  const statusEl=document.getElementById('ev-submit-status');
-  btn.disabled=true; btn.innerHTML='⏳ Submitting...';
-  statusEl.innerHTML='<span class="spinner"></span> Waiting for signature...';
-  try {
-    const provider=new ethers.providers.Web3Provider(wallet.provider);
-    const signer=provider.getSigner();
-    const contract=new ethers.Contract(EVENT_CONTRACT_ADDRESS,EVENT_ABI,signer);
-    const saved = loadCustomChars();
-    const nftChar = saved.find(c=>c.isNFT);
-    const tx=await contract.submitScore(
-      eventScore, S.wave,
-      nftChar?.username||'', nftChar?.avatarUrl||'', nftChar?.name||''
-    );
-    statusEl.innerHTML='<span class="spinner"></span> Confirming...';
-    await tx.wait();
-    eventBestScore=eventScore;
-    statusEl.textContent='✅ Score submitted to Event Board!';
-    btn.innerHTML='✅ Submitted!';
-    document.getElementById('ev-best').textContent=eventBestScore.toLocaleString()+' pts';
-    showToast('🏆 Event score submitted!');
-  } catch(err){
-    statusEl.textContent='❌ '+(err.reason||err.message);
-    btn.disabled=false; btn.innerHTML='🏆 Submit to Event Board';
-  }
-}
-
-function exitEvent(){
-  inEventMode=false;
-  S.wave=1; S.char=null; S.enemy=null;
-  showScreen('menu');
-}
-
-// (event mode is handled directly inside victory() below — no override needed)
-
-
-
-// ============================================================
-// SCORE & LEADERBOARD (localStorage sebagai simulasi on-chain)
-// ============================================================
-// SCORE & LEADERBOARD
-// ============================================================
-// Contract Address — deploy RitualArenaScore.sol to Ritual Testnet first
-// After deploy, replace CONTRACT_ADDRESS with your deployed contract address
-const CONTRACT_ADDRESS = '0xB96Cf73c7D528E95F2AaD71fCE938B98989275B3'; // Ritual Testnet
-
-// ABI minimal untuk fungsi submitScore & getLeaderboard
-const CONTRACT_ABI = [
-  {
-    "inputs": [
-      {"internalType":"uint256","name":"score","type":"uint256"},
-      {"internalType":"uint256","name":"xp","type":"uint256"},
-      {"internalType":"uint256","name":"wins","type":"uint256"},
-      {"internalType":"uint8","name":"level","type":"uint8"},
-      {"internalType":"string","name":"charName","type":"string"}
-    ],
-    "name": "submitScore",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [{"internalType":"address","name":"player","type":"address"}],
-    "name": "getScore",
-    "outputs": [
-      {"internalType":"uint256","name":"score","type":"uint256"},
-      {"internalType":"uint256","name":"xp","type":"uint256"},
-      {"internalType":"uint256","name":"wins","type":"uint256"},
-      {"internalType":"uint8","name":"level","type":"uint8"},
-      {"internalType":"string","name":"charName","type":"string"},
-      {"internalType":"uint256","name":"timestamp","type":"uint256"}
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getTopScores",
-    "outputs": [
-      {"internalType":"address[]","name":"players","type":"address[]"},
-      {"internalType":"uint256[]","name":"scores","type":"uint256[]"},
-      {"internalType":"uint256[]","name":"xps","type":"uint256[]"},
-      {"internalType":"uint8[]","name":"levels","type":"uint8[]"},
-      {"internalType":"string[]","name":"charNames","type":"string[]"}
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {"indexed":true,"internalType":"address","name":"player","type":"address"},
-      {"indexed":false,"internalType":"uint256","name":"score","type":"uint256"},
-      {"indexed":false,"internalType":"uint256","name":"xp","type":"uint256"}
-    ],
-    "name": "ScoreSubmitted",
-    "type": "event"
-  }
-];
-
-// Solidity contract source — deploy ini ke Ritual Testnet:
-/*
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-
-contract RitualArenaScore {
-    struct PlayerScore {
-        uint256 score;
-        uint256 xp;
-        uint256 wins;
-        uint8 level;
-        string charName;
-        uint256 timestamp;
-        bool exists;
-    }
-
-    mapping(address => PlayerScore) public scores;
-    address[] public players;
-    uint256 public constant MAX_TOP = 20;
-
-    event ScoreSubmitted(address indexed player, uint256 score, uint256 xp);
-
-    function submitScore(uint256 _score, uint256 _xp, uint256 _wins, uint8 _level, string calldata _charName) external {
-        if (!scores[msg.sender].exists) {
-            players.push(msg.sender);
-        }
-        if (_score > scores[msg.sender].score) {
-            scores[msg.sender] = PlayerScore(_score, _xp, _wins, _level, _charName, block.timestamp, true);
-            emit ScoreSubmitted(msg.sender, _score, _xp);
-        }
-    }
-
-    function getScore(address player) external view returns (uint256, uint256, uint256, uint8, string memory, uint256) {
-        PlayerScore memory s = scores[player];
-        return (s.score, s.xp, s.wins, s.level, s.charName, s.timestamp);
-    }
-
-    function getTopScores() external view returns (address[] memory, uint256[] memory, uint256[] memory, uint8[] memory, string[] memory) {
-        uint256 len = players.length < MAX_TOP ? players.length : MAX_TOP;
-        address[] memory addrs = new address[](len);
-        uint256[] memory sc = new uint256[](len);
-        uint256[] memory xps = new uint256[](len);
-        uint8[] memory lvls = new uint8[](len);
-        string[] memory chars = new string[](len);
-        // Copy
-        for (uint i = 0; i < len; i++) { addrs[i]=players[i]; sc[i]=scores[players[i]].score; xps[i]=scores[players[i]].xp; lvls[i]=scores[players[i]].level; chars[i]=scores[players[i]].charName; }
-        // Bubble sort by score desc
-        for (uint i = 0; i < len; i++) for (uint j = i+1; j < len; j++) if (sc[j] > sc[i]) {
-            (addrs[i],addrs[j])=(addrs[j],addrs[i]); (sc[i],sc[j])=(sc[j],sc[i]);
-            (xps[i],xps[j])=(xps[j],xps[i]); (lvls[i],lvls[j])=(lvls[j],lvls[i]); (chars[i],chars[j])=(chars[j],chars[i]);
-        }
-        return (addrs, sc, xps, lvls, chars);
-    }
-}
-*/
-
-const LB_KEY = 'ritual_arena_leaderboard_v2';
-let totalWins = 0;
-const CHAR_ICONS = {'Jez Runner':'⚙️','Mad Steel':'🛡️','Flash Shadow':'⚡'};
-
-function getLocalLeaderboard() {
-  try { return JSON.parse(localStorage.getItem(LB_KEY) || '[]'); } catch(e) { return []; }
-}
-function saveLocalLeaderboard(data) {
-  try { localStorage.setItem(LB_KEY, JSON.stringify(data)); } catch(e) {}
-}
-
-function calcScore(totalXP, level, wins) {
-  return (totalXP * 5) + (level * 500) + (wins * 200);
-}
-
-function isContractDeployed() {
-  return CONTRACT_ADDRESS !== '0x0000000000000000000000000000000000000000';
-}
-
-// ============================================================
-// SUBMIT SCORE — REAL ON-CHAIN via ethers.js
-// ============================================================
-async function submitScoreOnChain() {
-  if (!wallet.connected || wallet.isDemo) {
-    showToast('❌ Connect a real wallet first!'); return;
-  }
-  const btn = document.getElementById('btn-submit');
-  const statusEl = document.getElementById('submit-status');
-  const p = S.char;
-  const score = calcScore(S.totalXP, p.level, totalWins);
-
-  if (!isContractDeployed()) {
-    // Contract belum di-deploy — tampilkan instruksi
-    statusEl.innerHTML = `⚠️ Smart contract not deployed yet.<br>
-      <span style="font-size:11px">Copy the Solidity code above, deploy to Remix IDE → Ritual Testnet,<br>then replace <code style="color:#7F77DD">CONTRACT_ADDRESS</code> in this file.</span>`;
-    statusEl.style.color = '#EF9F27';
-    // Tetap simpan ke localStorage sebagai fallback
-    submitScoreLocal(score, btn, statusEl);
-    return;
-  }
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Waiting for signature...';
-  statusEl.style.color = '#EF9F27';
-  statusEl.textContent = '⏳ Open your wallet and sign the transaction...';
-
-  try {
-    // MetaMask untuk sign; RPC Ritual untuk gasPrice
-    const mmProvider = new ethers.providers.Web3Provider(wallet.provider);
-    const signer = mmProvider.getSigner();
-
-    // Get gasPrice directly from Ritual RPC (bypass MetaMask returning 0)
-    let gasPrice = ethers.utils.parseUnits('1', 'gwei'); // default 1 gwei
-    try {
-      const ritualRpc = new ethers.providers.JsonRpcProvider('https://rpc.ritualfoundation.org');
-      const feeData = await ritualRpc.getFeeData();
-      const raw = feeData.gasPrice || feeData.maxFeePerGas;
-      if (raw && raw.gt(gasPrice)) gasPrice = raw;
-    } catch(_) { /* use default 1 gwei */ }
-
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
-    statusEl.textContent = '⏳ Sending transaction to Ritual Chain...';
-    btn.innerHTML = '<span class="spinner"></span>Sending...';
-
-    // Cast tipe eksplisit agar tidak revert
-    const scoreBN  = ethers.BigNumber.from(Math.floor(score));
-    const xpBN     = ethers.BigNumber.from(Math.floor(S.totalXP));
-    const winsBN   = ethers.BigNumber.from(Math.floor(totalWins));
-    const levelU8  = Math.min(255, Math.max(1, Math.floor(p.level)));
-    const charName = String(p.name).slice(0, 32);
-
-    const tx = await contract.submitScore(
-      scoreBN, xpBN, winsBN, levelU8, charName,
-      { gasLimit: 300000, gasPrice: gasPrice }
-    );
-
-    statusEl.textContent = '⏳ Waiting for block confirmation...';
-    btn.innerHTML = '<span class="spinner"></span>Waiting for block...';
-
-    // Wait for 1 confirmation
-    const receipt = await tx.wait(1);
-
-    // Sukses!
-    const txHash = receipt.transactionHash;
-    const blockNum = receipt.blockNumber;
-
-    statusEl.style.color = '#5DCAA5';
-    statusEl.textContent = `✅ Score saved on block #${blockNum}!`;
-
-    document.getElementById('submit-tx-info').style.display = 'block';
-    document.getElementById('submit-tx-hash').textContent = txHash;
-    document.getElementById('submit-explorer-link').href =
-      `https://explorer.ritualfoundation.org/tx/${txHash}`;
-
-    // Permanently disable — already submitted
-    btn.disabled = true;
-    btn.innerHTML = '✅ Submitted to Chain!';
-    btn.style.background = 'rgba(29,158,117,0.3)';
-    btn.style.borderColor = '#5DCAA5';
-    btn.onclick = null;
-    showToast('✅ Score on-chain! Block #' + blockNum);
-
-    // Mark this score as submitted so it can't be re-submitted
-    const submittedKey = 'submittedScore_'+(wallet.address||'').toLowerCase();
-    localStorage.setItem(submittedKey, score.toString());
-
-    // Also save locally for leaderboard fallback
-    submitScoreLocal(score, null, null, txHash, blockNum);
-
-  } catch(e) {
-    console.error('Submit error:', e);
-    btn.disabled = false;
-    btn.innerHTML = '🚀 Try Again';
-
-    if (e.code === 4001 || e.code === 'ACTION_REJECTED') {
-      statusEl.style.color = '#f09595';
-      statusEl.textContent = '❌ Transaction rejected by user.';
-    } else if (e.code === 'INSUFFICIENT_FUNDS') {
-      statusEl.style.color = '#f09595';
-      statusEl.textContent = '❌ Not enough gas. Top up RITUAL Testnet first.';
-    } else {
-      statusEl.style.color = '#f09595';
-      statusEl.textContent = '❌ Error: ' + (e.reason || e.message || 'Unknown');
-    }
-  }
-}
-
-// Save to localStorage (fallback / demo / contract not deployed)
-function submitScoreLocal(score, btn, statusEl, txHash, blockNum) {
-  const lb = getLocalLeaderboard();
-  const addr = wallet.address;
-  const p = S.char;
-  const entry = {
-    address: addr,
-    score, xp: S.totalXP, wins: totalWins,
-    level: p.level, charName: p.name,
-    charIcon: CHAR_ICONS[p.name] || '⚔️',
-    timestamp: Date.now(),
-    txHash: txHash || null,
-    blockNum: blockNum || null,
-    isDemo: wallet.isDemo,
-    onChain: !!txHash
-  };
-  const idx = lb.findIndex(x => x.address.toLowerCase() === addr.toLowerCase());
-  if (idx >= 0) { if (score > lb[idx].score) lb[idx] = entry; }
-  else lb.push(entry);
-  lb.sort((a,b) => b.score - a.score);
-  saveLocalLeaderboard(lb);
-
-  if (btn && statusEl && !txHash) {
-    const rank = lb.findIndex(x => x.address.toLowerCase() === addr.toLowerCase()) + 1;
-    statusEl.innerHTML += `<br><span style="color:#a8a0d0">📋 Saved locally · Rank #${rank}</span>`;
-    btn.disabled = false;
-    btn.innerHTML = '📋 Saved Locally';
-  }
-}
-
-function showLeaderboard() {
-  loadLeaderboard();
-  document.getElementById('btn-back-vic').style.display = 'block';
-  showScreen('leaderboard');
-}
-
-// Cache NFT data per address for leaderboard
-const nftCache = {};
-
-async function fetchNFTForAddress(addr) {
-  if(nftCache[addr]) return nftCache[addr];
-  try {
-    const provider = new ethers.providers.Web3Provider(wallet.provider);
-    const contract = new ethers.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, provider);
-    const hasNFT = await contract.hasCharacter(addr);
-    if(!hasNFT){ nftCache[addr]=null; return null; }
-    const data = await contract.getCharacterByWallet(addr);
-    const result = { username: data.username, avatarUrl: data.avatarUrl };
-    nftCache[addr] = result;
-    return result;
-  } catch(e){ return null; }
-}
-
-function buildLbRow(addr, isMe, rankLabel, rankClass, icon, metaHtml, score, chainTag, nftData) {
-  const avatarHtml = nftData && nftData.avatarUrl
-    ? `<img class="lb-avatar nft" src="${nftData.avatarUrl}" onerror="this.style.display='none'">`
-    : `<div class="lb-char">${icon}</div>`;
-  const usernameHtml = nftData && nftData.username
-    ? `<div class="lb-username">@${nftData.username} <span style="background:#a855f7;color:#fff;font-size:5px;padding:1px 4px;font-family:var(--pixel)">NFT</span></div>`
-    : '';
-  return `<div class="lb-row ${isMe?'me':''}">
-    <div class="lb-rank ${rankClass}">${rankLabel}</div>
-    ${avatarHtml}
-    <div class="lb-info">
-      <div class="lb-addr">${addr.slice(0,6)}...${addr.slice(-4)}${isMe?'<span style="color:#7F77DD;margin-left:6px;font-size:10px">← You</span>':''}${chainTag}</div>
-      ${usernameHtml}
-      <div class="lb-meta">${metaHtml}</div>
-    </div>
-    <div class="lb-score">${score}</div>
-  </div>`;
-}
-
-async function loadLeaderboard() {
-  const lbEl = document.getElementById('lb-list');
-  const myAddr = wallet.address ? wallet.address.toLowerCase() : null;
-
-  // Try reading from contract first
-  if (isContractDeployed() && wallet.connected && !wallet.isDemo) {
-    if(!lbEl) return;
-  lbEl.innerHTML = `<div style="text-align:center;padding:20px;color:#a8a0d0"><span class="spinner"></span> Reading from blockchain...</div>`;
-    try {
-      const provider = new ethers.providers.Web3Provider(wallet.provider);
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
-      const [addrs, scores, xps, levels, charNames] = await contract.getTopScores();
-
-      if (addrs.length === 0) {
-        lbEl.innerHTML = `<div style="text-align:center;padding:30px;color:#555"><div style="font-size:32px;margin-bottom:8px">📭</div>No scores yet — be the first!</div>`;
-        return;
-      }
-
-      // Update my score box from chain
-      if (myAddr) {
-        const myIdx = addrs.findIndex(a => a.toLowerCase() === myAddr);
-        const myBox = document.getElementById('my-score-box');
-        if (myIdx >= 0 && myBox) {
-          myBox.style.display = 'block';
-          var sv=document.getElementById('my-score-val'); if(sv) sv.textContent = scores[myIdx].toString() + ' pts';
-          var sa=document.getElementById('my-score-addr'); if(sa) sa.textContent = addrs[myIdx].slice(0,6)+'...'+addrs[myIdx].slice(-4);
-          var sr=document.getElementById('my-score-rank'); if(sr) sr.textContent = '#' + (myIdx+1) + ' of ' + addrs.length;
-          var sc2=document.getElementById('my-score-char'); if(sc2) sc2.textContent = (CHAR_ICONS[charNames[myIdx]]||'⚔️') + ' ' + charNames[myIdx] + ' Lv' + levels[myIdx];
-        } else if(myBox) { myBox.style.display = 'none'; }
-      }
-
-      if(!lbEl) return;
-      // Fetch NFT data for all addresses in parallel
-      const nftResults = await Promise.all(addrs.map(a => fetchNFTForAddress(a).catch(()=>null)));
-      lbEl.innerHTML = addrs.map((addr, i) => {
-        const isMe = myAddr && addr.toLowerCase() === myAddr;
-        const rankLabel = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
-        const rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
-        const icon = CHAR_ICONS[charNames[i]] || '⚔️';
-        const chainTag = `<span style="font-size:10px;background:rgba(29,158,117,0.2);color:#5DCAA5;padding:1px 6px;border-radius:4px;margin-left:4px">⛓ on-chain</span>`;
-        const meta = `${charNames[i]} Lv${levels[i]} · ${xps[i].toString()} XP`;
-        return buildLbRow(addr, isMe, rankLabel, rankClass, icon, meta, Number(scores[i]).toLocaleString()+' pts', chainTag, nftResults[i]);
-      }).join('');
-      return;
-    } catch(e) {
-      console.warn('Failed to read contract, falling back to local:', e.message);
-    }
-  }
-
-  // Fallback: read from localStorage
-  renderLocalLeaderboard(myAddr);
-}
-
-function renderLocalLeaderboard(myAddr) {
-  const lb = getLocalLeaderboard();
-  const lbEl = document.getElementById('lb-list');
-  if (!lbEl) return;
-
-  if (myAddr) {
-    const myEntry = lb.find(x => x.address.toLowerCase() === myAddr);
-    const myBox = document.getElementById('my-score-box');
-    if (myEntry && myBox) {
-      myBox.style.display = 'block';
-      var sv2=document.getElementById('my-score-val'); if(sv2) sv2.textContent = myEntry.score.toLocaleString() + ' pts';
-      var sa2=document.getElementById('my-score-addr'); if(sa2) sa2.textContent = myEntry.address.slice(0,6)+'...'+myEntry.address.slice(-4);
-      const rank = lb.findIndex(x => x.address.toLowerCase() === myAddr) + 1;
-      var sr2=document.getElementById('my-score-rank'); if(sr2) sr2.textContent = '#' + rank + ' of ' + lb.length;
-      var sc3=document.getElementById('my-score-char'); if(sc3) sc3.textContent = (myEntry.charIcon||'⚔️') + ' ' + myEntry.charName + ' Lv' + myEntry.level;
-    } else if(myBox) { myBox.style.display = 'none'; }
-  }
-
-  if (!lb.length) {
-    lbEl.innerHTML = `<div style="text-align:center;padding:30px;color:#555">
-      <div style="font-size:32px;margin-bottom:8px">📭</div>
-      No scores yet — be the first!
-      <div style="font-size:12px;margin-top:6px;color:#444">Win a battle → Submit Score</div>
-    </div>`;
-    return;
-  }
-
-  lbEl.innerHTML = `<div style="font-size:11px;color:#555;margin-bottom:10px;text-align:center">
-    ${isContractDeployed() ? '⚠️ Showing local data (failed to read chain)' : '📋 Local data · Deploy contract for on-chain leaderboard'}
-  </div>` + lb.slice(0,20).map((e,i) => {
-    const isMe = myAddr && e.address.toLowerCase() === myAddr;
-    const rankLabel = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
-    const rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
-    const ago = timeAgo(e.timestamp);
-    const chainTag = e.onChain
-      ? `<span style="font-size:10px;background:rgba(29,158,117,0.2);color:#5DCAA5;padding:1px 6px;border-radius:4px;margin-left:4px">⛓ on-chain</span>`
-      : `<span style="font-size:10px;background:rgba(255,255,255,0.07);color:#555;padding:1px 6px;border-radius:4px;margin-left:4px">📋 local</span>`;
-    // Check local NFT cache
-    const nftData = nftCache[e.address.toLowerCase()] || null;
-    const meta = `${e.charName} Lv${e.level} · ${e.xp} XP · ${e.wins} wins · ${ago}`;
-    return buildLbRow(e.address, isMe, rankLabel, rankClass, e.charIcon||'⚔️', meta, e.score.toLocaleString(), chainTag, nftData);
-  }).join('');
-}
-
-function timeAgo(ts) {
-  const sec = Math.floor((Date.now()-ts)/1000);
-  if(sec<60)return'just now';
-  if(sec<3600)return Math.floor(sec/60)+' minutes ago';
-  if(sec<86400)return Math.floor(sec/3600)+' hours ago';
-  return Math.floor(sec/86400)+' days ago';
-}
-
-
-
-
-// BACKGROUND MUSIC
-const bgMusic = document.getElementById('bg-music');
-const musicBtn = document.getElementById('music-btn');
-let musicOn = true;
-
-function toggleMusic(){
-  if(musicOn){
-    bgMusic.pause();
-    musicBtn.textContent='🔇 OFF';
-    musicOn=false;
-  } else {
-    bgMusic.play();
-    musicBtn.textContent='🎵 ON';
-    musicOn=true;
-  }
-}
-
-// Autoplay on first user interaction
-document.addEventListener('click', function startMusic(){
-  if(musicOn && bgMusic.paused){
-    bgMusic.volume = 0.4;
-    bgMusic.play().catch(()=>{});
-  }
-  document.removeEventListener('click', startMusic);
-}, {once:true});
-
-// Init
-renderCharList();
-renderCustomCharList();
-loadEventInfo(); // Show banner immediately
-
-</script>
 </body>
 </html>
