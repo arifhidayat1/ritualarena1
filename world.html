@@ -235,13 +235,13 @@ const ANIM_SPEED = 8; // ticks per frame
 // ============================================================
 const COLLIDERS = [
   // Dungeon building body
-  { x:590, y:90,  w:180, h:180 },
+  { x:480, y:0,   w:480, h:220 },
   // Training camp body
-  { x:565, y:465, w:160, h:170 },
+  { x:520, y:460, w:380, h:460 },
   // PvP arena body
-  { x:1130, y:25, w:200, h:230 },
+  { x:1050, y:0,  w:500, h:320 },
   // Danau (water)
-  { x:1150, y:580, w:300, h:280 },
+  { x:1100, y:560, w:400, h:350 },
   // World boundaries
   { x:-50,       y:0,        w:50,       h:WORLD_H },
   { x:WORLD_W,   y:0,        w:50,       h:WORLD_H },
@@ -255,19 +255,19 @@ const COLLIDERS = [
 const TRIGGERS = [
   {
     id:'dungeon', name:'⚔ DUNGEON',
-    x:635, y:265, w:90, h:50,
+    x:580, y:185, w:180, h:70,
     color:'#ff6040',
     action: () => enterBuilding('classic'),
   },
   {
     id:'training', name:'🏗 TRAINING CAMP',
-    x:605, y:625, w:90, h:50,
+    x:565, y:455, w:180, h:70,
     color:'#f0c040',
     action: () => enterBuilding('classic'),
   },
   {
     id:'pvp', name:'🏛 PvP ARENA',
-    x:1185, y:255, w:90, h:50,
+    x:1050, y:145, w:120, h:80,
     color:'#ff40ff',
     action: () => enterBuilding('event'),
   },
