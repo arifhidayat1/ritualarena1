@@ -3,526 +3,400 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ritual Arena — Testnet</title>
-
-<!-- External Libraries -->
-<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<title>Ritual Arena</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; font-family:'Press Start 2P',monospace; }
 
-<!-- Local Stylesheet -->
-<link rel="stylesheet" href="css/style.css">
+/* ── Animated world background ── */
+#bg {
+  position:fixed; inset:0; z-index:0;
+  background:
+    url('assets/ground.png') center/cover no-repeat,
+    #2a4a1a;
+  filter:blur(4px) brightness(0.45);
+  transform:scale(1.08);
+}
+#bg-road  { position:fixed; inset:0; z-index:1; background:url('assets/jalan.png')  center/cover no-repeat; filter:blur(4px) brightness(0.45); transform:scale(1.08); }
+#bg-tree  { position:fixed; inset:0; z-index:2; background:url('assets/pohon.png')  center/cover no-repeat; filter:blur(4px) brightness(0.45); transform:scale(1.08); }
+#bg-build { position:fixed; inset:0; z-index:3; background:url('assets/dungeon.png') center/cover no-repeat; filter:blur(4px) brightness(0.3); transform:scale(1.08); }
+
+/* Floating particles */
+.particle {
+  position:fixed; border-radius:50%;
+  background:radial-gradient(circle, rgba(240,192,64,0.6), transparent);
+  animation:float linear infinite;
+  pointer-events:none; z-index:4;
+}
+@keyframes float {
+  0%   { transform:translateY(110vh) scale(0); opacity:0; }
+  10%  { opacity:1; }
+  90%  { opacity:0.6; }
+  100% { transform:translateY(-10vh) scale(1); opacity:0; }
+}
+
+/* Dark overlay */
+#overlay { position:fixed; inset:0; z-index:5; background:rgba(0,0,15,0.5); }
+
+/* Scanline */
+#scanline {
+  position:fixed; inset:0; z-index:6; pointer-events:none;
+  background:repeating-linear-gradient(0deg,
+    rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px,
+    transparent 1px, transparent 4px);
+}
+
+/* ── Connect panel ── */
+#panel {
+  position:fixed; inset:0; z-index:10;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:20px;
+}
+
+.title {
+  font-size:clamp(14px,4vw,30px);
+  color:#f0c040;
+  text-shadow:0 0 30px rgba(240,192,64,0.9), 3px 3px 0 #000;
+  letter-spacing:3px; text-align:center; margin-bottom:6px;
+  animation:titlePulse 3s ease-in-out infinite alternate;
+}
+@keyframes titlePulse {
+  from { text-shadow:0 0 20px rgba(240,192,64,0.6), 3px 3px 0 #000; }
+  to   { text-shadow:0 0 50px #f0c040, 0 0 80px rgba(240,160,0,0.6), 3px 3px 0 #000; }
+}
+.subtitle {
+  font-family:'VT323',monospace; font-size:18px;
+  color:#80b0d0; text-align:center;
+  letter-spacing:3px; margin-bottom:28px;
+}
+
+.box {
+  width:100%; max-width:350px;
+  background:rgba(4,4,20,0.93);
+  border:2px solid #f0c040;
+  box-shadow:0 0 0 1px #000, 0 0 40px rgba(240,192,64,0.2),
+             inset 0 0 30px rgba(30,30,80,0.6);
+  padding:22px;
+}
+.box-title {
+  font-size:8px; color:#f0c040; text-align:center;
+  border-bottom:1px solid rgba(240,192,64,0.3);
+  padding-bottom:12px; margin-bottom:16px;
+  letter-spacing:1px;
+}
+
+.w-btn {
+  display:flex; align-items:center; gap:12px;
+  width:100%; padding:11px 14px; margin-bottom:9px;
+  background:rgba(15,15,50,0.8);
+  border:2px solid rgba(70,70,160,0.5);
+  color:#e0d8ff; cursor:pointer;
+  font-family:'Press Start 2P',monospace;
+  font-size:7px; transition:all 0.12s;
+}
+.w-btn:hover:not(:disabled) {
+  border-color:#f0c040; background:rgba(35,35,90,0.9);
+  transform:translateX(3px);
+  box-shadow:0 0 12px rgba(240,192,64,0.2);
+}
+.w-btn:active:not(:disabled) { transform:scale(0.98); }
+.w-btn:disabled { opacity:0.35; cursor:not-allowed; }
+.wico {
+  width:34px; height:34px; border-radius:4px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; flex-shrink:0;
+}
+.wname { font-size:8px; color:#f0c040; }
+.wsub  { font-family:'VT323',monospace; font-size:13px; color:#505080; margin-top:2px; }
+
+.divider {
+  display:flex; align-items:center; gap:8px;
+  color:#333; font-family:'VT323',monospace;
+  font-size:14px; margin:4px 0;
+}
+.divider::before, .divider::after {
+  content:''; flex:1; height:1px; background:rgba(255,255,255,0.08);
+}
+
+#status {
+  font-family:'VT323',monospace; font-size:15px;
+  color:#80c0ff; text-align:center;
+  min-height:22px; margin-top:12px; line-height:1.5;
+}
+
+/* ── Smoke transition ── */
+#smoke {
+  position:fixed; inset:0; z-index:200;
+  pointer-events:none; display:none;
+}
+.sp {
+  position:absolute; border-radius:50%;
+  background:radial-gradient(circle,
+    rgba(255,255,255,0.96) 0%,
+    rgba(230,230,230,0.7) 40%,
+    transparent 70%);
+  animation:smokeUp linear forwards;
+}
+@keyframes smokeUp {
+  0%   { transform:translateY(0) scale(0.2); opacity:0; }
+  15%  { opacity:1; }
+  80%  { opacity:0.85; }
+  100% { transform:translateY(-130vh) scale(4); opacity:0; }
+}
+#smoke-white {
+  position:fixed; inset:0; z-index:201;
+  background:#fff; opacity:0; pointer-events:none;
+  transition:opacity 0.35s;
+}
+
+/* Spinner */
+.sp2 {
+  display:inline-block; width:10px; height:10px;
+  border:2px solid rgba(255,255,255,0.2);
+  border-top-color:#f0c040; border-radius:50%;
+  animation:spin 0.7s linear infinite;
+  vertical-align:middle; margin-right:6px;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+</style>
 </head>
 <body>
 
-<!-- ===== AUDIO ===== -->
-<audio id="bg-music" loop>
-  <source src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/backsound.mp3" type="audio/mpeg">
-</audio>
+<!-- Layered blurred world background -->
+<div id="bg"></div>
+<div id="bg-road"></div>
+<div id="bg-tree"></div>
+<div id="bg-build"></div>
+<div id="overlay"></div>
+<div id="scanline"></div>
 
-<!-- Music Toggle -->
-<button id="music-btn" onclick="toggleMusic()" style="position:fixed;bottom:16px;right:16px;z-index:9999;background:rgba(10,10,30,0.85);border:1px solid var(--gold);color:var(--gold);font-family:'Press Start 2P',monospace;font-size:8px;padding:6px 10px;cursor:pointer;border-radius:4px">🎵 ON</button>
+<!-- Floating gold particles -->
+<div id="particles"></div>
 
-<!-- Pixel Scanline Overlay -->
-<div style="position:fixed;inset:0;pointer-events:none;z-index:9990;background:repeating-linear-gradient(0deg,rgba(0,0,0,0.03) 0px,rgba(0,0,0,0.03) 1px,transparent 1px,transparent 4px);"></div>
+<!-- Connect panel -->
+<div id="panel">
+  <div class="title">⚔ RITUAL ARENA</div>
+  <div class="subtitle">Turn-Based Battle · Ritual Testnet</div>
 
-<!-- ===== QR MODAL ===== -->
-<div class="modal-overlay" id="qr-modal">
-  <div class="modal-box">
-    <div class="modal-title">📱 Scan QR Wallet</div>
-    <div class="modal-sub">Open your mobile wallet → scan this QR</div>
-    <div id="qr-container"></div>
-    <div style="font-size:7px;color:#6060a0;margin-bottom:8px">Or copy URI:</div>
-    <div class="modal-uri" id="wc-uri">Connecting...</div>
-    <div style="display:flex;gap:8px;justify-content:center">
-      <button class="px-btn px-btn-blue px-btn-sm" onclick="copyURI()">Copy URI</button>
-      <button class="px-btn px-btn-red px-btn-sm" onclick="closeQRModal()">✕ Close</button>
-    </div>
+  <div class="box">
+    <div class="box-title">— CONNECT WALLET —</div>
+
+    <button class="w-btn" id="btn-mm" onclick="connectMM()">
+      <div class="wico" style="background:rgba(246,133,27,0.15);border:1px solid rgba(246,133,27,0.4)">🦊</div>
+      <div><div class="wname">MetaMask</div><div class="wsub">Browser extension</div></div>
+    </button>
+
+    <button class="w-btn" id="btn-rabby" onclick="connectRabby()">
+      <div class="wico" style="background:rgba(134,151,255,0.15);border:1px solid rgba(134,151,255,0.4)">🐰</div>
+      <div><div class="wname">Rabby Wallet</div><div class="wsub">Multi-chain friendly</div></div>
+    </button>
+
+    <div class="divider">or</div>
+
+    <button class="w-btn" onclick="connectDemo()" style="border-color:rgba(240,192,64,0.3)">
+      <div class="wico" style="background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.3)">🎮</div>
+      <div><div class="wname" style="color:#b09020">Demo Mode</div><div class="wsub">No wallet needed</div></div>
+    </button>
+
+    <div id="status"></div>
   </div>
 </div>
 
-<!-- ===== FLEE CONFIRM MODAL ===== -->
-<div class="modal-overlay" id="flee-modal">
-  <div class="modal-box" style="text-align:center">
-    <div style="font-size:28px;margin-bottom:8px">🏃</div>
-    <div class="modal-title">FLEE?</div>
-    <div class="modal-sub" style="margin-bottom:16px">A new enemy will appear.<br>This battle progress will be lost.</div>
-    <div style="display:flex;gap:8px;justify-content:center">
-      <button class="px-btn px-btn-gold" onclick="doFlee()">✔ Flee</button>
-      <button class="px-btn px-btn-red px-btn-sm" onclick="closeFlee()">✕ Cancel</button>
-    </div>
-  </div>
-</div>
+<!-- Smoke transition -->
+<div id="smoke"></div>
+<div id="smoke-white"></div>
 
-<!-- ===== DISCONNECT MODAL ===== -->
-<div class="disc-modal-overlay" id="disc-modal">
-  <div class="disc-modal-box">
-    <div id="disc-confirm-view">
-      <div class="disc-modal-icon">⏻</div>
-      <div class="disc-modal-title">DISCONNECT WALLET?</div>
-      <div class="disc-modal-addr" id="disc-modal-addr">—</div>
-      <div class="disc-btn-row">
-        <button class="px-btn px-btn-red px-btn-sm" onclick="confirmDisconnect()">⏻ Disconnect</button>
-        <button class="px-btn px-btn-blue px-btn-sm" onclick="closeDiscModal()">✕ Cancel</button>
-      </div>
-    </div>
-    <div id="disc-success-view" style="display:none">
-      <div class="disc-modal-icon">✅</div>
-      <div class="disc-modal-title" style="color:var(--cyan)">DISCONNECTED</div>
-      <div style="font-family:var(--vt);font-size:12px;color:#8080b0;margin:10px 0 14px;line-height:1.6">
-        To fully remove this site from your wallet, revoke permission manually:<br><br>
-        <span style="color:var(--gold)">MetaMask:</span> ⋮ Menu → Connected Sites → ritualarena1.vercel.app → Disconnect<br><br>
-        <span style="color:var(--gold)">Rabby:</span> Settings → Connected Dapps → Remove
-      </div>
-      <div class="disc-btn-row">
-        <button class="px-btn px-btn-blue px-btn-sm" onclick="closeDiscModal()">✕ Close</button>
-      </div>
-    </div>
-  </div>
-</div>
+<script>
+// ── Particles ─────────────────────────────────────────────
+(function spawnParticles() {
+  const container = document.getElementById('particles');
+  for (let i = 0; i < 18; i++) {
+    const p  = document.createElement('div');
+    p.className = 'particle';
+    const sz = 4 + Math.random() * 12;
+    p.style.cssText = `
+      width:${sz}px; height:${sz}px;
+      left:${Math.random()*100}vw;
+      animation-duration:${6+Math.random()*10}s;
+      animation-delay:${Math.random()*8}s;
+      filter:blur(${Math.random()*2}px);
+    `;
+    container.appendChild(p);
+  }
+})();
 
-<!-- ===== CUSTOM CHARACTER MODAL ===== -->
-<div class="custom-modal-overlay" id="custom-modal">
-  <div class="custom-modal-box">
-    <div class="custom-modal-title">✨ CREATE CHARACTER FROM X</div>
-    <div class="custom-modal-sub">Enter your X username — we'll generate a unique warrior!</div>
-    <div class="x-input-row">
-      <span style="font-family:var(--pixel);font-size:10px;color:var(--gold)">@</span>
-      <input class="x-input" id="x-username-input" placeholder="your_username" maxlength="50">
-      <button class="px-btn px-btn-gold px-btn-sm" id="btn-gen-char" onclick="generateCustomChar()">⚡ Generate</button>
-    </div>
-    <div class="custom-gen-status" id="gen-status"></div>
-    <div class="custom-char-preview" id="char-preview">
-      <div class="preview-header">
-        <img class="preview-avatar" id="preview-avatar" src="" alt="avatar" onerror="this.style.display='none'">
-        <div>
-          <div class="preview-name" id="preview-name">—</div>
-          <div class="preview-class" id="preview-class">—</div>
-        </div>
-      </div>
-      <div class="preview-stats">
-        <div class="pstat"><div class="pstat-val" id="preview-hp">—</div><div class="pstat-lbl">HP</div></div>
-        <div class="pstat"><div class="pstat-val" id="preview-atk">—</div><div class="pstat-lbl">ATK</div></div>
-        <div class="pstat"><div class="pstat-val" id="preview-def">—</div><div class="pstat-lbl">DEF</div></div>
-        <div class="pstat"><div class="pstat-val" id="preview-mp">—</div><div class="pstat-lbl">MP</div></div>
-        <div class="pstat"><div class="pstat-val" id="preview-heal">—</div><div class="pstat-lbl">HEAL</div></div>
-        <div class="pstat"><div class="pstat-val" id="preview-cls">—</div><div class="pstat-lbl">CLASS</div></div>
-      </div>
-      <div class="preview-lore" id="preview-lore">—</div>
-      <div style="font-size:7px;color:var(--cyan);margin:8px 0 4px;border-bottom:1px solid rgba(64,208,255,0.2);padding-bottom:2px">── SKILLS ──</div>
-      <div id="preview-skills"></div>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px">
-      <button class="px-btn px-btn-gold" id="btn-save-char" onclick="saveCustomChar()" style="display:none">💾 Save</button>
-      <button class="px-btn px-btn-gold" id="btn-mint-char" onclick="mintCharacterNFT()" style="display:none;background:linear-gradient(135deg,#a855f7,#7c3aed);border-color:#a855f7">🎖 Mint as NFT</button>
-      <button class="px-btn px-btn-red px-btn-sm" onclick="closeCustomModal()">✕ Close</button>
-    </div>
-  </div>
-</div>
+// ── Chain ─────────────────────────────────────────────────
+const CHAIN_ID = '0x7BB';
+const CHAIN_PARAMS = {
+  chainId: CHAIN_ID,
+  chainName: 'Ritual Testnet',
+  nativeCurrency: { name:'RITUAL', symbol:'RITUAL', decimals:18 },
+  rpcUrls: ['https://rpc.ritualfoundation.org'],
+  blockExplorerUrls: ['https://explorer.ritualfoundation.org'],
+};
 
-<!-- ===== SCREEN: CONNECT ===== -->
-<div id="screen-connect" class="screen active bg-menu">
-  <div class="overlay">
-    <div class="game-title">RITUAL ARENA</div>
-    <div class="game-sub">Turn-Based Battle · Ritual Testnet</div>
-    <div class="connect-box">
-      <div class="connect-box-title">— CONNECT WALLET —</div>
-      <button class="wallet-btn" id="btn-metamask" onclick="connectMetaMask()">
-        <div class="wicon" style="background:#F6851B22;border:1px solid #F6851B40">🦊</div>
-        <div><div class="wname">MetaMask</div><div class="wsub">Browser extension</div></div>
-        <span id="mm-status" style="font-size:7px;color:#5DCAA5;margin-left:auto"></span>
-      </button>
-      <button class="wallet-btn" id="btn-rabby" onclick="connectRabby()">
-        <div class="wicon" style="background:#8697FF22;border:1px solid #8697FF40">🐰</div>
-        <div><div class="wname">Rabby Wallet</div><div class="wsub">Multi-chain friendly</div></div>
-        <span id="rabby-status" style="font-size:7px;color:#5DCAA5;margin-left:auto"></span>
-      </button>
-      <div class="divider-line">or</div>
-      <button class="wallet-btn" onclick="connectDemo()" style="border-color:rgba(240,192,64,0.3)">
-        <div class="wicon" style="background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.3)">🎮</div>
-        <div><div class="wname" style="color:#c0a020">Demo Mode</div><div class="wsub">No wallet needed</div></div>
-      </button>
-      <div style="margin-top:14px;font-family:var(--vt);font-size:13px;color:#404060;text-align:center">
-        Don't have MetaMask? <a href="https://metamask.io/download/" target="_blank" style="color:var(--gold);text-decoration:none">Download →</a>
-      </div>
-    </div>
-  </div>
-</div>
+// ── Auto reconnect on load ────────────────────────────────
+window.addEventListener('load', async () => {
+  if (sessionStorage.getItem('wallet_connected') === '1') {
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method:'eth_accounts' });
+        if (accounts && accounts.length > 0) {
+          setStatus('✅ Reconnecting...');
+          setTimeout(() => smokeAndGo(), 600);
+          return;
+        }
+      } catch(e) {}
+    }
+    // Demo mode
+    if (sessionStorage.getItem('wallet_demo') === '1') {
+      setStatus('🎮 Resuming demo...');
+      setTimeout(() => smokeAndGo(), 600);
+      return;
+    }
+    // Clear stale session
+    sessionStorage.removeItem('wallet_connected');
+  }
+});
 
-<!-- ===== SCREEN: WRONG NETWORK ===== -->
-<div id="screen-wrongnet" class="screen bg-menu">
-  <div class="overlay">
-    <div class="wrongnet-box">
-      <div style="font-size:36px;margin-bottom:10px">⛓️</div>
-      <div class="wrongnet-title">WRONG NETWORK!</div>
-      <div style="font-family:var(--vt);font-size:15px;color:#8080b0;margin-bottom:14px">Required: <span style="color:var(--gold)">Ritual Chain Testnet</span></div>
-      <div class="net-info">
-        <div class="net-row"><span>Network</span><span class="net-val">Ritual Testnet</span></div>
-        <div class="net-row"><span>Chain ID</span><span class="net-val">1979</span></div>
-        <div class="net-row"><span>RPC</span><span class="net-val">rpc.ritualfoundation.org</span></div>
-        <div class="net-row"><span>Symbol</span><span class="net-val">RITUAL</span></div>
-        <div class="net-row"><span>Explorer</span><span class="net-val">explorer.ritualfoundation.org</span></div>
-      </div>
-      <div class="btn-row">
-        <button class="px-btn px-btn-gold" onclick="addRitualNetwork()">+ Add Network</button>
-        <button class="px-btn px-btn-red px-btn-sm" onclick="disconnectWallet()">Switch Wallet</button>
-      </div>
-    </div>
-  </div>
-</div>
+// ── Helpers ───────────────────────────────────────────────
+function setStatus(msg) {
+  document.getElementById('status').textContent = msg;
+}
 
-<!-- ===== SCREEN: MENU (MODE SELECT) ===== -->
-<div id="screen-menu" class="screen bg-menu" style="position:relative;min-height:100vh;overflow:hidden">
-  <!-- Wallet status bar -->
-  <div style="position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,200,0,0.2);padding:8px 16px;display:flex;align-items:center;gap:8px">
-    <div class="dot" id="menu-dot"></div>
-    <span id="menu-addr" style="font-family:monospace;font-size:11px;color:#40d0ff">—</span>
-    <span id="menu-net" style="font-family:var(--pixel);font-size:6px;color:#6060a0;margin-left:4px">—</span>
-    <span style="margin-left:auto;font-family:var(--pixel);font-size:6px;color:#ffd700">⚔ RITUAL ARENA</span>
-    <button onclick="openDiscModal()" style="background:rgba(150,30,30,0.4);border:1px solid rgba(200,50,50,0.5);color:#ff8080;padding:3px 8px;font-size:6px;cursor:pointer;font-family:var(--pixel)">⏻</button>
-  </div>
+function setLoading(id, on, label) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.disabled = on;
+  btn.querySelector('.wname').innerHTML = on
+    ? '<span class="sp2"></span>Connecting...'
+    : label;
+}
 
-  <div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 44px);padding:16px;padding-top:60px">
-    <div style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px">
+function getProvider(rabby = false) {
+  const providers = window.ethereum?.providers || [];
+  if (providers.length) {
+    if (rabby) {
+      const r = providers.find(p => p.isRabby);
+      if (r) return r;
+    } else {
+      const m = providers.find(p => p.isMetaMask && !p.isRabby);
+      if (m) return m;
+    }
+    return providers[0];
+  }
+  if (rabby && window.rabby) return window.rabby;
+  return window.ethereum || null;
+}
 
-      <!-- RANK EVENT Card -->
-      <div id="mode-event-card" onclick="selectModeEvent()" style="cursor:pointer;border:2px solid #ff4040;background:linear-gradient(135deg,rgba(40,0,0,0.95),rgba(100,0,0,0.6));background-image:url('https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/bg_event.webp');background-size:cover;background-position:center;position:relative;overflow:hidden;border-radius:4px;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 0 20px rgba(255,40,40,0.3)" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform=''">
-        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.55)"></div>
-        <div id="event-card-locked" style="display:none"></div>
-        <div style="position:relative;padding:20px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            <span style="background:#ff4040;color:#fff;font-family:var(--pixel);font-size:6px;padding:3px 8px">🔥 LIVE</span>
-            <div id="event-countdown-mini" style="display:none;font-family:var(--pixel);font-size:6px;color:#ffd700;background:rgba(0,0,0,0.5);padding:3px 8px;border:1px solid rgba(255,215,0,0.3)"></div>
-          </div>
-          <div style="font-family:var(--pixel);font-size:clamp(12px,3vw,18px);color:#fff;text-shadow:0 0 20px #ff4040;margin-bottom:4px" id="mode-event-name">RANK EVENT</div>
-          <div style="font-family:var(--vt);font-size:13px;color:#ffaaaa;margin-bottom:10px" id="mode-event-desc">NFT holders only - compete for the top rank!</div>
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <div style="font-family:var(--pixel);font-size:6px;color:#ff8080">⚔ EXCLUSIVE PvP ARENA</div>
-            <div style="font-family:var(--pixel);font-size:7px;color:#fff;background:rgba(255,40,40,0.6);border:1px solid #ff4040;padding:6px 14px">ENTER ▶</div>
-          </div>
-        </div>
-      </div>
+async function doConnect(provider, btnId, label) {
+  setLoading(btnId, true, label);
+  try {
+    await provider.request({
+      method: 'wallet_requestPermissions',
+      params: [{ eth_accounts: {} }],
+    });
+    const accounts = await provider.request({ method: 'eth_accounts' });
+    if (!accounts?.length) {
+      setStatus('❌ No account selected');
+      setLoading(btnId, false, label);
+      return;
+    }
+    // Check/switch chain
+    const chainId = await provider.request({ method: 'eth_chainId' });
+    if (chainId.toLowerCase() !== CHAIN_ID.toLowerCase()) {
+      setStatus('⏳ Switching to Ritual Testnet...');
+      try {
+        await provider.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: CHAIN_ID }],
+        });
+      } catch (sw) {
+        if (sw.code === 4902) {
+          await provider.request({
+            method: 'wallet_addEthereumChain',
+            params: [CHAIN_PARAMS],
+          });
+        } else throw sw;
+      }
+    }
+    sessionStorage.setItem('wallet_connected', '1');
+    sessionStorage.setItem('wallet_address',   accounts[0]);
+    sessionStorage.removeItem('wallet_demo');
+    setStatus('✅ Connected! Entering world...');
+    setLoading(btnId, false, label);
+    setTimeout(() => smokeAndGo(), 500);
+  } catch (e) {
+    setLoading(btnId, false, label);
+    if (e.code === 4001) setStatus('❌ Rejected by user');
+    else setStatus('❌ ' + (e.message || 'Unknown error'));
+  }
+}
 
-      <!-- CLASSIC MODE Card -->
-      <div onclick="selectModeClassic()" style="cursor:pointer;border:2px solid var(--gold);background:linear-gradient(135deg,#0a0a2e,#050520);position:relative;overflow:hidden;border-radius:4px;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 0 20px rgba(255,200,0,0.15)" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform=''">
-        <div style="position:absolute;right:0;top:0;bottom:0;width:40%;background-image:url('https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/jezzCharArena.gif');background-size:auto 90%;background-repeat:no-repeat;background-position:right center;opacity:0.2"></div>
-        <div style="position:relative;padding:20px">
-          <div style="font-family:var(--pixel);font-size:clamp(12px,3vw,18px);color:var(--gold);text-shadow:0 0 20px var(--gold);margin-bottom:4px">CLASSIC BATTLE</div>
-          <div style="font-family:var(--vt);font-size:13px;color:#a0a0d0;margin-bottom:10px">Choose your fighter · Battle on-chain</div>
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <div style="font-family:var(--pixel);font-size:6px;color:var(--cyan)">⚡ ON-CHAIN LEADERBOARD</div>
-            <div style="font-family:var(--pixel);font-size:7px;color:#000;background:var(--gold);padding:6px 14px">PLAY ▶</div>
-          </div>
-        </div>
-      </div>
+async function connectMM() {
+  const p = getProvider(false);
+  if (!p) {
+    setStatus('❌ MetaMask not found!');
+    setTimeout(() => window.open('https://metamask.io/download/', '_blank'), 1000);
+    return;
+  }
+  await doConnect(p, 'btn-mm', 'MetaMask');
+}
 
-      <!-- Create NFT Character button (shown if no NFT) -->
-      <div id="btn-create-char-wrapper" style="display:none;text-align:center">
-        <button id="btn-create-char" class="px-btn px-btn-blue" onclick="openCustomModal()" style="width:100%">✨ Create NFT Character</button>
-        <div style="font-family:var(--vt);font-size:11px;color:#4040a0;margin-top:6px">Create your X profile character to access Rank Event</div>
-      </div>
+async function connectRabby() {
+  const p = getProvider(true);
+  if (!p) {
+    setStatus('❌ Rabby not found!');
+    setTimeout(() => window.open('https://rabby.io/', '_blank'), 1000);
+    return;
+  }
+  await doConnect(p, 'btn-rabby', 'Rabby Wallet');
+}
 
-      <!-- NFT Character display (shown if has NFT) -->
-      <div id="menu-nft-section" style="display:none"></div>
+function connectDemo() {
+  sessionStorage.setItem('wallet_connected', '1');
+  sessionStorage.setItem('wallet_demo', '1');
+  sessionStorage.setItem('wallet_address',
+    '0xDEMO' + Math.random().toString(16).slice(2,10).toUpperCase());
+  setStatus('🎮 Demo mode — Entering world...');
+  setTimeout(() => smokeAndGo(), 400);
+}
 
-    </div>
-  </div>
-</div>
+// ── Smoke transition ──────────────────────────────────────
+function smokeAndGo() {
+  const smoke = document.getElementById('smoke');
+  const white = document.getElementById('smoke-white');
+  smoke.style.display = 'block';
+  smoke.innerHTML = '';
 
-<!-- ===== SCREEN: DEMO SELECT ===== -->
-<div id="screen-demo-select" class="screen" style="background:linear-gradient(135deg,#050520,#0a0a1e)">
-  <div class="overlay">
-    <div class="menu-panel">
-      <div class="menu-title-bar" style="color:#40d0ff">🎮 DEMO MODE</div>
-      <div style="font-family:var(--vt);font-size:13px;color:#6060a0;text-align:center;margin-bottom:12px">Choose your fighter and battle!</div>
-      <div id="char-list-demo"></div>
-      <div class="btn-row" style="margin-top:14px">
-        <button class="px-btn px-btn-gold" onclick="startDemoFromSelect()">▶ START BATTLE</button>
-        <button class="px-btn px-btn-red px-btn-sm" onclick="showScreen('connect')">← Back</button>
-      </div>
-    </div>
-  </div>
-</div>
+  // Spawn smoke particles from bottom
+  for (let i = 0; i < 35; i++) {
+    const p   = document.createElement('div');
+    p.className = 'sp';
+    const sz  = 100 + Math.random() * 220;
+    const x   = Math.random() * 110 - 5;
+    const y   = 50 + Math.random() * 60;
+    const dur = 1.0 + Math.random() * 0.7;
+    const del = Math.random() * 0.5;
+    p.style.cssText = `
+      width:${sz}px; height:${sz}px;
+      left:${x}vw; top:${y}vh;
+      animation-duration:${dur}s;
+      animation-delay:${del}s;
+      filter:blur(${6+Math.random()*10}px);
+    `;
+    smoke.appendChild(p);
+  }
 
-<!-- ===== SCREEN: CLASSIC SELECT ===== -->
-<div id="screen-classic" class="screen bg-menu">
-  <div class="overlay">
-    <div class="menu-panel">
-      <div class="menu-title-bar">⚔ CLASSIC BATTLE</div>
-      <div class="status-pill">
-        <div class="dot" id="classic-dot"></div>
-        <span id="classic-addr">—</span>
-        <span style="margin-left:auto;font-family:var(--vt);font-size:14px;color:#6060a0" id="classic-net">Ritual Testnet</span>
-        <button onclick="openDiscModal()" style="background:rgba(150,30,30,0.4);border:1px solid rgba(200,50,50,0.5);color:#ff8080;padding:3px 10px;font-size:6px;cursor:pointer;font-family:var(--pixel);margin-left:8px">⏻ Disconnect</button>
-      </div>
-      <div id="char-list"></div>
-      <!-- Custom characters -->
-      <div id="custom-char-section" style="display:none;margin-top:12px">
-        <div style="font-size:6px;color:#a855f7;letter-spacing:1px;margin-bottom:8px;border-bottom:1px solid rgba(168,85,247,0.3);padding-bottom:4px">── YOUR CHARACTERS ──</div>
-        <div id="custom-char-list"></div>
-      </div>
-      <div class="btn-row" style="margin-top:14px">
-        <button class="px-btn px-btn-gold" onclick="startGame()">▶ START BATTLE</button>
-        <button class="px-btn px-btn-blue px-btn-sm" onclick="loadLeaderboard();document.getElementById('btn-back-vic').style.display='none';showScreen('leaderboard')">🏅 Ranking</button>
-        <button class="px-btn px-btn-red px-btn-sm" onclick="showScreen('menu')">← Back</button>
-      </div>
-    </div>
-  </div>
-</div>
+  // White flash
+  setTimeout(() => { white.style.opacity = '1'; }, 950);
 
-<!-- ===== SCREEN: EVENT ARENA ===== -->
-<div id="screen-event" class="screen bg-menu">
-  <div class="overlay">
-    <div class="menu-panel">
-      <div class="menu-title-bar" id="event-arena-title" style="color:#ff6060">⚔️ RANK EVENT</div>
-      <div id="event-arena-desc" style="font-family:var(--vt);font-size:13px;color:#8080b0;text-align:center;margin-bottom:10px"></div>
-      <div id="event-nft-info" style="display:none;margin-bottom:8px"></div>
-      <div style="font-size:6px;color:#ff6060;letter-spacing:1px;margin-bottom:6px;border-bottom:1px solid rgba(255,60,60,0.3);padding-bottom:4px">── EVENT RANKING ──</div>
-      <div id="event-lb-list" style="max-height:260px;overflow-y:auto;margin-bottom:10px">
-        <div style="font-family:var(--vt);font-size:12px;color:#4040a0;text-align:center;padding:10px">Loading...</div>
-      </div>
-      <div id="event-my-score" style="background:rgba(255,40,40,0.08);border:1px solid rgba(255,60,60,0.3);padding:8px 12px;margin-bottom:10px;display:none">
-        <div style="font-size:6px;color:#ff6060;margin-bottom:4px">── YOUR BEST ──</div>
-        <div style="display:flex;justify-content:space-between;font-family:var(--vt);font-size:13px">
-          <span id="event-my-wave" style="color:#a0a0d0"></span>
-          <span id="event-my-score-val" style="color:#ff6060;font-family:var(--pixel);font-size:8px"></span>
-        </div>
-      </div>
-      <div class="btn-row">
-        <button class="px-btn" style="background:linear-gradient(135deg,#7f0000,#cc0000);border-color:#ff4040;color:#fff" onclick="startEventBattle()">⚔️ Enter Battle</button>
-        <button class="px-btn px-btn-blue px-btn-sm" onclick="showScreen('menu')">← Back</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== SCREEN: BATTLE ===== -->
-<div id="screen-battle" class="screen bg-battle">
-  <!-- Battle HUD Header -->
-  <div class="jrpg-header" style="position:fixed;top:0;left:0;right:0;z-index:100">
-    <span class="hdr-title" style="font-size:7px">⚔ RITUAL ARENA</span>
-    <span style="font-size:6px;color:#4040a0;font-family:var(--pixel)">TESTNET</span>
-    <div class="hdr-net">
-      <div class="dot" id="battle-dot"></div>
-      <span style="font-size:6px;font-family:var(--pixel)" id="battle-net">—</span>
-      <span class="hdr-wallet" id="battle-wallet">—</span>
-      <button onclick="openDiscModal()" title="Disconnect wallet" style="background:none;border:none;color:#ff6060;font-size:10px;cursor:pointer;padding:0 2px;opacity:0.7">⏻</button>
-    </div>
-  </div>
-
-  <div class="battle-layout" style="padding-top:44px">
-    <div class="battle-status-bar"></div>
-
-    <!-- BATTLEFIELD -->
-    <div class="battlefield" id="battlefield">
-      <div class="wave-badge" id="wave-badge">WAVE 1 ⭐</div>
-      <!-- Player -->
-      <div class="player-sprite" id="player-sprite">
-        <img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/jezzCharArena.gif" alt="Jezz" class="player-sprite-img" id="player-gif">
-        <img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/madCharArena.gif" alt="Mad Steel" class="player-sprite-img" id="mad-gif" style="display:none">
-        <img src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/flashCharArena.gif" alt="Flash Shadow" class="player-sprite-img" id="flash-gif" style="display:none">
-        <div class="player-name-tag" id="p-battle-name">JEZZ</div>
-      </div>
-      <!-- VS -->
-      <div class="vs-badge">
-        <div class="vs-line"></div>
-        <div class="vs-text">VS</div>
-        <div class="vs-line"></div>
-      </div>
-      <!-- Enemy -->
-      <div class="enemy-sprite" id="enemy-sprite">
-        <span class="enemy-emoji-big" id="e-icon">🤖</span>
-        <div class="enemy-name-tag" id="e-name-tag">—</div>
-      </div>
-    </div>
-
-    <!-- BATTLE BOTTOM PANEL -->
-    <div class="battle-bottom">
-      <div class="bottom-status-bar">
-        <!-- Player stats -->
-        <div class="bstat-player">
-          <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
-            <span class="bstat-icon" id="p-sprite">⚙️</span>
-            <div>
-              <div class="bstat-name" id="p-name">—</div>
-              <div style="display:flex;align-items:center;gap:4px">
-                <span style="font-family:var(--vt);font-size:11px;color:var(--cyan);background:rgba(0,80,120,0.4);border:1px solid rgba(0,150,200,0.4);padding:0 4px">Lv <span id="p-level">1</span></span>
-                <span class="def-badge" id="def-badge" style="display:none">🛡️</span>
-              </div>
-            </div>
-          </div>
-          <div class="bstat-row">
-            <span class="bstat-lbl">HP</span>
-            <div class="hp-bar-wrap"><div class="hp-bar-fill" id="p-hp-bar" style="width:100%"></div></div>
-            <span class="bstat-val" id="p-hp-txt">—</span>
-          </div>
-          <div class="bstat-row">
-            <span class="bstat-lbl">MP</span>
-            <div class="hp-bar-wrap"><div class="mp-bar-fill" id="p-mp-bar" style="width:100%"></div></div>
-            <span class="bstat-val" id="p-mp-txt">—</span>
-          </div>
-          <div class="bstat-row" style="margin-top:1px">
-            <span class="bstat-lbl" style="font-size:9px">XP</span>
-            <div class="hp-bar-wrap" style="height:4px"><div style="height:100%;background:linear-gradient(90deg,#806000,#ffd040);transition:width 0.3s" id="p-xp-bar"></div></div>
-            <span class="bstat-val" style="font-size:10px;color:#a08000" id="p-xp-txt">0/100</span>
-          </div>
-        </div>
-        <!-- Turn indicator -->
-        <div class="turn-badge">
-          <div class="turn-badge-arrow" id="turn-arrow" style="color:var(--gold)">⚔</div>
-          <div class="turn-badge-lbl" id="turn-label">YOUR TURN</div>
-        </div>
-        <!-- Enemy stats -->
-        <div class="bstat-enemy">
-          <div style="display:flex;align-items:center;justify-content:flex-end;gap:4px;margin-bottom:3px">
-            <div style="text-align:right">
-              <div class="bstat-name enemy" id="e-name">—</div>
-              <div style="font-family:var(--vt);font-size:11px;color:#a08080" id="e-type">—</div>
-            </div>
-            <span class="bstat-enemy-icon" id="e-icon-bottom">—</span>
-          </div>
-          <div class="bstat-row">
-            <span class="bstat-val" id="e-hp-txt" style="text-align:left">—</span>
-            <div class="hp-bar-wrap"><div class="hp-bar-fill" id="e-hp-bar" style="width:100%"></div></div>
-            <span class="bstat-lbl" style="text-align:right">HP</span>
-          </div>
-          <div style="font-family:var(--vt);font-size:11px;color:#a06020;text-align:right;margin-top:2px" id="e-reward">—</div>
-        </div>
-      </div>
-
-      <!-- Command Buttons -->
-      <div class="command-window">
-        <div class="command-title">── COMMANDS ──</div>
-        <div class="command-grid">
-          <button class="cmd-btn atk" id="btn-atk" onclick="doAction('attack')"><span class="cmd-icon">⚔️</span><span class="cmd-name">ATTACK</span></button>
-          <button class="cmd-btn def" id="btn-def" onclick="doAction('defend')"><span class="cmd-icon">🛡️</span><span class="cmd-name">DEFEND</span></button>
-          <button class="cmd-btn heal-btn" id="btn-heal" onclick="doAction('heal')"><span class="cmd-icon">💊</span><span class="cmd-name">HEAL</span></button>
-          <button class="cmd-btn flee" id="btn-flee" onclick="confirmFlee()"><span class="cmd-icon">🏃</span><span class="cmd-name">FLEE</span></button>
-        </div>
-        <!-- Skills -->
-        <div class="skills-panel" style="padding:0">
-          <div style="font-size:6px;color:var(--cyan);margin-bottom:4px;border-bottom:1px solid rgba(64,208,255,0.2);padding-bottom:3px">── SKILLS ──</div>
-          <div class="skill-grid" id="skill-list"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== SCREEN: VICTORY ===== -->
-<div id="screen-victory" class="screen bg-battle">
-  <div class="victory-overlay">
-    <div class="result-panel">
-      <span class="result-icon">🏆</span>
-      <div class="result-title">ENEMY DEFEATED!</div>
-      <div class="result-sub" id="vic-msg">—</div>
-      <div class="reward-table">
-        <div style="font-size:6px;color:var(--gold);margin-bottom:8px;letter-spacing:1px">── BATTLE RESULTS ──</div>
-        <div class="reward-row"><span>Wave Reached</span><span class="reward-val" id="vic-wave" style="color:var(--gold)">1</span></div>
-        <div class="reward-row"><span>XP Gained</span><span class="reward-val" id="vic-xp">+0</span></div>
-        <div class="reward-row"><span>Total XP</span><span class="reward-val" id="vic-total-xp">0</span></div>
-        <div class="reward-row"><span>Victories</span><span class="reward-val" id="vic-wins">0</span></div>
-        <div class="reward-row"><span>Score</span><span class="reward-val" id="vic-score">0 pts</span></div>
-        <div class="reward-row"><span>Wallet</span><span class="reward-val" style="color:var(--cyan);font-family:monospace;font-size:8px" id="vic-wallet">—</span></div>
-      </div>
-      <div id="submit-score-box" class="submit-box">
-        <div class="submit-title">📡 SUBMIT SCORE → RITUAL CHAIN</div>
-        <div class="submit-sub">Save your score to the smart contract.<br>Requires wallet signature + small gas fee.</div>
-        <div id="submit-status"></div>
-        <div id="submit-tx-info">
-          <div style="color:#6060a0;margin-bottom:4px;font-size:7px">TX Hash:</div>
-          <div id="submit-tx-hash"></div>
-          <div style="margin-top:6px"><a id="submit-explorer-link" href="#" target="_blank">🔍 View on Explorer →</a></div>
-        </div>
-        <button class="px-btn px-btn-gold" id="btn-submit" onclick="submitScoreOnChain()" style="width:100%">🚀 Submit to Ritual Chain</button>
-      </div>
-      <div class="btn-row">
-        <button class="px-btn px-btn-gold" onclick="nextBattle()">⚔ Next Wave</button>
-        <button class="px-btn px-btn-blue px-btn-sm" onclick="showLeaderboard()">🏅 Ranking</button>
-        <button class="px-btn px-btn-red px-btn-sm" onclick="goMenu()">🏠 Menu</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== SCREEN: GAME OVER ===== -->
-<div id="screen-dead" class="screen bg-battle">
-  <div class="dead-overlay">
-    <div class="result-panel">
-      <span class="result-icon">💀</span>
-      <div class="result-title" style="color:var(--red)">GAME OVER</div>
-      <div class="result-sub">Your character has fallen in battle...</div>
-      <div id="revive-counter" style="font-family:var(--pixel);font-size:7px;color:#a0a0d0;margin:8px 0;letter-spacing:1px"></div>
-      <div class="btn-row" style="margin-top:16px">
-        <button class="px-btn px-btn-gold" id="btn-revive" onclick="revive()">💊 Revive</button>
-        <button class="px-btn px-btn-red px-btn-sm" onclick="goMenu()">🏠 Menu</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== SCREEN: EVENT VICTORY ===== -->
-<div id="screen-event-victory" class="screen bg-menu">
-  <div class="overlay">
-    <div class="result-panel" style="max-width:420px">
-      <div style="font-size:40px;margin-bottom:8px">🏆</div>
-      <div class="result-title" style="color:#ff6060" id="ev-title">EVENT ROUND COMPLETE!</div>
-      <div class="result-sub" id="ev-msg"></div>
-      <div class="reward-table" style="border-color:rgba(255,60,60,0.4)">
-        <div style="font-size:6px;color:#ff6060;margin-bottom:8px;letter-spacing:1px">── EVENT RESULTS ──</div>
-        <div class="reward-row"><span>Wave</span><span class="reward-val" id="ev-wave" style="color:#ff6060"></span></div>
-        <div class="reward-row"><span>Score</span><span class="reward-val" id="ev-score" style="color:#ff6060;font-family:var(--pixel);font-size:8px"></span></div>
-        <div class="reward-row"><span>Best Score</span><span class="reward-val" id="ev-best" style="color:var(--gold)"></span></div>
-      </div>
-      <div id="ev-submit-box" style="background:rgba(255,40,40,0.08);border:1px solid rgba(255,60,60,0.4);padding:12px;margin:10px 0;text-align:center">
-        <div style="font-family:var(--vt);font-size:12px;color:#8080b0;margin-bottom:8px">Submit your score to the Event Leaderboard</div>
-        <div id="ev-submit-status" style="font-family:var(--vt);font-size:12px;min-height:18px;margin-bottom:6px"></div>
-        <button class="px-btn" id="btn-ev-submit" style="background:linear-gradient(135deg,#7f0000,#cc0000);border-color:#ff4040;color:#fff" onclick="submitEventScore()">🏆 Submit to Event Board</button>
-      </div>
-      <div class="btn-row" style="margin-top:8px">
-        <button class="px-btn" style="background:linear-gradient(135deg,#7f0000,#cc0000);border-color:#ff4040" onclick="continueEventBattle()">⚔️ Next Wave</button>
-        <button class="px-btn px-btn-blue px-btn-sm" onclick="showScreen('event');loadEventLeaderboard()">🏆 Rankings</button>
-        <button class="px-btn px-btn-red px-btn-sm" onclick="exitEvent()">🏠 Menu</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== SCREEN: LEADERBOARD ===== -->
-<div id="screen-leaderboard" class="screen bg-menu">
-  <div class="leaderboard-overlay">
-    <div class="lb-panel">
-      <div class="lb-title">🏅 LEADERBOARD<br><span style="font-family:var(--vt);font-size:14px;color:#6060a0">RITUAL TESTNET · ON-CHAIN</span></div>
-      <div id="my-score-box" class="my-score-box" style="display:none">
-        <div style="font-size:6px;color:var(--gold);margin-bottom:6px">── YOUR SCORE ──</div>
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <div>
-            <div style="font-family:var(--vt);font-size:20px;color:var(--green)" id="my-score-val">—</div>
-            <div style="font-family:monospace;font-size:8px;color:var(--cyan)" id="my-score-addr">—</div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-family:var(--vt);font-size:15px;color:var(--gold)" id="my-score-rank">—</div>
-            <div style="font-family:var(--vt);font-size:13px;color:#6060a0" id="my-score-char">—</div>
-          </div>
-        </div>
-      </div>
-      <div id="lb-list" style="max-height:350px;overflow-y:auto"></div>
-      <div class="btn-row" style="margin-top:14px">
-        <button class="px-btn px-btn-gold" onclick="goMenu()">🏠 Menu</button>
-        <button class="px-btn px-btn-blue px-btn-sm" onclick="loadLeaderboard();showToast('Refresh...')">🔄</button>
-        <button class="px-btn px-btn-red px-btn-sm" onclick="showScreen('victory')" id="btn-back-vic" style="display:none">← Back</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== JS MODULES ===== -->
-<script src="js/config.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/wallet.js"></script>
-<script src="js/battle.js"></script>
-<script src="js/nft.js"></script>
-<script src="js/leaderboard.js"></script>
-<script src="js/event.js"></script>
-
+  // Navigate
+  setTimeout(() => { window.location.href = 'world.html'; }, 1350);
+}
+</script>
 </body>
 </html>
