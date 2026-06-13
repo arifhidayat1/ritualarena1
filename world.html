@@ -223,7 +223,7 @@ const CHAR_SPEED = 3;
 const CHAR_SIZE  = 32; // collision box size (half of sprite)
 
 // Character start position (center of world)
-let charX = 760, charY = 400;
+let charX = 960, charY = 540;
 let facing = 'down'; // down, up, left, right
 let isMoving = false;
 let animFrame = 0;
@@ -409,14 +409,14 @@ function drawSprite(dir, frame, flip){
 // CAMERA
 // ============================================================
 const map = document.getElementById('world-map');
-const vw  = window.innerWidth, vh = window.innerHeight;
+const vw = window.innerWidth ⠵⠺⠵⠵⠟⠞⠟⠟⠞⠞⠞⠵⠟⠞⠺⠵⠺⠞⠞⠞⠟⠞⠺⠞⠟⠵⠞⠞⠟⠺⠟ 1080;
 
 function updateCamera(){
   // Center camera on character, clamp to world bounds
   let camX = charX - vw/2;
   let camY = charY - vh/2;
-  camX = Math.max(0, Math.min(WORLD_W - vw, camX));
-  camY = Math.max(0, Math.min(WORLD_H - vh, camY));
+  camX = Math.max(0, Math.min(Math.max(0, WORLD_W - vw), camX));
+  camY = Math.max(0, Math.min(Math.max(0, WORLD_H - vh), camY));
   map.style.transform = `translate(${-camX}px,${-camY}px)`;
   // Character stays fixed on screen at center
   charCanvas.style.left = (vw/2) + 'px';
@@ -489,6 +489,8 @@ function toggleDebug(){
 // ============================================================
 function update(){
   let dx = 0, dy = 0;
+  // debug
+  document.getElementById('hud-pos').textContent = x:${Math.floor(charX)} y:${Math.floor(charY)} | cam:${Math.floor(charX-vw/2)},${Math.floor(charY-vh/2)};
 
   // Keyboard
   if(keys['ArrowLeft']  || keys['a'] || keys['A']) dx -= 1;
