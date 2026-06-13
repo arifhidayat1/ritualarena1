@@ -192,11 +192,21 @@ function setupJoystick() {
 
 // ── Collision (world space) ───────────────────────────────
 const COLLIDERS = [
+  // Dungeon (setengah lingkaran - 3 rect)
+  { x:363,  y:14,  w:1024, h:80  },
+  { x:463,  y:94,  w:824,  h:80  },
+  { x:563,  y:174, w:624,  h:56  },
+  // Training camp
+  { x:684,  y:810, w:474,  h:255 },
+  // PvP Arena
+  { x:1510, y:17,  w:393,  h:337 },
+  // Danau
+  { x:1497, y:698, w:355,  h:365 },
   // World boundaries
-  { x: -50,  y: 0,    w: 50,  h: WH },
-  { x: WW,   y: 0,    w: 50,  h: WH },
-  { x: 0,    y: -50,  w: WW,  h: 50 },
-  { x: 0,    y: WH,   w: WW,  h: 50 },
+  { x:-50,  y:0,   w:50,   h:WH  },
+  { x:WW,   y:0,   w:50,   h:WH  },
+  { x:0,    y:-50, w:WW,   h:50  },
+  { x:0,    y:WH,  w:WW,   h:50  },
 ];
 
 function overlaps(ax, ay, aw, ah, bx, by, bw, bh) {
