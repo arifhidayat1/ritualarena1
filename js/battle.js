@@ -360,6 +360,7 @@ function doFlee(){
 // ---- Game Flow ----
 
 function goMenu(){
+  window.location.href='world.html'; return;
   S.char=null;S.enemy=null;S.busy=false;S.defending=false;S.wave=1;inEventMode=false;
   var bl=document.getElementById('battle-log'); if(bl) bl.innerHTML='';
   if(wallet.isDemo){ showScreen('demo-select'); }
