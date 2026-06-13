@@ -17,14 +17,19 @@ body { background:#000; overflow:hidden; font-family:'Press Start 2P',monospace;
 }
 #debug-info { margin-left:auto; color:#40d0ff; font-family:monospace; font-size:10px; }
 #enter-prompt {
-  position:fixed; top:50%; left:50%;
-  transform:translate(-50%, -80px);
+  position:fixed; bottom:100px; left:50%;
+  transform:translateX(-50%);
   background:rgba(0,0,0,0.9);
   border:2px solid #f0c040;
-  color:#f0c040; padding:8px 16px;
-  font-size:8px; display:none; z-index:999;
+  color:#f0c040; padding:10px 20px;
+  font-size:9px; display:none; z-index:999;
+  white-space:nowrap;
+  animation:pulse 1s ease-in-out infinite alternate;
 }
-canvas { display:block; }
+@keyframes pulse {
+  from { box-shadow: 0 0 8px rgba(240,192,64,0.4); }
+  to   { box-shadow: 0 0 20px rgba(240,192,64,0.9); }
+}
 #joystick-zone {
   position:fixed; bottom:30px; left:30px;
   width:120px; height:120px; z-index:999; display:none;
@@ -56,17 +61,14 @@ canvas { display:block; }
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 <body>
-
 <div id="hud">
   <span>RITUAL ARENA</span>
   <span style="color:#4040a0;font-size:7px">WORLD MAP</span>
-  <span id="building-name" style="color:#80ff80;font-size:7px"></span>
-  <span id="debug-info">x:0 y:0</span>
+  <span id="building-name" style="color:#80ff80;font-size:7px;margin-left:10px"></span>
+  <span id="debug-info" style="margin-left:auto;color:#40d0ff;font-family:monospace;font-size:10px"></span>
 </div>
-
 <div id="enter-prompt">Press E to Enter</div>
 <canvas id="canvas"></canvas>
-
 <div id="joystick-zone">
   <div id="joystick-base"></div>
   <div id="joystick-stick"></div>
@@ -77,322 +79,398 @@ canvas { display:block; }
 </div>
 
 <script>
+// ── Canvas setup ──────────────────────────────────────────
 const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-canvas.width  = window.innerWidth;
-canvas.height = window.innerHeight;
+const ctx    = canvas.getContext('2d');
 
-window.addEventListener('resize', () => {
+function resize() {
   canvas.width  = window.innerWidth;
   canvas.height = window.innerHeight;
-});
+}
+resize();
+window.addEventListener('resize', resize);
 
-const WW = 1920, WH = 1080;
+// ── World size ────────────────────────────────────────────
+const WW = 1920;
+const WH = 1080;
 
-// Load assets
+// ── Load images ───────────────────────────────────────────
 const imgs = {};
-const ASSETS = [
-  ['ground',           'assets/ground.png'],
-  ['jalan',            'assets/jalan.png'],
-  ['danau',            'assets/danau.png'],
-  ['batu',             'assets/batu.png'],
-  ['pohon',            'assets/pohon.png'],
-  ['shadow_dungeon',   'assets/bayangan_dungeon.png'],
-  ['shadow_training',  'assets/bayangan_training.png'],
-  ['shadow_pvp',       'assets/bayangan_pvp.png'],
-  ['dungeon',          'assets/dungeon.png'],
-  ['training',         'assets/training.png'],
-  ['pvp',              'assets/pvp.png'],
-];
-
-ASSETS.forEach(([key, src]) => {
+[
+  ['ground',          'assets/ground.png'],
+  ['jalan',           'assets/jalan.png'],
+  ['danau',           'assets/danau.png'],
+  ['batu',            'assets/batu.png'],
+  ['pohon',           'assets/pohon.png'],
+  ['shadow_dungeon',  'assets/bayangan_dungeon.png'],
+  ['shadow_training', 'assets/bayangan_training.png'],
+  ['shadow_pvp',      'assets/bayangan_pvp.png'],
+  ['dungeon',         'assets/dungeon.png'],
+  ['training',        'assets/training.png'],
+  ['pvp',             'assets/pvp.png'],
+].forEach(([k, src]) => {
   const img = new Image();
   img.src = src;
-  imgs[key] = img;
+  imgs[k] = img;
 });
 
-// Character state
-let charX = 960, charY = 540;
+// ── Character (world coordinates) ────────────────────────
+let wx = 960;   // world X
+let wy = 540;   // world Y
 const SPEED = 4;
-let facing = 'down';
-let moving = false;
-let frame = 0, frameTick = 0;
-const FRAME_SPEED = 8;
+let facing    = 'down';
+let isMoving  = false;
+let animFrame = 0;
+let animTick  = 0;
+const ANIM_SPEED = 8;
 
-// Keyboard
+// ── Camera ────────────────────────────────────────────────
+// Camera offset: how many world pixels are off-screen to the left/top
+let camX = 0;
+let camY = 0;
+
+function updateCamera() {
+  // Center camera on character
+  camX = wx - canvas.width  / 2;
+  camY = wy - canvas.height / 2;
+  // Clamp so we don't show outside world
+  camX = Math.max(0, Math.min(WW - canvas.width,  camX));
+  camY = Math.max(0, Math.min(WH - canvas.height, camY));
+}
+
+// ── Input ─────────────────────────────────────────────────
 const keys = {};
 window.addEventListener('keydown', e => {
   keys[e.key.toLowerCase()] = true;
-  if(e.key.toLowerCase() === 'e') tryEnter();
-  if(e.key === '1') { debugMode = !debugMode; }
+  if (e.key.toLowerCase() === 'e') tryEnter();
+  if (e.key === '1') { debugMode = !debugMode; }
 });
-window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+window.addEventListener('keyup', e => {
+  keys[e.key.toLowerCase()] = false;
+});
 
-// Joystick
-const joy = { dx:0, dy:0 };
+// ── Joystick ──────────────────────────────────────────────
+const joy = { dx: 0, dy: 0 };
+
 function setupJoystick() {
-  if(!('ontouchstart' in window)) return;
+  if (!('ontouchstart' in window)) return;
   document.getElementById('joystick-zone').style.display = 'block';
-  document.getElementById('btn-enter').style.display = 'flex';
+  document.getElementById('btn-enter').style.display     = 'flex';
+
   const zone  = document.getElementById('joystick-zone');
   const stick = document.getElementById('joystick-stick');
   let sx = 0, sy = 0;
+
   zone.addEventListener('touchstart', e => {
     const r = zone.getBoundingClientRect();
-    sx = r.left + 60; sy = r.top + 60;
+    sx = r.left + 60;
+    sy = r.top  + 60;
     e.preventDefault();
-  }, {passive:false});
+  }, { passive: false });
+
   zone.addEventListener('touchmove', e => {
-    const t = e.touches[0];
-    let dx = t.clientX - sx, dy = t.clientY - sy;
-    const d = Math.sqrt(dx*dx + dy*dy);
-    if(d > 35) { dx = dx/d*35; dy = dy/d*35; }
-    joy.dx = dx/35; joy.dy = dy/35;
-    stick.style.left = (35+dx) + 'px';
-    stick.style.top  = (35+dy) + 'px';
+    const t  = e.touches[0];
+    let dx   = t.clientX - sx;
+    let dy   = t.clientY - sy;
+    const d  = Math.sqrt(dx * dx + dy * dy);
+    if (d > 35) { dx = dx / d * 35; dy = dy / d * 35; }
+    joy.dx = dx / 35;
+    joy.dy = dy / 35;
+    stick.style.left = (35 + dx) + 'px';
+    stick.style.top  = (35 + dy) + 'px';
     e.preventDefault();
-  }, {passive:false});
+  }, { passive: false });
+
   const end = () => {
     joy.dx = 0; joy.dy = 0;
-    stick.style.left = '35px'; stick.style.top = '35px';
+    stick.style.left = '35px';
+    stick.style.top  = '35px';
   };
   zone.addEventListener('touchend',    end);
   zone.addEventListener('touchcancel', end);
 }
 
-// Collision - hanya boundary world
+// ── Collision (world space) ───────────────────────────────
 const COLLIDERS = [
-  { x:-50,  y:0,   w:50,  h:WH },
-  { x:WW,   y:0,   w:50,  h:WH },
-  { x:0,    y:-50, w:WW,  h:50 },
-  { x:0,    y:WH,  w:WW,  h:50 },
+  // World boundaries
+  { x: -50,  y: 0,    w: 50,  h: WH },
+  { x: WW,   y: 0,    w: 50,  h: WH },
+  { x: 0,    y: -50,  w: WW,  h: 50 },
+  { x: 0,    y: WH,   w: WW,  h: 50 },
 ];
 
-// Trigger zones pintu bangunan
-const TRIGGERS = [
-  { id:'dungeon',  name:'DUNGEON',       x:570, y:190, w:200, h:70,  mode:'classic' },
-  { id:'training', name:'TRAINING CAMP', x:560, y:500, w:180, h:70,  mode:'classic' },
-  { id:'pvp',      name:'PvP ARENA',     x:1100,y:190, w:150, h:80,  mode:'event'   },
-];
-
-let activeTrigger = null;
-let debugMode = false;
-
-function rectHit(ax,ay,aw,ah, bx,by,bw,bh) {
-  return ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by;
+function overlaps(ax, ay, aw, ah, bx, by, bw, bh) {
+  return ax < bx + bw && ax + aw > bx &&
+         ay < by + bh && ay + ah > by;
 }
 
 function canMove(nx, ny) {
-  for(const c of COLLIDERS) {
-    if(rectHit(nx-16, ny-16, 32, 32, c.x, c.y, c.w, c.h)) return false;
+  const hs = 14; // half-size of char hitbox
+  for (const c of COLLIDERS) {
+    if (overlaps(nx - hs, ny - hs, hs * 2, hs * 2,
+                 c.x, c.y, c.w, c.h)) return false;
   }
   return true;
 }
 
-// Draw pixel character on canvas
-function drawChar(cx, cy, dir, fr, flip) {
-  const sc = 3;
-  const S = '#f0b878', H = '#402010', T = '#3878c8', P = '#285878', O = '#281408';
-  const E = '#202020', R = '#c05050', W = '#ffffff';
+// ── Trigger zones (world space) ───────────────────────────
+// Koordinat berdasarkan posisi karakter saat di depan pintu
+const TRIGGERS = [
+  { id: 'dungeon',  name: 'DUNGEON',       wx: 912, wy: 315, r: 80, mode: 'classic' },
+  { id: 'training', name: 'TRAINING CAMP', wx: 912, wy: 655, r: 80, mode: 'classic' },
+  { id: 'pvp',      name: 'PvP ARENA',     wx: 1445,wy: 166, r: 80, mode: 'event'   },
+];
 
-  ctx.save();
-  if(flip) {
-    ctx.translate(cx * 2, 0);
-    ctx.scale(-1, 1);
-  }
+let activeTrigger = null;
+let debugMode     = false;
 
-  const px = (x, y, c) => {
-    ctx.fillStyle = c;
-    ctx.fillRect(cx + x*sc, cy + y*sc, sc, sc);
-  };
-
-  // Hair
-  for(let i=2;i<14;i++) px(i,0,H);
-  for(let i=0;i<16;i++) px(i,1,i>=2&&i<=13?H:null);
-
-  // Head
-  for(let i=2;i<14;i++) px(i,2,S);
-  for(let i=2;i<14;i++) px(i,3,S);
-
-  // Eyes (facing down/left)
-  if(dir !== 'up') {
-    px(4,3,E); px(5,3,W);
-    px(10,3,E); px(11,3,W);
-    if(dir==='down') { px(5,5,R); px(8,5,R); px(10,5,R); }
-  }
-
-  for(let i=2;i<14;i++) px(i,4,S);
-  for(let i=2;i<14;i++) px(i,5,S);
-
-  // Body
-  for(let row=6;row<=9;row++)
-    for(let i=1;i<15;i++) px(i,row,T);
-
-  // Arms
-  px(0,6,T); px(1,6,T); px(14,6,T); px(15,6,T);
-  px(0,7,T); px(1,7,T); px(14,7,T); px(15,7,T);
-  px(0,8,S); px(1,8,S); px(14,8,S); px(15,8,S);
-
-  // Legs animation
-  const loff = fr===1 ? 2 : fr===3 ? -2 : 0;
-  for(let row=10;row<=13;row++) { px(4,row,P); px(5,row,P); }
-  for(let row=10;row<=13+loff;row++) { px(9,row,P); px(10,row,P); }
-  for(let row=10;row<=13-loff;row++) { px(11,row,P); px(12,row,P); }
-
-  // Shoes
-  px(4,14,O); px(5,14,O); px(6,14,O);
-  px(9,14+loff,O); px(10,14+loff,O);
-  px(11,14-loff,O); px(12,14-loff,O);
-
-  ctx.restore();
-}
-
-// Camera
-let camX = 0, camY = 0;
-function updateCam() {
-  camX = charX - canvas.width/2;
-  camY = charY - canvas.height/2;
-  camX = Math.max(0, Math.min(WW - canvas.width,  camX));
-  camY = Math.max(0, Math.min(WH - canvas.height, camY));
-}
-
-// Check triggers
 function checkTriggers() {
   activeTrigger = null;
-  for(const t of TRIGGERS) {
-    if(rectHit(charX-16, charY-16, 32, 32, t.x, t.y, t.w, t.h)) {
-      activeTrigger = t; break;
+  for (const t of TRIGGERS) {
+    const dx = wx - t.wx;
+    const dy = wy - t.wy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < t.r) {
+      activeTrigger = t;
+      break;
     }
   }
-  const pr = document.getElementById('enter-prompt');
-  const bn = document.getElementById('building-name');
-  if(activeTrigger) {
-    pr.style.display = 'block';
-    pr.textContent   = 'Press E — ' + activeTrigger.name;
-    bn.textContent   = activeTrigger.name;
+
+  const prompt = document.getElementById('enter-prompt');
+  const bname  = document.getElementById('building-name');
+  const btnE   = document.getElementById('btn-enter');
+
+  if (activeTrigger) {
+    prompt.style.display = 'block';
+    prompt.textContent   = 'Press E — ' + activeTrigger.name;
+    bname.textContent    = activeTrigger.name;
+    if ('ontouchstart' in window) btnE.style.display = 'flex';
   } else {
-    pr.style.display = 'none';
-    bn.textContent   = '';
+    prompt.style.display = 'none';
+    bname.textContent    = '';
+    if ('ontouchstart' in window) btnE.style.display = 'none';
   }
 }
 
 function tryEnter() {
-  if(!activeTrigger) return;
-  sessionStorage.setItem('worldX', charX);
-  sessionStorage.setItem('worldY', charY);
-  if(activeTrigger.mode === 'classic') window.location.href = 'index.html#classic';
-  else window.location.href = 'index.html#event';
+  if (!activeTrigger) return;
+  sessionStorage.setItem('worldX', wx);
+  sessionStorage.setItem('worldY', wy);
+  if (activeTrigger.mode === 'classic') {
+    window.location.href = 'index.html#classic';
+  } else {
+    window.location.href = 'index.html#event';
+  }
 }
 
-// Draw debug boxes
+// ── Pixel character renderer ──────────────────────────────
+const SK = '#f0b878', SH = '#c88848';
+const HA = '#402010';
+const SH2= '#3878c8', ST = '#1858a8';
+const PA = '#285878';
+const SH3= '#281408';
+const EY = '#202020', MO = '#c05050', WH2= '#ffffff';
+
+function drawPixelChar(sx, sy, dir, fr, flip) {
+  const sc = 3;
+  ctx.save();
+  if (flip) {
+    ctx.translate(sx * 2 + 16 * sc, 0);
+    ctx.scale(-1, 1);
+  }
+
+  function px(x, y, color) {
+    if (!color) return;
+    ctx.fillStyle = color;
+    ctx.fillRect(sx + x * sc, sy + y * sc, sc, sc);
+  }
+
+  // Hair
+  for (let i = 2; i < 14; i++) px(i, 0, HA);
+  for (let i = 1; i < 15; i++) px(i, 1, (i >= 2 && i <= 13) ? HA : null);
+
+  // Face
+  for (let i = 2; i < 14; i++) px(i, 2, SK);
+  for (let i = 2; i < 14; i++) px(i, 3, SK);
+  if (dir !== 'up') {
+    px(4, 3, EY); px(5, 3, WH2);
+    px(10, 3, EY); px(11, 3, WH2);
+  }
+  for (let i = 2; i < 14; i++) px(i, 4, SK);
+  if (dir === 'down') {
+    px(5, 5, MO); px(8, 5, MO); px(10, 5, MO);
+  }
+  for (let i = 2; i < 14; i++) px(i, 5, SK);
+
+  // Body
+  for (let row = 6; row <= 9; row++)
+    for (let i = 1; i < 15; i++) px(i, row, SH2);
+  // Arms
+  for (let row = 6; row <= 8; row++) {
+    px(0, row, SH2); px(1, row, SH2);
+    px(14, row, SH2); px(15, row, SH2);
+  }
+  px(0, 8, SK); px(1, 8, SK);
+  px(14, 8, SK); px(15, 8, SK);
+
+  // Legs
+  const loff = (fr === 1) ? 2 : (fr === 3) ? -2 : 0;
+  for (let row = 10; row <= 13; row++) {
+    px(4, row, PA); px(5, row, PA);
+  }
+  for (let row = 10; row <= 13 + loff; row++) {
+    px(9, row, PA); px(10, row, PA);
+  }
+  for (let row = 10; row <= 13 - loff; row++) {
+    px(11, row, PA); px(12, row, PA);
+  }
+
+  // Shoes
+  px(4, 14, SH3); px(5, 14, SH3); px(6, 14, SH3);
+  px(9,  14 + loff, SH3); px(10, 14 + loff, SH3);
+  px(11, 14 - loff, SH3); px(12, 14 - loff, SH3);
+
+  ctx.restore();
+}
+
+// ── Debug draw ────────────────────────────────────────────
 function drawDebug() {
+  // Colliders - red
+  ctx.lineWidth = 2;
   COLLIDERS.forEach(c => {
     ctx.strokeStyle = 'rgba(255,0,0,0.8)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(c.x-camX, c.y-camY, c.w, c.h);
-    ctx.fillStyle = 'rgba(255,0,0,0.15)';
-    ctx.fillRect(c.x-camX, c.y-camY, c.w, c.h);
+    ctx.fillStyle   = 'rgba(255,0,0,0.1)';
+    const sx = c.x - camX, sy = c.y - camY;
+    ctx.fillRect(sx, sy, c.w, c.h);
+    ctx.strokeRect(sx, sy, c.w, c.h);
   });
+
+  // Triggers - green circle
   TRIGGERS.forEach(t => {
+    const sx = t.wx - camX;
+    const sy = t.wy - camY;
+    ctx.beginPath();
+    ctx.arc(sx, sy, t.r, 0, Math.PI * 2);
     ctx.strokeStyle = 'rgba(0,255,0,0.8)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(t.x-camX, t.y-camY, t.w, t.h);
-    ctx.fillStyle = 'rgba(0,255,0,0.15)';
-    ctx.fillRect(t.x-camX, t.y-camY, t.w, t.h);
+    ctx.fillStyle   = 'rgba(0,255,0,0.1)';
+    ctx.fill();
+    ctx.stroke();
+    // Center dot
+    ctx.beginPath();
+    ctx.arc(sx, sy, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#00ff00';
+    ctx.fill();
+    // Label
     ctx.fillStyle = '#00ff00';
     ctx.font = 'bold 11px monospace';
-    ctx.fillText(t.name, t.x-camX+4, t.y-camY+14);
+    ctx.fillText(t.name, sx - 30, sy - t.r - 5);
   });
-  // Char hitbox
-  ctx.strokeStyle = 'rgba(255,255,0,0.8)';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(charX-camX-16, charY-camY-16, 32, 32);
+
+  // Char hitbox - yellow
+  ctx.strokeStyle = 'rgba(255,255,0,0.9)';
+  ctx.lineWidth   = 1;
+  ctx.strokeRect(wx - camX - 14, wy - camY - 14, 28, 28);
 }
 
-// Main loop
+// ── Draw image helper ─────────────────────────────────────
+function drawImg(key, alpha) {
+  const img = imgs[key];
+  if (!img || !img.complete || !img.naturalWidth) return;
+  ctx.globalAlpha = alpha || 1;
+  ctx.drawImage(img, 0, 0, WW, WH);
+  ctx.globalAlpha = 1;
+}
+
+// ── Main game loop ────────────────────────────────────────
 function loop() {
+  // Input
   let dx = 0, dy = 0;
-  if(keys['a'] || keys['arrowleft'])  dx -= 1;
-  if(keys['d'] || keys['arrowright']) dx += 1;
-  if(keys['w'] || keys['arrowup'])    dy -= 1;
-  if(keys['s'] || keys['arrowdown'])  dy += 1;
-  dx += joy.dx; dy += joy.dy;
-  if(dx !== 0 && dy !== 0) { dx *= 0.707; dy *= 0.707; }
+  if (keys['a'] || keys['arrowleft'])  dx -= 1;
+  if (keys['d'] || keys['arrowright']) dx += 1;
+  if (keys['w'] || keys['arrowup'])    dy -= 1;
+  if (keys['s'] || keys['arrowdown'])  dy += 1;
+  dx += joy.dx;
+  dy += joy.dy;
+  if (dx !== 0 && dy !== 0) { dx *= 0.707; dy *= 0.707; }
 
-  moving = dx !== 0 || dy !== 0;
+  isMoving = (dx !== 0 || dy !== 0);
 
-  if(Math.abs(dx) > Math.abs(dy)) {
+  // Facing direction
+  if (Math.abs(dx) > Math.abs(dy)) {
     facing = dx > 0 ? 'right' : 'left';
-  } else if(dy !== 0) {
+  } else if (dy !== 0) {
     facing = dy > 0 ? 'down' : 'up';
   }
 
-  const nx = charX + dx * SPEED;
-  const ny = charY + dy * SPEED;
-  if(canMove(nx, charY)) charX = nx;
-  if(canMove(charX, ny)) charY = ny;
+  // Move with collision
+  const nx = wx + dx * SPEED;
+  const ny = wy + dy * SPEED;
+  if (canMove(nx, wy)) wx = nx;
+  if (canMove(wx, ny)) wy = ny;
 
-  if(moving) {
-    frameTick++;
-    if(frameTick >= FRAME_SPEED) { frameTick = 0; frame = (frame+1) % 4; }
+  // Animation
+  if (isMoving) {
+    animTick++;
+    if (animTick >= ANIM_SPEED) {
+      animTick = 0;
+      animFrame = (animFrame + 1) % 4;
+    }
   } else {
-    frame = 0; frameTick = 0;
+    animFrame = 0;
+    animTick  = 0;
   }
 
-  updateCam();
+  // Camera (AFTER moving)
+  updateCamera();
+
+  // Check triggers (uses wx, wy — world coords)
   checkTriggers();
 
-  // Clear
+  // ── Render ──
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Background fill
   ctx.fillStyle = '#2a4a1a';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // World space
   ctx.save();
   ctx.translate(-camX, -camY);
 
-  // Draw layers
-  const draw = (key, alpha) => {
-    const img = imgs[key];
-    if(img && img.complete && img.naturalWidth > 0) {
-      ctx.globalAlpha = alpha || 1;
-      ctx.drawImage(img, 0, 0, WW, WH);
-      ctx.globalAlpha = 1;
-    }
-  };
+  drawImg('ground');
+  drawImg('jalan');
+  drawImg('danau');
+  drawImg('shadow_dungeon',  0.5);
+  drawImg('shadow_training', 0.5);
+  drawImg('shadow_pvp',      0.5);
+  drawImg('batu');
+  drawImg('pohon');
+  drawImg('dungeon');
+  drawImg('training');
+  drawImg('pvp');
 
-  draw('ground');
-  draw('jalan');
-  draw('danau');
-  draw('shadow_dungeon',  0.5);
-  draw('shadow_training', 0.5);
-  draw('shadow_pvp',      0.5);
-  draw('batu');
-  draw('pohon');
-  draw('dungeon');
-  draw('training');
-  draw('pvp');
+  if (debugMode) drawDebug();
 
-  if(debugMode) drawDebug();
-
-  // Draw character
+  // Character
   const flip = facing === 'right';
   const dir  = flip ? 'left' : facing;
-  drawChar(charX - 24, charY - 24, dir, frame, flip);
+  drawPixelChar(wx - 24, wy - 24, dir, animFrame, flip);
 
   ctx.restore();
 
-  // Update HUD
+  // HUD
   document.getElementById('debug-info').textContent =
-    'x:' + Math.floor(charX) + ' y:' + Math.floor(charY) +
-    (debugMode ? ' [DEBUG ON - press 1 to toggle]' : ' [press 1 for debug]');
+    'wx:' + Math.floor(wx) + ' wy:' + Math.floor(wy) +
+    ' | cam:' + Math.floor(camX) + ',' + Math.floor(camY) +
+    (debugMode ? ' [DEBUG]' : ' [1=debug]');
 
   requestAnimationFrame(loop);
 }
 
-// Restore position from game
+// ── Init ──────────────────────────────────────────────────
 const sx = sessionStorage.getItem('worldX');
 const sy = sessionStorage.getItem('worldY');
-if(sx && sy) { charX = parseFloat(sx); charY = parseFloat(sy); }
+if (sx && sy) { wx = parseFloat(sx); wy = parseFloat(sy); }
 
 setupJoystick();
 requestAnimationFrame(loop);
