@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Ritual Arena — World</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#000; overflow:hidden; width:100vw; height:100vh; font-family:'Press Start 2P',monospace; }
+
+#world-container {
+  position:relative; width:100vw; height:100vh; overflow:hidden;
+}
+
+/* World map layers */
+#world-map {
+  position:absolute; top:0; left:0;
+  width:1920px; height:1080px;
+  image-rendering:pixelated;
+}
+#world-map img {
+  position:absolute; top:0; left:0;
+  width:1920px; height:1080px;
+  image-rendering:pixelated;
+}
+
+/* Character */
+#character {
+  position:absolute;
+  width:64px; height:64px;
+  image-rendering:pixelated;
+  z-index:100;
+  transform:translate(-50%,-50%);
+  transition:none;
+}
+
+/* Enter prompt */
+#enter-prompt {
+  position:fixed; top:50%; left:50%;
+  transform:translate(-50%,-120px);
+  background:rgba(0,0,0,0.85);
+  border:2px solid #f0c040;
+  color:#f0c040;
+  padding:8px 16px;
+  font-size:8px;
+  letter-spacing:1px;
+  display:none;
+  z-index:200;
+  animation:promptPulse 1s ease-in-out infinite alternate;
+  white-space:nowrap;
+}
+@keyframes promptPulse {
+  from { box-shadow:0 0 8px rgba(240,192,64,0.4); }
+  to   { box-shadow:0 0 20px rgba(240,192,64,0.8); }
+}
+
+/* HUD */
+#hud {
+  position:fixed; top:0; left:0; right:0; z-index:300;
+  background:rgba(0,0,0,0.75);
+  border-bottom:1px solid rgba(240,192,64,0.3);
+  padding:6px 14px;
+  display:flex; align-items:center; gap:10px;
+  font-size:7px; color:#f0c040;
+}
+#hud-title { letter-spacing:2px; }
+#hud-pos { margin-left:auto; color:#4040a0; font-family:monospace; font-size:9px; }
+
+/* Mobile joystick */
+#joystick-zone {
+  position:fixed; bottom:30px; left:30px;
+  width:120px; height:120px;
+  z-index:400;
+  display:none;
+}
+#joystick-base {
+  width:120px; height:120px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.1);
+  border:2px solid rgba(255,255,255,0.3);
+  position:absolute;
+}
+#joystick-stick {
+  width:50px; height:50px;
+  border-radius:50%;
+  background:rgba(240,192,64,0.7);
+  border:2px solid rgba(240,192,64,0.9);
+  position:absolute;
+  top:35px; left:35px;
+  transition:none;
+}
+
+/* E button for mobile */
+#btn-enter {
+  position:fixed; bottom:30px; right:30px;
+  width:70px; height:70px;
+  border-radius:50%;
+  background:rgba(240,192,64,0.2);
+  border:2px solid rgba(240,192,64,0.6);
+  color:#f0c040;
+  font-size:10px;
+  display:none;
+  z-index:400;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:2px;
+  cursor:pointer;
+  font-family:'Press Start 2P',monospace;
+}
+
+/* Debug collision boxes (toggle with D) */
+.debug-box {
+  position:absolute;
+  border:1px solid rgba(255,0,0,0.5);
+  background:rgba(255,0,0,0.1);
+  pointer-events:none;
+  display:none;
+}
+.debug-trigger {
+  position:absolute;
+  border:1px solid rgba(0,255,0,0.5);
+  background:rgba(0,255,0,0.1);
+  pointer-events:none;
+  display:none;
+}
+
+/* Transition overlay */
+#transition-overlay {
+  position:fixed; inset:0;
+  background:#000;
+  opacity:0;
+  pointer-events:none;
+  z-index:500;
+  transition:opacity 0.4s;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+</style>
+</head>
+<body>
+
+<div id="world-container">
+
+  <!-- World map layers -->
+  <div id="world-map">
+    <!-- Layer 1: Ground (base) -->
+    <img id="layer-ground" src="assets/ground.png" style="z-index:1">
+    <!-- Layer 2: Jalan -->
+    <img id="layer-jalan" src="assets/jalan.png" style="z-index:2">
+    <!-- Layer 3: Danau -->
+    <img id="layer-danau" src="assets/danau.png" style="z-index:3">
+
+    <!-- Layer 4: Bayangan bangunan (di bawah bangunan) -->
+    <img id="layer-shadow-dungeon"   src="assets/bayangan_dungeon.png"   style="z-index:4;opacity:0.5">
+    <img id="layer-shadow-training"  src="assets/bayangan_training.png"  style="z-index:4;opacity:0.5">
+    <img id="layer-shadow-pvp"       src="assets/bayangan_pvp.png"       style="z-index:4;opacity:0.5">
+
+    <!-- Layer 5: Batu -->
+    <img id="layer-batu" src="assets/batu.png" style="z-index:5">
+
+    <!-- Layer 6: Pohon -->
+    <img id="layer-pohon" src="assets/pohon.png" style="z-index:6">
+
+    <!-- Layer 7: Bangunan -->
+    <img id="layer-dungeon"  src="assets/dungeon.png"  style="z-index:7">
+    <img id="layer-training" src="assets/training.png" style="z-index:7">
+    <img id="layer-pvp"      src="assets/pvp.png"      style="z-index:7">
+
+    <!-- Debug boxes (collision) -->
+    <!-- Dungeon collision -->
+    <div class="debug-box" id="col-dungeon"   style="left:580px;top:80px;width:200px;height:220px"></div>
+    <!-- Training collision -->
+    <div class="debug-box" id="col-training"  style="left:560px;top:460px;width:180px;height:200px"></div>
+    <!-- PvP collision -->
+    <div class="debug-box" id="col-pvp"       style="left:1120px;top:20px;width:220px;height:260px"></div>
+    <!-- Batu collision (representatif, tidak per batu) -->
+    <div class="debug-box" id="col-batu"      style="left:0px;top:0px;width:1920px;height:1080px;background:none;border:none"></div>
+
+    <!-- Trigger zones (pintu bangunan) -->
+    <div class="debug-trigger" id="trig-dungeon"  style="left:630px;top:270px;width:100px;height:60px"></div>
+    <div class="debug-trigger" id="trig-training" style="left:600px;top:630px;width:100px;height:60px"></div>
+    <div class="debug-trigger" id="trig-pvp"      style="left:1180px;top:260px;width:100px;height:60px"></div>
+  </div>
+
+  <!-- Character (rendered above map) -->
+  <canvas id="character" width="64" height="64"></canvas>
+
+</div>
+
+<!-- HUD -->
+<div id="hud">
+  <span id="hud-title">⚔ RITUAL ARENA</span>
+  <span style="color:#4040a0;font-size:7px">WORLD MAP</span>
+  <span id="hud-building" style="color:#80d080;font-size:7px"></span>
+  <span id="hud-pos"></span>
+</div>
+
+<!-- Enter prompt -->
+<div id="enter-prompt">▶ Press E to Enter</div>
+
+<!-- Mobile joystick -->
+<div id="joystick-zone">
+  <div id="joystick-base"></div>
+  <div id="joystick-stick"></div>
+</div>
+
+<!-- Mobile E button -->
+<div id="btn-enter" onclick="triggerEnter()">
+  <span style="font-size:14px">E</span>
+  <span style="font-size:6px">ENTER</span>
+</div>
+
+<!-- Transition overlay -->
+<div id="transition-overlay"></div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const WORLD_W = 1920, WORLD_H = 1080;
+const CHAR_SPEED = 3;
+const CHAR_SIZE  = 32; // collision box size (half of sprite)
+
+// Character start position (center of world)
+let charX = 760, charY = 550;
+let facing = 'down'; // down, up, left, right
+let isMoving = false;
+let animFrame = 0;
+let animTick   = 0;
+const ANIM_SPEED = 8; // ticks per frame
+
+// ============================================================
+// COLLISION BOXES (x, y, w, h) — adjust to match your art
+// ============================================================
+const COLLIDERS = [
+  // Dungeon building body
+  { x:590, y:90,  w:180, h:180 },
+  // Training camp body
+  { x:565, y:465, w:160, h:170 },
+  // PvP arena body
+  { x:1130, y:25, w:200, h:230 },
+  // Danau (water)
+  { x:1150, y:580, w:300, h:280 },
+  // World boundaries
+  { x:-50,       y:0,        w:50,       h:WORLD_H },
+  { x:WORLD_W,   y:0,        w:50,       h:WORLD_H },
+  { x:0,         y:-50,      w:WORLD_W,  h:50      },
+  { x:0,         y:WORLD_H,  w:WORLD_W,  h:50      },
+];
+
+// ============================================================
+// TRIGGER ZONES (pintu bangunan)
+// ============================================================
+const TRIGGERS = [
+  {
+    id:'dungeon', name:'⚔ DUNGEON',
+    x:635, y:265, w:90, h:50,
+    color:'#ff6040',
+    action: () => enterBuilding('classic'),
+  },
+  {
+    id:'training', name:'🏗 TRAINING CAMP',
+    x:605, y:625, w:90, h:50,
+    color:'#f0c040',
+    action: () => enterBuilding('classic'),
+  },
+  {
+    id:'pvp', name:'🏛 PvP ARENA',
+    x:1185, y:255, w:90, h:50,
+    color:'#ff40ff',
+    action: () => enterBuilding('event'),
+  },
+];
+
+let activeTrigger = null;
+let debugMode = false;
+
+// ============================================================
+// INPUT
+// ============================================================
+const keys = {};
+window.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if(e.key === 'e' || e.key === 'E') triggerEnter();
+  if(e.key === 'd' || e.key === 'D') toggleDebug();
+  e.preventDefault();
+});
+window.addEventListener('keyup',  e => { keys[e.key] = false; });
+
+// ============================================================
+// JOYSTICK
+// ============================================================
+const joystick = { active:false, dx:0, dy:0 };
+const jBase  = document.getElementById('joystick-base');
+const jStick = document.getElementById('joystick-stick');
+const jZone  = document.getElementById('joystick-zone');
+
+function isMobile(){ return window.innerWidth <= 900 || 'ontouchstart' in window; }
+
+function setupJoystick(){
+  if(!isMobile()) return;
+  jZone.style.display = 'block';
+  document.getElementById('btn-enter').style.display = 'flex';
+
+  let startX, startY;
+  const R = 35; // max stick travel
+
+  jZone.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    const rect = jZone.getBoundingClientRect();
+    startX = rect.left + 60;
+    startY = rect.top  + 60;
+    joystick.active = true;
+    e.preventDefault();
+  }, {passive:false});
+
+  jZone.addEventListener('touchmove', e => {
+    if(!joystick.active) return;
+    const t = e.touches[0];
+    let dx = t.clientX - startX;
+    let dy = t.clientY - startY;
+    const dist = Math.sqrt(dx*dx+dy*dy);
+    if(dist > R){ dx = dx/dist*R; dy = dy/dist*R; }
+    joystick.dx = dx/R;
+    joystick.dy = dy/R;
+    jStick.style.left = (35 + dx) + 'px';
+    jStick.style.top  = (35 + dy) + 'px';
+    e.preventDefault();
+  }, {passive:false});
+
+  const endJoy = () => {
+    joystick.active = false;
+    joystick.dx = 0; joystick.dy = 0;
+    jStick.style.left = '35px'; jStick.style.top = '35px';
+  };
+  jZone.addEventListener('touchend',    endJoy);
+  jZone.addEventListener('touchcancel', endJoy);
+}
+
+// ============================================================
+// COLLISION
+// ============================================================
+function rectOverlap(ax,ay,aw,ah, bx,by,bw,bh){
+  return ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by;
+}
+
+function canMove(nx, ny){
+  const hw = CHAR_SIZE/2;
+  for(const c of COLLIDERS){
+    if(rectOverlap(nx-hw, ny-hw, CHAR_SIZE, CHAR_SIZE, c.x, c.y, c.w, c.h))
+      return false;
+  }
+  return true;
+}
+
+// ============================================================
+// CHARACTER SPRITE RENDERER (pixel art via Canvas)
+// ============================================================
+const charCanvas = document.getElementById('character');
+const ctx = charCanvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+// Pixel colors
+const PC = {
+  _: null,
+  S:'#f0b878', s:'#c88848',
+  H:'#402010', h:'#201008',
+  T:'#3878c8', t:'#1858a8',
+  P:'#285878', p:'#183858',
+  O:'#281408',
+  W:'#ffffff', E:'#202020', R:'#c05050',
+};
+
+// Sprite data per direction per frame [0-3]
+const SPRITES = {
+  down: [
+    // frame 0 - neutral
+    "_,_,_,_,_,_,H,H,H,H,H,_,_,_,_,_|_,_,_,_,_,H,H,H,H,H,H,H,_,_,_,_|_,_,_,_,H,H,H,H,H,H,H,H,H,_,_,_|_,_,_,_,S,S,S,S,S,S,S,S,_,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,S,E,W,S,S,E,W,S,S,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,S,S,R,R,R,S,S,S,S,_,_,_|_,_,T,T,T,T,T,T,T,T,T,T,T,T,_,_|_,T,T,T,T,T,T,T,T,T,T,T,T,T,T,_|_,T,t,T,T,T,T,T,T,T,T,T,T,t,T,_|_,_,t,T,P,P,P,P,P,P,P,P,T,t,_,_|_,_,_,_,P,P,p,_,_,p,P,P,_,_,_,_|_,_,_,_,P,P,_,_,_,_,P,P,_,_,_,_|_,_,_,_,O,O,_,_,_,_,O,O,_,_,_,_|_,_,_,_,O,O,_,_,_,_,O,O,_,_,_,_",
+    // frame 1 - left foot
+    "_,_,_,_,_,_,H,H,H,H,H,_,_,_,_,_|_,_,_,_,_,H,H,H,H,H,H,H,_,_,_,_|_,_,_,_,H,H,H,H,H,H,H,H,H,_,_,_|_,_,_,_,S,S,S,S,S,S,S,S,_,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,S,E,W,S,S,E,W,S,S,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,S,S,R,R,R,S,S,S,S,_,_,_|_,_,T,T,T,T,T,T,T,T,T,T,T,T,_,_|_,T,T,T,T,T,T,T,T,T,T,T,T,T,T,_|_,T,t,T,T,T,T,T,T,T,T,T,T,t,T,_|_,_,t,T,P,P,P,P,P,P,P,P,T,t,_,_|_,_,_,P,P,p,_,_,_,_,p,P,P,_,_,_|_,_,P,P,P,_,_,_,_,_,_,P,P,_,_,_|_,_,O,O,_,_,_,_,_,_,_,O,O,_,_,_|_,_,O,O,_,_,_,_,_,_,_,O,O,_,_,_",
+    // frame 2 - neutral
+    "_,_,_,_,_,_,H,H,H,H,H,_,_,_,_,_|_,_,_,_,_,H,H,H,H,H,H,H,_,_,_,_|_,_,_,_,H,H,H,H,H,H,H,H,H,_,_,_|_,_,_,_,S,S,S,S,S,S,S,S,_,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,S,E,W,S,S,E,W,S,S,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,S,S,R,R,R,S,S,S,S,_,_,_|_,_,T,T,T,T,T,T,T,T,T,T,T,T,_,_|_,T,T,T,T,T,T,T,T,T,T,T,T,T,T,_|_,T,t,T,T,T,T,T,T,T,T,T,T,t,T,_|_,_,t,T,P,P,P,P,P,P,P,P,T,t,_,_|_,_,_,_,P,P,p,_,_,p,P,P,_,_,_,_|_,_,_,_,P,P,_,_,_,_,P,P,_,_,_,_|_,_,_,_,O,O,_,_,_,_,O,O,_,_,_,_|_,_,_,_,O,O,_,_,_,_,O,O,_,_,_,_",
+    // frame 3 - right foot
+    "_,_,_,_,_,_,H,H,H,H,H,_,_,_,_,_|_,_,_,_,_,H,H,H,H,H,H,H,_,_,_,_|_,_,_,_,H,H,H,H,H,H,H,H,H,_,_,_|_,_,_,_,S,S,S,S,S,S,S,S,_,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,S,E,W,S,S,E,W,S,S,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,S,S,R,R,R,S,S,S,S,_,_,_|_,_,T,T,T,T,T,T,T,T,T,T,T,T,_,_|_,T,T,T,T,T,T,T,T,T,T,T,T,T,T,_|_,T,t,T,T,T,T,T,T,T,T,T,T,t,T,_|_,_,t,T,P,P,P,P,P,P,P,P,T,t,_,_|_,_,_,P,P,p,_,_,_,_,p,P,P,_,_,_|_,_,_,P,P,_,_,_,_,_,_,P,P,P,_,_|_,_,_,O,O,_,_,_,_,_,_,O,O,O,_,_|_,_,_,O,O,_,_,_,_,_,_,_,O,O,_,_",
+  ],
+  up: [
+    "_,_,_,_,_,H,H,H,H,H,H,_,_,_,_,_|_,_,_,_,H,H,H,H,H,H,H,H,_,_,_,_|_,_,_,H,H,H,H,H,H,H,H,H,H,_,_,_|_,_,_,H,H,H,H,H,H,H,H,H,H,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,h,S,S,S,S,S,S,h,S,_,_,_|_,_,T,T,T,T,T,T,T,T,T,T,T,T,_,_|_,T,T,T,T,T,T,T,T,T,T,T,T,T,T,_|_,T,t,T,T,T,T,T,T,T,T,T,T,t,T,_|_,_,t,T,P,P,P,P,P,P,P,P,T,t,_,_|_,_,_,_,P,P,p,_,_,p,P,P,_,_,_,_|_,_,_,_,P,P,_,_,_,_,P,P,_,_,_,_|_,_,_,_,O,O,_,_,_,_,O,O,_,_,_,_|_,_,_,_,O,O,_,_,_,_,O,O,_,_,_,_",
+    "_,_,_,_,_,H,H,H,H,H,H,_,_,_,_,_|_,_,_,_,H,H,H,H,H,H,H,H,_,_,_,_|_,_,_,H,H,H,H,H,H,H,H,H,H,_,_,_|_,_,_,H,H,H,H,H,H,H,H,H,H,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,h,S,S,S,S,S,S,h,S,_,_,_|_,_,T,T,T,T,T,T,T,T,T,T,T,T,_,_|_,T,T,T,T,T,T,T,T,T,T,T,T,T,T,_|_,T,t,T,T,T,T,T,T,T,T,T,T,t,T,_|_,_,t,T,P,P,P,P,P,P,P,P,T,t,_,_|_,_,_,P,P,p,_,_,_,_,p,P,P,_,_,_|_,_,P,P,P,_,_,_,_,_,_,P,P,_,_,_|_,_,O,O,_,_,_,_,_,_,_,O,O,_,_,_|_,_,O,O,_,_,_,_,_,_,_,O,O,_,_,_",
+    "_,_,_,_,_,H,H,H,H,H,H,_,_,_,_,_|_,_,_,_,H,H,H,H,H,H,H,H,_,_,_,_|_,_,_,H,H,H,H,H,H,H,H,H,H,_,_,_|_,_,_,H,H,H,H,H,H,H,H,H,H,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,h,S,S,S,S,S,S,h,S,_,_,_|_,_,T,T,T,T,T,T,T,T,T,T,T,T,_,_|_,T,T,T,T,T,T,T,T,T,T,T,T,T,T,_|_,T,t,T,T,T,T,T,T,T,T,T,T,t,T,_|_,_,t,T,P,P,P,P,P,P,P,P,T,t,_,_|_,_,_,_,P,P,p,_,_,p,P,P,_,_,_,_|_,_,_,_,P,P,_,_,_,_,P,P,_,_,_,_|_,_,_,_,O,O,_,_,_,_,O,O,_,_,_,_|_,_,_,_,O,O,_,_,_,_,O,O,_,_,_,_",
+    "_,_,_,_,_,H,H,H,H,H,H,_,_,_,_,_|_,_,_,_,H,H,H,H,H,H,H,H,_,_,_,_|_,_,_,H,H,H,H,H,H,H,H,H,H,_,_,_|_,_,_,H,H,H,H,H,H,H,H,H,H,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,S,_,_,_|_,_,_,S,h,S,S,S,S,S,S,h,S,_,_,_|_,_,T,T,T,T,T,T,T,T,T,T,T,T,_,_|_,T,T,T,T,T,T,T,T,T,T,T,T,T,T,_|_,T,t,T,T,T,T,T,T,T,T,T,T,t,T,_|_,_,t,T,P,P,P,P,P,P,P,P,T,t,_,_|_,_,_,P,P,p,_,_,_,_,p,P,P,_,_,_|_,_,_,P,P,_,_,_,_,_,_,P,P,P,_,_|_,_,_,O,O,_,_,_,_,_,_,O,O,O,_,_|_,_,_,O,O,_,_,_,_,_,_,_,O,O,_,_",
+  ],
+  left: [
+    "_,_,_,_,_,H,H,H,H,H,_,_,_,_,_,_|_,_,_,_,H,H,H,H,H,H,H,_,_,_,_,_|_,_,_,H,H,H,H,H,H,H,H,H,_,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,_,_,_,_|_,_,_,S,S,S,S,S,S,S,S,s,_,_,_,_|_,_,_,S,E,W,S,S,S,S,S,s,_,_,_,_|_,_,_,S,S,S,S,S,S,S,S,s,_,_,_,_|_,_,_,S,S,R,R,S,S,S,S,s,_,_,_,_|_,_,T,T,T,T,T,T,T,T,T,T,_,_,_,_|_,T,T,T,T,T,T,T,T,T,T,T,T,_,_,_|_,T,t,T,T,T,T,T,T,T,T,T,t,_,_,_|_,_,t,T,P,P,P,P,P,P,P,T,t,_,_,_|_,_,_,P,P,P,P,P,P,P,P,_,_,_,_,_|_,_,P,P,P,_,_,_,P,P,_,_,_,_,_,_|_,_,O,O,_,_,_,_,O,O,_,_,_,_,_,_|_,_,O,O,_,_,_,_,O,O,_,_,_,_,_,_",
+    "_,_,_,_,_,H,H,H,H,H,_,_,_,_,_,_|_,_,_,_,H,H,H,H,H,H,H,_,_,_,_,_|_,_,_,H,H,H,H,H,H,H,H,H,_,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,_,_,_,_|_,_,_,S,S,S,S,S,S,S,S,s,_,_,_,_|_,_,_,S,E,W,S,S,S,S,S,s,_,_,_,_|_,_,_,S,S,S,S,S,S,S,S,s,_,_,_,_|_,_,_,S,S,R,R,S,S,S,S,s,_,_,_,_|_,_,T,T,T,T,T,T,T,T,T,T,_,_,_,_|_,T,T,T,T,T,T,T,T,T,T,T,T,_,_,_|_,T,t,T,T,T,T,T,T,T,T,T,t,_,_,_|_,_,t,T,P,P,P,P,P,P,P,T,t,_,_,_|_,_,_,P,P,P,P,P,P,P,P,_,_,_,_,_|_,P,P,P,_,_,_,_,P,P,_,_,_,_,_,_|_,O,O,_,_,_,_,_,O,O,_,_,_,_,_,_|_,O,O,_,_,_,_,_,_,O,_,_,_,_,_,_",
+    "_,_,_,_,_,H,H,H,H,H,_,_,_,_,_,_|_,_,_,_,H,H,H,H,H,H,H,_,_,_,_,_|_,_,_,H,H,H,H,H,H,H,H,H,_,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,_,_,_,_|_,_,_,S,S,S,S,S,S,S,S,s,_,_,_,_|_,_,_,S,E,W,S,S,S,S,S,s,_,_,_,_|_,_,_,S,S,S,S,S,S,S,S,s,_,_,_,_|_,_,_,S,S,R,R,S,S,S,S,s,_,_,_,_|_,_,T,T,T,T,T,T,T,T,T,T,_,_,_,_|_,T,T,T,T,T,T,T,T,T,T,T,T,_,_,_|_,T,t,T,T,T,T,T,T,T,T,T,t,_,_,_|_,_,t,T,P,P,P,P,P,P,P,T,t,_,_,_|_,_,_,P,P,P,P,P,P,P,P,_,_,_,_,_|_,_,P,P,P,_,_,_,P,P,_,_,_,_,_,_|_,_,O,O,_,_,_,_,O,O,_,_,_,_,_,_|_,_,O,O,_,_,_,_,O,O,_,_,_,_,_,_",
+    "_,_,_,_,_,H,H,H,H,H,_,_,_,_,_,_|_,_,_,_,H,H,H,H,H,H,H,_,_,_,_,_|_,_,_,H,H,H,H,H,H,H,H,H,_,_,_,_|_,_,_,S,S,S,S,S,S,S,S,S,_,_,_,_|_,_,_,S,S,S,S,S,S,S,S,s,_,_,_,_|_,_,_,S,E,W,S,S,S,S,S,s,_,_,_,_|_,_,_,S,S,S,S,S,S,S,S,s,_,_,_,_|_,_,_,S,S,R,R,S,S,S,S,s,_,_,_,_|_,_,T,T,T,T,T,T,T,T,T,T,_,_,_,_|_,T,T,T,T,T,T,T,T,T,T,T,T,_,_,_|_,T,t,T,T,T,T,T,T,T,T,T,t,_,_,_|_,_,t,T,P,P,P,P,P,P,P,T,t,_,_,_|_,_,_,P,P,P,P,P,P,P,P,_,_,_,_,_|_,_,_,_,P,P,_,_,P,P,P,P,_,_,_,_|_,_,_,_,O,O,_,_,_,O,O,O,_,_,_,_|_,_,_,_,O,O,_,_,_,_,O,O,_,_,_,_",
+  ],
+};
+SPRITES.right = SPRITES.left; // will be flipped
+
+function drawSprite(dir, frame, flip){
+  ctx.clearRect(0,0,64,64);
+  const rows = SPRITES[dir][frame].split('|');
+  const scale = 4;
+  ctx.save();
+  if(flip){ ctx.scale(-1,1); ctx.translate(-64,0); }
+  rows.forEach((row,y)=>{
+    row.split(',').forEach((k,x)=>{
+      const color = PC[k.trim()];
+      if(color){ ctx.fillStyle=color; ctx.fillRect(x*scale,y*scale,scale,scale); }
+    });
+  });
+  ctx.restore();
+}
+
+// ============================================================
+// CAMERA
+// ============================================================
+const map = document.getElementById('world-map');
+const vw  = window.innerWidth, vh = window.innerHeight;
+
+function updateCamera(){
+  // Center camera on character, clamp to world bounds
+  let camX = charX - vw/2;
+  let camY = charY - vh/2;
+  camX = Math.max(0, Math.min(WORLD_W - vw, camX));
+  camY = Math.max(0, Math.min(WORLD_H - vh, camY));
+  map.style.transform = `translate(${-camX}px,${-camY}px)`;
+  // Character stays fixed on screen at center
+  charCanvas.style.left = (vw/2) + 'px';
+  charCanvas.style.top  = (vh/2) + 'px';
+}
+
+// ============================================================
+// TRIGGER CHECK
+// ============================================================
+function checkTriggers(){
+  const hw = CHAR_SIZE/2;
+  activeTrigger = null;
+  for(const t of TRIGGERS){
+    if(rectOverlap(charX-hw,charY-hw,CHAR_SIZE,CHAR_SIZE, t.x,t.y,t.w,t.h)){
+      activeTrigger = t;
+      break;
+    }
+  }
+  const prompt = document.getElementById('enter-prompt');
+  const btnE   = document.getElementById('btn-enter');
+  if(activeTrigger){
+    prompt.textContent = `▶ Press E to Enter ${activeTrigger.name}`;
+    prompt.style.display = 'block';
+    document.getElementById('hud-building').textContent = activeTrigger.name;
+    if(isMobile()) btnE.style.display='flex';
+  } else {
+    prompt.style.display = 'none';
+    document.getElementById('hud-building').textContent = '';
+    if(isMobile()) btnE.style.display='none';
+  }
+}
+
+// ============================================================
+// ENTER BUILDING
+// ============================================================
+function triggerEnter(){
+  if(!activeTrigger) return;
+  const overlay = document.getElementById('transition-overlay');
+  overlay.style.opacity = '1';
+  overlay.style.pointerEvents = 'all';
+  setTimeout(()=>{
+    activeTrigger.action();
+  }, 400);
+}
+
+function enterBuilding(mode){
+  // Save world state
+  sessionStorage.setItem('worldX', charX);
+  sessionStorage.setItem('worldY', charY);
+  // Go to game
+  if(mode === 'classic'){
+    window.location.href = 'index.html#classic';
+  } else if(mode === 'event'){
+    window.location.href = 'index.html#event';
+  }
+}
+
+// ============================================================
+// DEBUG
+// ============================================================
+function toggleDebug(){
+  debugMode = !debugMode;
+  document.querySelectorAll('.debug-box,.debug-trigger').forEach(el=>{
+    el.style.display = debugMode ? 'block' : 'none';
+  });
+}
+
+// ============================================================
+// GAME LOOP
+// ============================================================
+function update(){
+  let dx = 0, dy = 0;
+
+  // Keyboard
+  if(keys['ArrowLeft']  || keys['a'] || keys['A']) dx -= 1;
+  if(keys['ArrowRight'] || keys['d'] || keys['D']) dx += 1;
+  if(keys['ArrowUp']    || keys['w'] || keys['W']) dy -= 1;
+  if(keys['ArrowDown']  || keys['s'] || keys['S']) dy += 1;
+
+  // Joystick
+  if(joystick.active){
+    dx += joystick.dx;
+    dy += joystick.dy;
+  }
+
+  // Normalize diagonal
+  if(dx !== 0 && dy !== 0){ dx *= 0.707; dy *= 0.707; }
+
+  isMoving = (dx !== 0 || dy !== 0);
+
+  // Update facing
+  if(Math.abs(dx) > Math.abs(dy)){
+    facing = dx > 0 ? 'right' : 'left';
+  } else if(dy !== 0){
+    facing = dy > 0 ? 'down' : 'up';
+  }
+
+  // Move with collision
+  const nx = charX + dx * CHAR_SPEED;
+  const ny = charY + dy * CHAR_SPEED;
+
+  if(canMove(nx, charY)) charX = nx;
+  if(canMove(charX, ny)) charY = ny;
+
+  // Animate
+  if(isMoving){
+    animTick++;
+    if(animTick >= ANIM_SPEED){ animTick=0; animFrame=(animFrame+1)%4; }
+  } else {
+    animFrame = 0; animTick = 0;
+  }
+
+  // Draw
+  const dir   = facing === 'right' ? 'left' : facing;
+  const flip  = facing === 'right';
+  drawSprite(dir, animFrame, flip);
+
+  // Camera
+  updateCamera();
+
+  // Triggers
+  checkTriggers();
+
+  // HUD pos (debug)
+  document.getElementById('hud-pos').textContent = `${Math.floor(charX)},${Math.floor(charY)}`;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function init(){
+  // Restore position if coming back from game
+  const sx = sessionStorage.getItem('worldX');
+  const sy = sessionStorage.getItem('worldY');
+  if(sx && sy){ charX = parseFloat(sx); charY = parseFloat(sy); }
+
+  setupJoystick();
+  drawSprite('down', 0, false);
+  updateCamera();
+
+  setInterval(update, 1000/60);
+}
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
