@@ -283,7 +283,7 @@ const keys = {};
 window.addEventListener('keydown', e => {
   keys[e.key] = true;
   if(e.key === 'e' || e.key === 'E') triggerEnter();
-  if(e.key === 'F1') toggleDebug();
+  if(e.key === '`') toggleDebug();
   e.preventDefault();
 });
 window.addEventListener('keyup',  e => { keys[e.key] = false; });
