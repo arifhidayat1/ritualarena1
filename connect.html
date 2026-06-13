@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ritual Arena</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; }
+
+/* World background via iframe */
+#world-bg {
+  position:fixed; inset:0;
+  width:100%; height:100%;
+  border:none;
+  filter:blur(6px) brightness(0.5);
+  transform:scale(1.05);
+  pointer-events:none;
+  z-index:0;
+}
+
+/* Dark overlay */
+#overlay {
+  position:fixed; inset:0;
+  background:rgba(0,0,10,0.45);
+  z-index:1;
+}
+
+/* Connect panel */
+#connect-panel {
+  position:fixed; inset:0;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  z-index:10; padding:20px;
+}
+
+.game-title {
+  font-family:'Press Start 2P',monospace;
+  font-size:clamp(16px,4vw,32px);
+  color:#f0c040;
+  text-align:center;
+  margin-bottom:6px;
+  text-shadow:0 0 30px rgba(240,192,64,0.8), 3px 3px 0 #000;
+  animation:titleGlow 3s ease-in-out infinite alternate;
+  letter-spacing:2px;
+}
+@keyframes titleGlow {
+  from { text-shadow:0 0 20px rgba(240,192,64,0.6), 3px 3px 0 #000; }
+  to   { text-shadow:0 0 50px rgba(240,192,64,1), 0 0 80px rgba(240,160,0,0.5), 3px 3px 0 #000; }
+}
+
+.game-sub {
+  font-family:'VT323',monospace;
+  font-size:18px; color:#80b0d0;
+  text-align:center; margin-bottom:28px;
+  letter-spacing:3px;
+}
+
+.panel-box {
+  width:100%; max-width:360px;
+  background:rgba(6,6,24,0.92);
+  border:2px solid #f0c040;
+  box-shadow:0 0 0 1px #000, 0 0 40px rgba(240,192,64,0.2),
+             inset 0 0 30px rgba(40,40,80,0.5);
+  padding:24px;
+}
+
+.panel-title {
+  font-family:'Press Start 2P',monospace;
+  font-size:8px; color:#f0c040;
+  text-align:center; margin-bottom:18px;
+  border-bottom:1px solid rgba(240,192,64,0.3);
+  padding-bottom:12px; letter-spacing:1px;
+}
+
+.wallet-btn {
+  display:flex; align-items:center; gap:12px;
+  width:100%; padding:12px 14px; margin-bottom:10px;
+  background:rgba(20,20,60,0.8);
+  border:2px solid rgba(80,80,180,0.5);
+  color:#e0d8ff; cursor:pointer;
+  font-family:'Press Start 2P',monospace;
+  font-size:7px; transition:all 0.15s;
+  text-align:left;
+}
+.wallet-btn:hover:not(:disabled) {
+  border-color:#f0c040;
+  background:rgba(40,40,100,0.9);
+  transform:translateX(3px);
+}
+.wallet-btn:disabled { opacity:0.4; cursor:not-allowed; }
+.wicon {
+  width:34px; height:34px; border-radius:4px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; flex-shrink:0;
+}
+.wname { font-size:8px; color:#f0c040; font-weight:bold; }
+.wsub  { font-family:'VT323',monospace; font-size:14px; color:#6060a0; margin-top:2px; }
+
+.divider {
+  display:flex; align-items:center; gap:10px;
+  color:#444; font-family:'VT323',monospace;
+  font-size:14px; margin:6px 0;
+}
+.divider::before, .divider::after {
+  content:''; flex:1; height:1px;
+  background:rgba(255,255,255,0.1);
+}
+
+.status-msg {
+  font-family:'VT323',monospace; font-size:15px;
+  color:#80c0ff; text-align:center;
+  margin-top:12px; min-height:20px; line-height:1.5;
+}
+
+/* Smoke / cloud transition */
+#smoke-overlay {
+  position:fixed; inset:0; z-index:100;
+  pointer-events:none; opacity:0;
+}
+.smoke-particle {
+  position:absolute;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(220,220,220,0.7) 40%, transparent 70%);
+  animation:smokeRise linear forwards;
+}
+@keyframes smokeRise {
+  0%   { transform:translateY(0)   scale(0.3); opacity:0; }
+  20%  { opacity:1; }
+  60%  { opacity:0.9; }
+  100% { transform:translateY(-120vh) scale(3); opacity:0; }
+}
+
+/* Spinner */
+.spinner {
+  display:inline-block; width:10px; height:10px;
+  border:2px solid rgba(255,255,255,0.2);
+  border-top-color:#f0c040; border-radius:50%;
+  animation:spin 0.7s linear infinite;
+  vertical-align:middle; margin-right:6px;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- World map as blurred background -->
+<iframe id="world-bg" src="world.html" scrolling="no"></iframe>
+<div id="overlay"></div>
+
+<!-- Connect panel -->
+<div id="connect-panel">
+  <div class="game-title">RITUAL ARENA</div>
+  <div class="game-sub">Turn-Based Battle · Ritual Testnet</div>
+
+  <div class="panel-box">
+    <div class="panel-title">— CONNECT WALLET —</div>
+
+    <button class="wallet-btn" id="btn-mm" onclick="connectMetaMask()">
+      <div class="wicon" style="background:rgba(246,133,27,0.15);border:1px solid rgba(246,133,27,0.4)">🦊</div>
+      <div>
+        <div class="wname">MetaMask</div>
+        <div class="wsub">Browser extension</div>
+      </div>
+    </button>
+
+    <button class="wallet-btn" id="btn-rabby" onclick="connectRabby()">
+      <div class="wicon" style="background:rgba(134,151,255,0.15);border:1px solid rgba(134,151,255,0.4)">🐰</div>
+      <div>
+        <div class="wname">Rabby Wallet</div>
+        <div class="wsub">Multi-chain friendly</div>
+      </div>
+    </button>
+
+    <div class="divider">or</div>
+
+    <button class="wallet-btn" onclick="connectDemo()" style="border-color:rgba(240,192,64,0.3)">
+      <div class="wicon" style="background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.3)">🎮</div>
+      <div>
+        <div class="wname" style="color:#c0a020">Demo Mode</div>
+        <div class="wsub">No wallet needed</div>
+      </div>
+    </button>
+
+    <div class="status-msg" id="status-msg"></div>
+  </div>
+</div>
+
+<!-- Smoke overlay -->
+<div id="smoke-overlay" id="smoke"></div>
+
+<script>
+// ── Chain config ──────────────────────────────────────────
+const RITUAL_CHAIN_ID     = '0x7BB'; // 1979
+const RITUAL_CHAIN_PARAMS = {
+  chainId: RITUAL_CHAIN_ID,
+  chainName: 'Ritual Testnet',
+  nativeCurrency: { name:'RITUAL', symbol:'RITUAL', decimals:18 },
+  rpcUrls: ['https://rpc.ritualfoundation.org'],
+  blockExplorerUrls: ['https://explorer.ritualfoundation.org'],
+};
+
+// ── Auto-reconnect ────────────────────────────────────────
+window.addEventListener('load', async () => {
+  // Check if already connected
+  const saved = sessionStorage.getItem('wallet_connected');
+  if (saved === '1' && window.ethereum) {
+    try {
+      const accounts = await window.ethereum.request({ method:'eth_accounts' });
+      if (accounts && accounts.length > 0) {
+        setStatus('✅ Already connected! Entering world...');
+        setTimeout(() => goToWorld(), 800);
+        return;
+      }
+    } catch(e) {}
+  }
+});
+
+// ── Helpers ───────────────────────────────────────────────
+function setStatus(msg) {
+  document.getElementById('status-msg').textContent = msg;
+}
+
+function setLoading(btnId, loading, label) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.querySelector('.wname').innerHTML = loading
+    ? '<span class="spinner"></span>Connecting...'
+    : label;
+}
+
+function getProvider(preferRabby = false) {
+  if (window.ethereum?.providers?.length) {
+    const providers = window.ethereum.providers;
+    if (preferRabby) {
+      const r = providers.find(p => p.isRabby);
+      if (r) return r;
+    } else {
+      const m = providers.find(p => p.isMetaMask && !p.isRabby);
+      if (m) return m;
+    }
+    return providers[0];
+  }
+  if (preferRabby && window.rabby) return window.rabby;
+  return window.ethereum || null;
+}
+
+async function connectWithProvider(provider, btnId, label) {
+  setLoading(btnId, true, label);
+  try {
+    await provider.request({ method:'wallet_requestPermissions', params:[{ eth_accounts:{} }] });
+    const accounts = await provider.request({ method:'eth_accounts' });
+    if (!accounts?.length) { setStatus('❌ No account selected'); setLoading(btnId, false, label); return; }
+
+    const chainId = await provider.request({ method:'eth_chainId' });
+
+    // Switch to Ritual if needed
+    if (chainId.toLowerCase() !== RITUAL_CHAIN_ID.toLowerCase()) {
+      setStatus('⏳ Switching to Ritual Testnet...');
+      try {
+        await provider.request({ method:'wallet_switchEthereumChain', params:[{ chainId:RITUAL_CHAIN_ID }] });
+      } catch(sw) {
+        if (sw.code === 4902) {
+          await provider.request({ method:'wallet_addEthereumChain', params:[RITUAL_CHAIN_PARAMS] });
+        } else throw sw;
+      }
+    }
+
+    sessionStorage.setItem('wallet_connected', '1');
+    sessionStorage.setItem('wallet_address', accounts[0]);
+    sessionStorage.setItem('wallet_type', btnId);
+
+    setStatus('✅ Connected! Entering world...');
+    setLoading(btnId, false, label);
+    setTimeout(() => triggerSmokeTransition(), 600);
+
+  } catch(e) {
+    setLoading(btnId, false, label);
+    if (e.code === 4001) setStatus('❌ Rejected by user');
+    else setStatus('❌ Error: ' + (e.message || 'Unknown'));
+  }
+}
+
+async function connectMetaMask() {
+  const p = getProvider(false);
+  if (!p) {
+    setStatus('❌ MetaMask not found!');
+    setTimeout(() => window.open('https://metamask.io/download/', '_blank'), 1000);
+    return;
+  }
+  await connectWithProvider(p, 'btn-mm', 'MetaMask');
+}
+
+async function connectRabby() {
+  const p = getProvider(true);
+  if (!p) {
+    setStatus('❌ Rabby not found!');
+    setTimeout(() => window.open('https://rabby.io/', '_blank'), 1000);
+    return;
+  }
+  await connectWithProvider(p, 'btn-rabby', 'Rabby Wallet');
+}
+
+function connectDemo() {
+  sessionStorage.setItem('wallet_connected', '1');
+  sessionStorage.setItem('wallet_address', '0xDEMO' + Math.random().toString(16).slice(2,10).toUpperCase());
+  sessionStorage.setItem('wallet_type', 'demo');
+  sessionStorage.setItem('wallet_demo', '1');
+  setStatus('🎮 Demo Mode — Entering world...');
+  setTimeout(() => triggerSmokeTransition(), 500);
+}
+
+// ── Smoke transition ──────────────────────────────────────
+function triggerSmokeTransition() {
+  const overlay = document.getElementById('smoke-overlay');
+  overlay.style.opacity = '1';
+  overlay.innerHTML = '';
+
+  const count = 30;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'smoke-particle';
+    const size = 80 + Math.random() * 200;
+    const startX = Math.random() * 110 - 5;
+    const startY = 60 + Math.random() * 60;
+    const dur    = 1.2 + Math.random() * 0.8;
+    const delay  = Math.random() * 0.4;
+    p.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${startX}vw; top:${startY}vh;
+      animation-duration:${dur}s;
+      animation-delay:${delay}s;
+      filter:blur(${4 + Math.random()*8}px);
+    `;
+    overlay.appendChild(p);
+  }
+
+  // White flash then go
+  setTimeout(() => {
+    overlay.style.background = 'rgba(255,255,255,0.95)';
+    overlay.style.transition = 'background 0.3s';
+  }, 900);
+
+  setTimeout(() => goToWorld(), 1400);
+}
+
+function goToWorld() {
+  window.location.href = 'world.html';
+}
+</script>
+</body>
+</html>
