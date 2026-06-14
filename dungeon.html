@@ -373,7 +373,12 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 
 <!-- HUD -->
 <!-- Dungeon Background -->
-<div id="dungeon-bg-layer" style="background-image:url('assets/background_dungeon.png')"></div>
+<div id="dungeon-bg-layer" style="
+  position:fixed;inset:0;z-index:0;
+  background:url('assets/background_dungeon.png') center/cover no-repeat;
+  filter:blur(6px) brightness(0.4);
+  transform:scale(1.08);
+"></div>
 <div id="dungeon-particles"></div>
 <div id="dungeon-overlay"></div>
 
