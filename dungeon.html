@@ -43,7 +43,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 /* ── FLOOR SELECT SCREEN ── */
 #screen-floors{
   padding-top:60px;
-  background:linear-gradient(180deg,#080818 0%,#0a0a24 100%);
+  background:transparent;
   min-height:100vh;
 }
 .floor-header{
@@ -90,7 +90,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 /* ── HERO SELECT ── */
 #screen-hero{
   padding-top:60px;
-  background:linear-gradient(180deg,#080818,#0a0a24);min-height:100vh;
+  background:transparent;min-height:100vh;
 }
 .hero-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:16px;max-width:500px;margin:0 auto}
 .hero-card{
@@ -372,6 +372,11 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 <body>
 
 <!-- HUD -->
+<!-- Dungeon Background -->
+<div id="dungeon-bg-layer"></div>
+<div id="dungeon-particles"></div>
+<div id="dungeon-overlay"></div>
+
 <div class="hud" id="hud" style="display:none">
   <span class="hud-floor" id="hud-floor">DUNGEON</span>
   <div class="hud-right">
@@ -381,7 +386,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 </div>
 
 <!-- SCREEN: HERO SELECT -->
-<div id="screen-hero" class="screen active" style="padding-top:50px;background:linear-gradient(180deg,#080818,#0a0a24);min-height:100vh">
+<div id="screen-hero" class="screen active" style="padding-top:50px;background:transparent;min-height:100vh">
   <div style="text-align:center;padding:16px 20px 10px">
     <div style="font-size:10px;color:var(--gold);text-shadow:0 0 20px var(--gold);margin-bottom:4px">🏚️ DUNGEON</div>
     <div style="font-family:'VT323',monospace;font-size:16px;color:#6060a0;margin-bottom:4px">25 floors of darkness await</div>
@@ -761,6 +766,7 @@ function confirmHero() {
 function showFloorSelect() {
   renderFloorGrid();
   showScreen('floors');
+  blurBgForMenu();
 }
 
 function renderFloorGrid() {
@@ -813,6 +819,7 @@ function startFloor(f) {
   document.getElementById('hud-floor').textContent = '🏚️ FLOOR ' + f + '/25';
   inBattle = true;
   setTurnUI(true);
+  clearBgForBattle();
   addLog(`⚔️ Floor ${f} — ${isBossFloor(f)?'👑 BOSS BATTLE!':'Battle begins!'}`, isBossFloor(f)?'boss':'sys');
   addLog(`Enemy: ${enemy.icon} ${enemy.name}`, 'sys');
 }
@@ -1424,7 +1431,47 @@ function goWorld() {
 window.addEventListener('load', () => {
   renderHeroSelect();
   showScreen('hero');
+  spawnDungeonParticles();
 });
+
+// ── Background particles ──────────────────────────────────
+function spawnDungeonParticles() {
+  const container = document.getElementById('dungeon-particles');
+  for (let i = 0; i < 40; i++) {
+    const p  = document.createElement('div');
+    p.className = 'dungeon-particle';
+    const sz  = 2 + Math.random() * 6;
+    const dur = 4 + Math.random() * 8;
+    const del = Math.random() * 8;
+    p.style.cssText = `
+      width:${sz}px; height:${sz}px;
+      left:${Math.random()*100}vw;
+      animation-duration:${dur}s;
+      animation-delay:${del}s;
+      filter:blur(${Math.random()*1.5}px);
+      box-shadow:0 0 ${sz*2}px rgba(40,255,100,0.6);
+    `;
+    container.appendChild(p);
+  }
+}
+
+// Clear bg when entering battle
+function clearBgForBattle() {
+  document.getElementById('dungeon-bg-layer').classList.add('clear');
+  document.getElementById('dungeon-overlay').classList.add('battle');
+  // Reduce particles
+  document.querySelectorAll('.dungeon-particle').forEach((p,i) => {
+    if (i % 3 !== 0) p.style.opacity = '0.2';
+  });
+}
+
+function blurBgForMenu() {
+  document.getElementById('dungeon-bg-layer').classList.remove('clear');
+  document.getElementById('dungeon-overlay').classList.remove('battle');
+  document.querySelectorAll('.dungeon-particle').forEach(p => {
+    p.style.opacity = '';
+  });
+}
 </script>
 </body>
 </html>
