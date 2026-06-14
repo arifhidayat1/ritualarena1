@@ -28,7 +28,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 }
 .dungeon-bg::before{
   content:'';position:fixed;inset:0;
-  background:rgba(0,0,0,0.6);pointer-events:none;z-index:0;
+  background:rgba(0,0,0,0);pointer-events:none;z-index:0;
 }
 
 /* ── HUD ── */
@@ -378,12 +378,11 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 <div id="dungeon-bg-layer" style="
   position:fixed;inset:0;z-index:0;
   background:url('assets/background_dungeon.png') center/cover no-repeat;
-  filter:blur(3px) brightness(0.65);
-  transform:scale(1.08);
+  filter:brightness(1);
   pointer-events:none;
 "></div>
 <div id="dungeon-particles" style="position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden"></div>
-<div id="dungeon-overlay" style="position:fixed;inset:0;z-index:2;background:rgba(0,5,0,0.25);pointer-events:none"></div>
+<div id="dungeon-overlay" style="position:fixed;inset:0;z-index:2;background:rgba(0,0,0,0.05);pointer-events:none"></div>
 
 <div class="hud" id="hud" style="display:none">
   <span class="hud-floor" id="hud-floor">DUNGEON</span>
