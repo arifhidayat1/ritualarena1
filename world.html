@@ -461,13 +461,16 @@ function loop() {
   drawImg('batu');
   drawImg('pohon');
   drawImg('dungeon');
-  drawImg('training');
   drawImg('pvp');
 
-  if (debugMode) drawDebug();
+  const nearTraining = (wx > 560 && wx < 1158 && wy > 700);
+  if (!nearTraining) drawSpriteChar(wx - 40, wy - 48);
 
-  // Character
-  drawSpriteChar(wx - 40, wy - 48);
+  drawImg('training');
+
+  if (nearTraining) drawSpriteChar(wx - 40, wy - 48);
+
+  if (debugMode) drawDebug();
 
   ctx.restore();
 
