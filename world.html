@@ -493,18 +493,26 @@ requestAnimationFrame(loop);
 
 <script>
 // Sprite sheet renderer patch
-const SPRITE_W = 256;
-const SPRITE_H = 256;
+// Walk sheet: 4 cols x 4 rows = 1024x1024 -> each frame 256x256
+// Idle sheet: 2 cols x 4 rows = 1024x1024 -> each frame 512x256
+const WALK_FW = 256; const WALK_FH = 256;
+const IDLE_FW = 512; const IDLE_FH = 256;
 const DISPLAY_W = 80;
 const DISPLAY_H = 80;
 const DIR_ROW = { down:0, left:1, right:2, up:3 };
 
 function drawSpriteChar(sx, sy) {
   const row = DIR_ROW[facing] ?? 0;
-  const img = isMoving ? imgs['char_walk'] : imgs['char_idle'];
-  if (!img || !img.complete || !img.naturalWidth) return;
-  const maxFrames = isMoving ? 4 : 2;
-  const col = animFrame % maxFrames;
-  ctx.drawImage(img, col*SPRITE_W, row*SPRITE_H, SPRITE_W, SPRITE_H, sx, sy, DISPLAY_W, DISPLAY_H);
+  if (isMoving) {
+    const img = imgs['char_walk'];
+    if (!img || !img.complete || !img.naturalWidth) return;
+    const col = animFrame % 4;
+    ctx.drawImage(img, col*WALK_FW, row*WALK_FH, WALK_FW, WALK_FH, sx, sy, DISPLAY_W, DISPLAY_H);
+  } else {
+    const img = imgs['char_idle'];
+    if (!img || !img.complete || !img.naturalWidth) return;
+    const col = animFrame % 2;
+    ctx.drawImage(img, col*IDLE_FW, row*IDLE_FH, IDLE_FW, IDLE_FH, sx, sy, DISPLAY_W, DISPLAY_H);
+  }
 }
 </script>
