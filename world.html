@@ -98,6 +98,7 @@ const WH = 1080;
 const imgs = {};
 [
   ['char_walk',        'assets/black_ritualist_walk.png'],
+  ['wallet_icon',      'assets/wallet_icon.png'],
   ['char_idle',        'assets/black_ritualist_idle.png'],
   ['ground',          'assets/ground.png'],
   ['jalan',           'assets/jalan.png'],
@@ -490,6 +491,157 @@ if (sx && sy) { wx = parseFloat(sx); wy = parseFloat(sy); }
 
 setupJoystick();
 requestAnimationFrame(loop);
+</script>
+
+<!-- WALLET BUTTON -->
+<div id="wallet-btn-wrap" style="position:fixed;top:8px;right:12px;z-index:999;cursor:pointer" onclick="toggleWalletPanel()">
+  <canvas id="wallet-icon-canvas" width="40" height="40" style="image-rendering:pixelated;display:block"></canvas>
+</div>
+
+<!-- WALLET PANEL -->
+<div id="wallet-panel" style="
+  position:fixed;top:48px;right:12px;z-index:998;
+  background:rgba(4,4,20,0.97);
+  border:2px solid #f0c040;
+  box-shadow:0 0 20px rgba(240,192,64,0.3);
+  padding:16px;width:220px;
+  display:none;
+  font-family:'Press Start 2P',monospace;
+">
+  <div style="font-size:7px;color:#f0c040;margin-bottom:12px;border-bottom:1px solid rgba(240,192,64,0.3);padding-bottom:8px;letter-spacing:1px">
+    ── WALLET ──
+  </div>
+  <!-- Address -->
+  <div style="font-size:6px;color:#6060a0;margin-bottom:4px">ADDRESS</div>
+  <div id="wp-address" style="font-family:monospace;font-size:8px;color:#40d0ff;margin-bottom:12px;word-break:break-all;background:rgba(0,0,0,0.3);padding:6px;border:1px solid rgba(64,208,255,0.2)">—</div>
+  <!-- Balance -->
+  <div style="font-size:6px;color:#6060a0;margin-bottom:4px">BALANCE</div>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;background:rgba(0,0,0,0.3);padding:8px;border:1px solid rgba(240,192,64,0.2)">
+    <span style="font-size:18px">⚡</span>
+    <div>
+      <div id="wp-balance" style="font-size:9px;color:#f0c040">Loading...</div>
+      <div style="font-family:'VT323',monospace;font-size:13px;color:#6060a0">RITUAL Token</div>
+    </div>
+  </div>
+  <!-- Network -->
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px;font-family:'VT323',monospace;font-size:14px;color:#40c040">
+    <div style="width:8px;height:8px;border-radius:50%;background:#40c040;flex-shrink:0"></div>
+    Ritual Testnet
+  </div>
+  <!-- Disconnect -->
+  <button onclick="disconnectFromWorld()" style="
+    width:100%;padding:9px;
+    background:rgba(80,10,10,0.8);
+    border:2px solid rgba(200,50,50,0.6);
+    color:#ff8080;font-size:7px;cursor:pointer;
+    font-family:'Press Start 2P',monospace;
+    transition:all 0.1s;
+  " onmouseover="this.style.background='rgba(120,10,10,0.9)'" onmouseout="this.style.background='rgba(80,10,10,0.8)'">
+    ⏻ DISCONNECT
+  </button>
+</div>
+
+<script>
+// ── Wallet Panel ──────────────────────────────────────────
+let walletPanelOpen = false;
+
+function toggleWalletPanel() {
+  walletPanelOpen = !walletPanelOpen;
+  const panel = document.getElementById('wallet-panel');
+  panel.style.display = walletPanelOpen ? 'block' : 'none';
+  if (walletPanelOpen) loadWalletInfo();
+}
+
+// Close panel when clicking outside
+document.addEventListener('click', (e) => {
+  const panel  = document.getElementById('wallet-panel');
+  const btn    = document.getElementById('wallet-btn-wrap');
+  if (!panel.contains(e.target) && !btn.contains(e.target)) {
+    panel.style.display = 'none';
+    walletPanelOpen = false;
+  }
+});
+
+async function loadWalletInfo() {
+  const addr = sessionStorage.getItem('wallet_address') || '—';
+  const isDemo = sessionStorage.getItem('wallet_demo') === '1';
+
+  // Address
+  const addrEl = document.getElementById('wp-address');
+  if (addr && addr !== '—') {
+    addrEl.textContent = addr.slice(0,8) + '...' + addr.slice(-6);
+    addrEl.title = addr;
+  } else {
+    addrEl.textContent = isDemo ? '0xDEMO (Demo Mode)' : '—';
+  }
+
+  // Balance
+  const balEl = document.getElementById('wp-balance');
+  if (isDemo) {
+    balEl.textContent = 'Demo Mode';
+    return;
+  }
+  if (!window.ethereum || !addr || addr === '—') {
+    balEl.textContent = '—';
+    return;
+  }
+  try {
+    balEl.textContent = 'Loading...';
+    const balance = await window.ethereum.request({
+      method: 'eth_getBalance',
+      params: [addr, 'latest'],
+    });
+    const eth = parseInt(balance, 16) / 1e18;
+    balEl.textContent = eth.toFixed(4) + ' RITUAL';
+  } catch(e) {
+    balEl.textContent = 'Error loading';
+  }
+}
+
+function disconnectFromWorld() {
+  // Clear session
+  sessionStorage.removeItem('wallet_connected');
+  sessionStorage.removeItem('wallet_address');
+  sessionStorage.removeItem('wallet_demo');
+  sessionStorage.removeItem('wallet_type');
+  sessionStorage.removeItem('worldX');
+  sessionStorage.removeItem('worldY');
+
+  // Revoke permissions if possible
+  if (window.ethereum) {
+    try {
+      window.ethereum.request({
+        method: 'wallet_revokePermissions',
+        params: [{ eth_accounts: {} }]
+      });
+    } catch(e) {}
+  }
+
+  // Redirect to connect screen
+  window.location.href = 'index.html';
+}
+
+// Draw wallet icon on canvas using loaded image
+function drawWalletIcon() {
+  const c   = document.getElementById('wallet-icon-canvas');
+  const ctx = c.getContext('2d');
+  const img = imgs['wallet_icon'];
+  if (img && img.complete && img.naturalWidth) {
+    ctx.clearRect(0, 0, 40, 40);
+    ctx.drawImage(img, 0, 0, 40, 40);
+  } else {
+    // Fallback emoji
+    ctx.font = '28px serif';
+    ctx.fillText('👛', 2, 30);
+  }
+  // Redraw until loaded
+  if (!img || !img.complete) setTimeout(drawWalletIcon, 200);
+}
+
+// Init wallet panel
+window.addEventListener('load', () => {
+  setTimeout(drawWalletIcon, 500);
+});
 </script>
 </body>
 </html>
