@@ -485,3 +485,21 @@ requestAnimationFrame(loop);
 </script>
 </body>
 </html>
+
+<script>
+// Sprite sheet renderer patch
+const SPRITE_W = 256;
+const SPRITE_H = 256;
+const DISPLAY_W = 80;
+const DISPLAY_H = 80;
+const DIR_ROW = { down:0, left:1, right:2, up:3 };
+
+function drawSpriteChar(sx, sy) {
+  const row = DIR_ROW[facing] ?? 0;
+  const img = isMoving ? imgs['char_walk'] : imgs['char_idle'];
+  if (!img || !img.complete || !img.naturalWidth) return;
+  const maxFrames = isMoving ? 4 : 2;
+  const col = animFrame % maxFrames;
+  ctx.drawImage(img, col*SPRITE_W, row*SPRITE_H, SPRITE_W, SPRITE_H, sx, sy, DISPLAY_W, DISPLAY_H);
+}
+</script>
