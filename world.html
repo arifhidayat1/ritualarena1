@@ -494,13 +494,13 @@ requestAnimationFrame(loop);
 </script>
 
 <!-- WALLET BUTTON -->
-<div id="wallet-btn-wrap" style="position:fixed;top:8px;right:12px;z-index:999;cursor:pointer" onclick="toggleWalletPanel()">
+<div id="wallet-btn-wrap" style="position:fixed;top:45%;right:12px;z-index:999;transform:translateY(-50%);cursor:pointer" onclick="toggleWalletPanel()">
   <canvas id="wallet-icon-canvas" width="40" height="40" style="image-rendering:pixelated;display:block"></canvas>
 </div>
 
 <!-- WALLET PANEL -->
 <div id="wallet-panel" style="
-  position:fixed;top:48px;right:12px;z-index:998;
+  position:fixed;top:calc(45% + 50px);right:12px;z-index:998;
   background:rgba(4,4,20,0.97);
   border:2px solid #f0c040;
   box-shadow:0 0 20px rgba(240,192,64,0.3);
