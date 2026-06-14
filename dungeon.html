@@ -18,7 +18,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
   image-rendering:pixelated}
 
 /* ── SCREENS ── */
-.screen{display:none;min-height:100vh}
+.screen{display:none;min-height:100vh;position:relative;z-index:10}
 .screen.active{display:block}
 
 /* ── BG ── */
@@ -392,7 +392,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 </div>
 
 <!-- SCREEN: HERO SELECT -->
-<div id="screen-hero" class="screen active" style="padding-top:50px;background:transparent;min-height:100vh">
+<div id="screen-hero" class="screen active" style="padding-top:50px;background:transparent;min-height:100vh;position:relative;z-index:10">
   <div style="text-align:center;padding:16px 20px 10px">
     <div style="font-size:10px;color:var(--gold);text-shadow:0 0 20px var(--gold);margin-bottom:4px">🏚️ DUNGEON</div>
     <div style="font-family:'VT323',monospace;font-size:16px;color:#6060a0;margin-bottom:4px">25 floors of darkness await</div>
@@ -409,7 +409,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 
 <!-- SCREEN: FLOOR SELECT -->
 <div id="screen-floors" class="screen">
-  <div style="position:relative;z-index:5">
+  <div style="position:relative;z-index:10">
     <div class="floor-header">
       🏚️ DUNGEON — SELECT FLOOR
       <div class="floor-header-sub" id="floor-header-sub">Choose your starting floor</div>
