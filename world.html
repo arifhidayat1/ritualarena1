@@ -462,9 +462,7 @@ function loop() {
   if (debugMode) drawDebug();
 
   // Character
-  const flip = facing === 'right';
-  const dir  = flip ? 'left' : facing;
-  drawPixelChar(wx - 24, wy - 24, dir, animFrame, flip);
+  drawSpriteChar(wx - 40, wy - 48);
 
   ctx.restore();
 
