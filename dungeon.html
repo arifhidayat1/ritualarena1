@@ -136,16 +136,44 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 .hstat{font-family:'VT323',monospace;font-size:12px;color:#6060a0;text-align:left}
 .hstat span{color:var(--text)}
 
-/* ── ENEMY MULTI ── */
-.enemy-side{display:flex;align-items:flex-end;justify-content:center;gap:18px;flex:1}
-.enemy-unit{display:flex;flex-direction:column;align-items:center;cursor:default;transition:transform 0.2s}
-.enemy-unit.active-enemy{transform:scale(1.15);filter:drop-shadow(0 0 10px rgba(255,200,0,0.7))}
-.enemy-unit.dead-enemy{pointer-events:none}
+/* Fighter card — hero & enemy shared */
+.fighter-card{display:flex;flex-direction:column;align-items:center;gap:4px}
+.fighter-name{
+  font-family:'Press Start 2P',monospace;font-size:7px;color:#fff;
+  text-shadow:0 0 6px rgba(0,0,0,0.9);
+  background:rgba(0,0,0,0.55);padding:2px 7px;letter-spacing:0.5px;
+}
+.fighter-bars{
+  width:100%;max-width:120px;
+  padding:2px 0;display:flex;flex-direction:column;gap:3px;
+}
+.fighter-bar-row{display:flex;align-items:center;gap:4px}
+.fighter-bar-track{flex:1;height:6px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.1);overflow:hidden}
+.fighter-bar-fill{height:100%;transition:width 0.35s ease}
+.fighter-bar-fill.hp{background:linear-gradient(90deg,#10c050,#60ff70)}
+.fighter-bar-fill.hp.low{background:linear-gradient(90deg,#c05010,#ff7030)}
+.fighter-bar-fill.mp{background:linear-gradient(90deg,#1840c0,#5080ff)}
+.fighter-bar-fill.xp{background:linear-gradient(90deg,#906000,#ffd840)}
+.fighter-bar-val{font-family:'VT323',monospace;font-size:11px;color:#e0e0e0;width:40px;flex-shrink:0;text-align:right}
+
+/* Enemy side - horizontal row like reference */
+.enemy-side{
+  flex:1;display:flex;flex-direction:row;
+  align-items:flex-end;justify-content:center;
+  gap:20px;padding-bottom:8px;
+}
+.enemy-unit{display:flex;flex-direction:column;align-items:center;gap:2px;transition:all 0.2s}
+.enemy-sprite{font-size:44px;display:block;line-height:1;transition:all 0.2s}
+.enemy-unit.active-enemy .enemy-sprite{
+  font-size:54px;
+  filter:drop-shadow(0 0 10px rgba(255,200,0,0.8));
+}
+.enemy-unit.dead-enemy{opacity:0.2;pointer-events:none}
 .monster-dot.active{background:var(--gold);box-shadow:0 0 6px var(--gold)}
 
 /* ── BATTLE SCREEN ── */
 #screen-battle{padding-top:44px;position:relative;z-index:10}
-.battle-wrap{min-height:calc(100vh - 44px);display:flex;flex-direction:column}
+.battle-wrap{min-height:calc(100vh - 44px);display:flex;flex-direction:column;position:relative}
 
 /* Floor banner */
 .floor-banner{
@@ -182,7 +210,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 /* Battlefield */
 .battlefield{
   flex:1;display:flex;align-items:center;justify-content:center;
-  position:relative;min-height:200px;gap:0;padding:10px 0;
+  position:relative;min-height:340px;gap:0;padding:10px 100px 80px 100px;
 }
 
 /* Hero side */
@@ -197,6 +225,38 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
   animation:heroFloat 3s ease-in-out infinite;
 }
 @keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+
+/* Attack animations */
+@keyframes heroCharge{
+  0%{transform:translateX(0) translateY(0)}
+  40%{transform:translateX(120px) translateY(-10px)}
+  60%{transform:translateX(110px) translateY(0)}
+  80%{transform:translateX(115px) translateY(-5px)}
+  100%{transform:translateX(0) translateY(0)}
+}
+@keyframes enemyCharge{
+  0%{transform:translateX(0) translateY(0)}
+  40%{transform:translateX(-100px) translateY(-10px)}
+  60%{transform:translateX(-90px) translateY(0)}
+  80%{transform:translateX(-95px) translateY(-5px)}
+  100%{transform:translateX(0) translateY(0)}
+}
+@keyframes hitFlash{
+  0%,100%{filter:brightness(1)}
+  30%{filter:brightness(3) saturate(0)}
+  60%{filter:brightness(2) hue-rotate(20deg)}
+}
+@keyframes hitBounce{
+  0%{transform:translateX(0)}
+  25%{transform:translateX(14px)}
+  50%{transform:translateX(-8px)}
+  75%{transform:translateX(5px)}
+  100%{transform:translateX(0)}
+}
+.hero-charging{animation:heroCharge 0.55s ease-in-out forwards !important}
+.enemy-hit{animation:hitFlash 0.35s ease, hitBounce 0.35s ease !important}
+.enemy-charging{animation:enemyCharge 0.55s ease-in-out forwards !important}
+.hero-hit{animation:hitFlash 0.35s ease, hitBounce 0.35s ease !important}
 .hero-battle-name{
   font-size:6px;color:var(--cyan);
   background:rgba(0,0,0,0.8);border:1px solid var(--cyan);
@@ -239,21 +299,9 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
   animation:bossGlow 1s ease-in-out infinite alternate;
 }
 
-/* Battle bottom */
-.battle-bottom{
-  background:rgba(8,8,32,0.98);
-  border-top:2px solid var(--gold);
-  box-shadow:0 -4px 24px rgba(0,0,0,0.6);
-  position:relative;z-index:20;
-}
+/* Battle bottom - REMOVED, now using overlay panels */
 
-/* Status bars */
-.status-bars{
-  display:grid;grid-template-columns:1fr auto 1fr;
-  gap:6px;padding:6px 10px;
-  border-bottom:1px solid rgba(240,192,64,0.3);
-  background:rgba(0,0,10,0.5);
-}
+/* Status bars - REMOVED, now above hero / right panel */
 .bar-section{flex:1}
 .bar-section.enemy-section{text-align:right}
 .bar-name{font-size:6px;color:var(--gold);margin-bottom:3px}
@@ -267,50 +315,87 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 .bar-fill.hp.low{background:linear-gradient(90deg,#c05010,#ff7030)}
 .bar-fill.mp{background:linear-gradient(90deg,#1840c0,#5080ff)}
 .bar-fill.xp{background:linear-gradient(90deg,#906000,#ffd840)}
-.bar-val{font-family:'VT323',monospace;font-size:12px;color:#d0d0f0;width:44px;flex-shrink:0}
-.turn-mid{display:flex;flex-direction:column;align-items:center;gap:2px;padding:0 6px}
-.turn-arrow{font-size:14px;animation:bounce 0.8s infinite}
-@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-.turn-lbl{font-family:'VT323',monospace;font-size:10px;color:#a0a0d0}
+.bar-val{font-family:'VT323',monospace;font-size:11px;color:#d0d0f0;width:44px;flex-shrink:0}
 
-/* Commands */
-.commands{padding:6px 10px 4px}
-.cmd-title{font-size:6px;color:var(--gold);margin-bottom:5px;border-bottom:1px solid rgba(240,192,64,0.2);padding-bottom:3px}
-.cmd-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:5px}
-.cmd-btn{
-  font-family:'Press Start 2P',monospace;font-size:6px;border:0;cursor:pointer;
-  padding:7px 4px 5px;background:rgba(30,30,80,0.95);
+/* Hero overhead bars - replaced by fighter-bars */
+.hero-overhead-bars{display:none}
+
+/* Right enemy bars - hidden, HP shown per-enemy inline */
+.right-enemy-bars{display:none}
+
+/* FLEE button top-right */
+.flee-btn{
+  position:absolute;top:90px;right:8px;z-index:30;
+  font-family:'Press Start 2P',monospace;font-size:6px;
+  background:rgba(80,0,0,0.9);color:#ff8080;
+  border:2px solid var(--red);padding:6px 10px;cursor:pointer;
+  transition:all 0.1s;
+}
+.flee-btn:hover:not(:disabled){background:rgba(140,0,0,0.95);border-color:#ff6060}
+.flee-btn:disabled{opacity:0.35;cursor:not-allowed}
+
+/* Turn indicator */
+.turn-indicator{
+  position:absolute;top:90px;left:50%;transform:translateX(-50%);
+  font-family:'VT323',monospace;font-size:14px;
+  background:rgba(0,0,0,0.7);border:1px solid rgba(240,192,64,0.4);
+  padding:3px 12px;color:var(--gold);z-index:15;letter-spacing:1px;
+  animation:turnPulse 1.2s ease-in-out infinite;
+}
+@keyframes turnPulse{0%,100%{opacity:1}50%{opacity:0.6}}
+
+/* LEFT PANEL */
+.left-panel{
+  position:absolute;left:8px;top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:5px;
+  z-index:20;width:80px;
+}
+.action-btn{
+  font-family:'Press Start 2P',monospace;font-size:5px;
+  border:0;cursor:pointer;padding:8px 4px 6px;
+  background:rgba(20,20,70,0.95);
   border-top:2px solid rgba(160,160,255,0.6);
   border-left:2px solid rgba(160,160,255,0.6);
-  border-bottom:2px solid rgba(10,10,40,0.9);
-  border-right:2px solid rgba(10,10,40,0.9);
-  color:#e8e0ff;transition:all 0.1s;text-align:center;
+  border-bottom:2px solid rgba(5,5,30,0.9);
+  border-right:2px solid rgba(5,5,30,0.9);
+  color:#e8e0ff;transition:all 0.1s;text-align:center;width:100%;
 }
-.cmd-btn:hover:not(:disabled){
+.action-btn:hover:not(:disabled){
   border-top-color:var(--gold);border-left-color:var(--gold);
   background:rgba(60,50,10,0.95);
 }
-.cmd-btn:disabled{opacity:0.35;cursor:not-allowed}
-.cmd-icon{font-size:14px;display:block;margin-bottom:1px}
-.cmd-name{color:var(--gold);font-size:5px}
+.action-btn:disabled{opacity:0.35;cursor:not-allowed}
+.action-icon{font-size:16px;display:block;margin-bottom:2px}
+.action-name{color:var(--gold);font-size:5px}
+.atk-btn{border-top-color:rgba(255,120,120,0.7);border-left-color:rgba(255,120,120,0.7)}
+.def-btn{border-top-color:rgba(120,120,255,0.7);border-left-color:rgba(120,120,255,0.7)}
+.item-btn{border-top-color:rgba(120,255,120,0.5);border-left-color:rgba(120,255,120,0.5)}
 
-/* Skills */
-.skill-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.left-divider{height:1px;background:rgba(240,192,64,0.3);margin:2px 0}
+
+/* Left skill grid */
+.left-skill-grid{display:flex;flex-direction:column;gap:3px}
 .skill-btn{
   font-family:'Press Start 2P',monospace;font-size:5px;
   background:rgba(15,15,55,0.95);border:1px solid rgba(80,80,200,0.7);
-  color:#d0c8ff;padding:5px 3px;cursor:pointer;text-align:center;transition:all 0.1s;
+  color:#d0c8ff;padding:5px 3px;cursor:pointer;text-align:center;transition:all 0.1s;width:100%;
 }
 .skill-btn:hover:not(:disabled){border-color:var(--cyan);background:rgba(15,30,80,0.98)}
 .skill-btn:disabled{opacity:0.35;cursor:not-allowed}
 .sk-name{color:var(--cyan);font-size:5px;display:block}
 .sk-cost{color:var(--gold);font-family:'VT323',monospace;font-size:10px;margin-top:1px}
 
+/* Commands - old, keep for compatibility */
+.commands{padding:6px 10px 4px}
+.cmd-title{font-size:6px;color:var(--gold);margin-bottom:5px;border-bottom:1px solid rgba(240,192,64,0.2);padding-bottom:3px}
+
 /* ── BATTLE LOG ── */
 .battle-log{
-  max-height:60px;overflow-y:auto;
-  padding:4px 10px;background:rgba(0,0,8,0.6);
+  position:absolute;bottom:0;left:90px;right:0;
+  max-height:70px;overflow-y:auto;
+  padding:4px 10px;background:rgba(0,0,8,0.82);
   border-top:1px solid rgba(255,255,255,0.1);
+  z-index:15;
 }
 .log-line{font-family:'VT323',monospace;font-size:13px;padding:1px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
 .log-hit{color:#ff9090}.log-heal{color:#90ff90}.log-mp{color:#9090ff}
@@ -471,72 +556,93 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
     <div class="floor-banner" id="floor-banner">FLOOR 1</div>
     <!-- Monster dots -->
     <div class="monster-count" id="monster-count"></div>
+
+    <!-- Flee button top-right -->
+    <button class="flee-btn" id="btn-flee" onclick="doFlee()">🏃 FLEE</button>
+
+    <!-- Turn indicator -->
+    <div class="turn-indicator" id="turn-indicator">
+      <span id="turn-lbl">YOUR TURN</span>
+    </div>
+
     <!-- Battlefield -->
     <div class="battlefield">
-      <!-- Hero -->
-      <div class="hero-side">
-        <img id="hero-battle-img" class="hero-battle-sprite" src="" alt="hero">
-        <div class="hero-battle-name" id="hero-battle-name">HERO</div>
+
+      <!-- LEFT PANEL: Attack + Skills + Item -->
+      <div class="left-panel" id="left-panel">
+        <!-- Attack button -->
+        <button class="action-btn atk-btn" id="btn-atk" onclick="doAction('attack')">
+          <span class="action-icon">⚔️</span>
+          <span class="action-name">ATTACK</span>
+        </button>
+        <!-- Defend button -->
+        <button class="action-btn def-btn" id="btn-def" onclick="doAction('defend')">
+          <span class="action-icon">🛡️</span>
+          <span class="action-name">DEFEND</span>
+        </button>
+        <!-- Skills -->
+        <div class="left-skill-grid" id="skill-grid"></div>
+        <!-- Divider -->
+        <div class="left-divider"></div>
+        <!-- Item/Bag button -->
+        <button class="action-btn item-btn" id="btn-item" onclick="openInventory()">
+          <span class="action-icon">🎒</span>
+          <span class="action-name">BAG</span>
+        </button>
       </div>
+
+      <!-- Hero side -->
+      <div class="hero-side">
+        <div class="fighter-card">
+          <div class="fighter-name" id="hero-battle-name">HERO</div>
+          <img id="hero-battle-img" class="hero-battle-sprite" src="" alt="hero">
+          <!-- HP/MP bar below sprite -->
+          <div class="fighter-bars">
+            <div class="fighter-bar-row">
+              <div class="fighter-bar-track">
+                <div class="fighter-bar-fill hp" id="hero-hp-bar" style="width:100%"></div>
+              </div>
+              <span class="fighter-bar-val" id="hero-hp-val">—</span>
+            </div>
+            <div class="fighter-bar-row">
+              <div class="fighter-bar-track">
+                <div class="fighter-bar-fill mp" id="hero-mp-bar" style="width:100%"></div>
+              </div>
+              <span class="fighter-bar-val" style="color:#8080ff" id="hero-mp-val">—</span>
+            </div>
+            <div class="fighter-bar-row">
+              <div class="fighter-bar-track" style="height:3px">
+                <div class="fighter-bar-fill xp" id="hero-xp-bar"></div>
+              </div>
+              <span class="fighter-bar-val" style="color:#a08000;font-size:9px" id="hero-xp-val">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- VS -->
       <div class="vs-mid">
         <div class="vs-txt">VS</div>
       </div>
+
       <!-- Enemy -->
       <div class="enemy-side" id="enemy-side">
         <!-- dynamically rendered by renderEnemies() -->
       </div>
-    </div>
-    <!-- Battle bottom -->
-    <div class="battle-bottom">
-      <!-- Status bars -->
-      <div class="status-bars">
-        <div class="bar-section">
-          <div class="bar-name" id="hero-bar-name">HERO</div>
-          <div class="bar-row">
-            <span class="bar-lbl">HP</span>
-            <div class="bar-track"><div class="bar-fill hp" id="hero-hp-bar" style="width:100%"></div></div>
-            <span class="bar-val" id="hero-hp-val">—</span>
-          </div>
-          <div class="bar-row">
-            <span class="bar-lbl">MP</span>
-            <div class="bar-track"><div class="bar-fill mp" id="hero-mp-bar" style="width:100%"></div></div>
-            <span class="bar-val" id="hero-mp-val">—</span>
-          </div>
-          <div class="bar-row">
-            <span class="bar-lbl" style="font-size:9px">XP</span>
-            <div class="bar-track" style="height:4px"><div class="bar-fill xp" id="hero-xp-bar"></div></div>
-            <span class="bar-val" style="font-size:9px;color:#a08000" id="hero-xp-val">0/100</span>
-          </div>
-        </div>
-        <div class="turn-mid">
-          <div class="turn-arrow" id="turn-arrow" style="color:var(--gold)">⚔</div>
-          <div class="turn-lbl" id="turn-lbl">YOUR TURN</div>
-        </div>
-        <div class="bar-section enemy-section">
-          <div class="bar-name enemy" id="enemy-bar-name">ENEMY</div>
-          <div id="all-enemy-bars">
-            <!-- rendered by renderEnemyBars() -->
-          </div>
-          <div style="margin-top:2px">
-            <span style="font-family:'VT323',monospace;font-size:11px;color:#a06020" id="enemy-type-val">—</span>
-          </div>
+
+      <!-- Enemy bars right side -->
+      <div class="right-enemy-bars">
+        <div class="bar-name enemy" id="enemy-bar-name" style="text-align:right;margin-bottom:3px">ENEMY</div>
+        <div id="all-enemy-bars"></div>
+        <div style="text-align:right;margin-top:2px">
+          <span style="font-family:'VT323',monospace;font-size:11px;color:#a06020" id="enemy-type-val">—</span>
         </div>
       </div>
-      <!-- Commands -->
-      <div class="commands">
-        <div class="cmd-title">── COMMANDS ──</div>
-        <div class="cmd-grid">
-          <button class="cmd-btn" id="btn-atk" onclick="doAction('attack')"><span class="cmd-icon">⚔️</span><span class="cmd-name">ATTACK</span></button>
-          <button class="cmd-btn" id="btn-def" onclick="doAction('defend')"><span class="cmd-icon">🛡️</span><span class="cmd-name">DEFEND</span></button>
-          <button class="cmd-btn" id="btn-item" onclick="openInventory()"><span class="cmd-icon">🎒</span><span class="cmd-name">ITEM</span></button>
-          <button class="cmd-btn" id="btn-flee" onclick="doFlee()"><span class="cmd-icon">🏃</span><span class="cmd-name">FLEE</span></button>
-        </div>
-        <div class="skill-grid" id="skill-grid"></div>
-      </div>
-      <!-- Log -->
-      <div class="battle-log" id="battle-log"></div>
+
     </div>
+
+    <!-- Battle Log -->
+    <div class="battle-log" id="battle-log"></div>
   </div>
 </div>
 
@@ -911,15 +1017,17 @@ function renderBattle() {
   const h = hero;
   // Hero
   const img = document.getElementById('hero-battle-img');
-  img.src = h.img;
-  document.getElementById('hero-battle-name').textContent = h.name;
-  document.getElementById('hero-bar-name').textContent = h.name;
-  // Boss tag
-  const bossTag = document.getElementById('boss-tag');
+  if (img) img.src = h.img;
+  const heroName = document.getElementById('hero-battle-name');
+  if (heroName) heroName.textContent = h.name;
+  const heroBarName = document.getElementById('hero-bar-name');
+  if (heroBarName) heroBarName.textContent = h.name;
   // Floor banner
   const banner = document.getElementById('floor-banner');
-  banner.textContent = `FLOOR ${floor}/25 ${isBossFloor(floor)?'👑 BOSS':'— Monster '+(activeEnemyIdx+1)+'/'+monsters.length}`;
-  banner.className = 'floor-banner' + (isBossFloor(floor) ? ' boss-banner' : '');
+  if (banner) {
+    banner.textContent = `FLOOR ${floor}/25 ${isBossFloor(floor)?'👑 BOSS':'— Monster '+(activeEnemyIdx+1)+'/'+monsters.length}`;
+    banner.className = 'floor-banner' + (isBossFloor(floor) ? ' boss-banner' : '');
+  }
   // Render enemies
   renderEnemies();
   renderMonsterDots();
@@ -931,58 +1039,57 @@ function renderEnemies() {
   const side = document.getElementById('enemy-side');
   if (isBossFloor(floor)) {
     const e = monsters[0];
+    const pct = Math.max(0, e.hp/e.maxhp*100);
     side.innerHTML = `
-      <div class="enemy-unit active-enemy" id="enemy-unit-0">
-        <span class="enemy-emoji" id="enemy-emoji">${e.icon}</span>
-        <div class="enemy-name-tag" id="enemy-name-tag">${e.name}</div>
+      <div class="enemy-unit active-enemy fighter-card" id="enemy-unit-0">
+        <div class="fighter-name">${e.name}</div>
+        <span class="enemy-sprite">${e.icon}</span>
+        <div class="fighter-bars" style="max-width:130px">
+          <div class="fighter-bar-row">
+            <div class="fighter-bar-track">
+              <div class="fighter-bar-fill hp${pct<25?' low':''}" id="boss-hp-fill" style="width:${pct}%"></div>
+            </div>
+            <span class="fighter-bar-val">${Math.max(0,e.hp)}</span>
+          </div>
+        </div>
         <div class="boss-tag" id="boss-tag">💀 BOSS — Floor ${floor}</div>
-        <div style="font-family:'VT323',monospace;font-size:13px;color:#a06020;margin-top:2px">+${e.xp} XP</div>
       </div>`;
-    document.getElementById('enemy-type-val').textContent = e.type;
-    document.getElementById('enemy-bar-name').textContent = e.name;
+    const etvB = document.getElementById('enemy-type-val');
+    const ebnB = document.getElementById('enemy-bar-name');
+    if (etvB) etvB.textContent = e.type;
+    if (ebnB) ebnB.textContent = e.name;
   } else {
     side.innerHTML = monsters.map((m, i) => {
       const isDead = m.hp <= 0;
       const isActive = i === activeEnemyIdx && !isDead;
+      const pct = Math.max(0, m.hp/m.maxhp*100);
       return `
-        <div class="enemy-unit ${isActive?'active-enemy':''} ${isDead?'dead-enemy':''}" id="enemy-unit-${i}" onclick="${!isDead&&isPlayerTurn?'selectTarget('+i+')':''}">
-          <span class="enemy-emoji" style="font-size:${isActive?'52px':'36px'};opacity:${isDead?0.25:1}">${m.icon}</span>
-          <div class="enemy-name-tag" style="font-size:${isActive?'10px':'8px'};opacity:${isDead?0.3:1}">${isDead?'💀':m.name}</div>
-          ${isActive?`<div style="font-family:'VT323',monospace;font-size:11px;color:#a06020">+${m.xp} XP</div>`:''}
+        <div class="enemy-unit fighter-card ${isActive?'active-enemy':''} ${isDead?'dead-enemy':''}" id="enemy-unit-${i}">
+          <div class="fighter-name" style="font-size:${isActive?'7px':'6px'};color:${isActive?'#ffd080':'#ffffff'}">${m.name}</div>
+          <span class="enemy-sprite">${isDead?'💀':m.icon}</span>
+          ${!isDead?`
+          <div class="fighter-bars" style="max-width:${isActive?'110px':'90px'}">
+            <div class="fighter-bar-row">
+              <div class="fighter-bar-track" style="height:${isActive?'6px':'4px'}">
+                <div class="fighter-bar-fill hp${pct<25?' low':''}" style="width:${pct}%"></div>
+              </div>
+              <span class="fighter-bar-val" style="font-size:${isActive?'11px':'9px'}">${Math.max(0,m.hp)}</span>
+            </div>
+          </div>`:''}
         </div>`;
     }).join('');
     const ae = monsters[activeEnemyIdx];
-    document.getElementById('enemy-type-val').textContent = ae ? ae.type : '—';
-    document.getElementById('enemy-bar-name').textContent = `Enemy ${activeEnemyIdx+1}/${monsters.length}`;
+    const etv = document.getElementById('enemy-type-val');
+    const ebn = document.getElementById('enemy-bar-name');
+    if (etv) etv.textContent = ae ? ae.type : '—';
+    if (ebn) ebn.textContent = `Enemy ${activeEnemyIdx+1}/${monsters.length}`;
   }
 }
 
 function renderEnemyBars() {
-  const container = document.getElementById('all-enemy-bars');
-  if (isBossFloor(floor)) {
-    const e = monsters[0];
-    const pct = Math.max(0, e.hp/e.maxhp*100);
-    container.innerHTML = `
-      <div class="bar-row rev">
-        <span class="bar-lbl">HP</span>
-        <div class="bar-track"><div class="bar-fill hp ${pct<25?'low':''}" style="width:${pct}%"></div></div>
-        <span class="bar-val">${Math.max(0,e.hp)}/${e.maxhp}</span>
-      </div>`;
-  } else {
-    container.innerHTML = monsters.map((m, i) => {
-      const pct = Math.max(0, m.hp/m.maxhp*100);
-      const isActive = i === activeEnemyIdx;
-      const isDead = m.hp <= 0;
-      return `
-        <div class="bar-row rev" style="opacity:${isDead?0.3:1};margin-bottom:1px">
-          <span class="bar-lbl" style="font-size:9px;color:${isActive?'#ffd040':'#6060a0'}">${m.icon}</span>
-          <div class="bar-track" style="height:${isActive?'7px':'5px'}">
-            <div class="bar-fill hp ${pct<25?'low':''}" style="width:${pct}%"></div>
-          </div>
-          <span class="bar-val" style="font-size:${isActive?'11px':'9px'}">${isDead?'☠':''+Math.max(0,m.hp)}</span>
-        </div>`;
-    }).join('');
-  }
+  // HP bars are now rendered inline inside each enemy-unit
+  // Just re-render enemies to sync HP
+  renderEnemies();
 }
 
 function renderMonsterDots() {
@@ -997,13 +1104,18 @@ function updateBars() {
   const hpPct = Math.max(0, h.hp/h.maxhp*100);
   const mpPct = h.mp/h.maxmp*100;
   const xpPct = Math.min(100, h.xp/h.xpNext*100);
-  document.getElementById('hero-hp-bar').style.width = hpPct+'%';
-  document.getElementById('hero-hp-bar').className = 'bar-fill hp' + (hpPct<25?' low':'');
-  document.getElementById('hero-hp-val').textContent = h.hp+'/'+h.maxhp;
-  document.getElementById('hero-mp-bar').style.width = mpPct+'%';
-  document.getElementById('hero-mp-val').textContent = h.mp+'/'+h.maxmp;
-  document.getElementById('hero-xp-bar').style.width = xpPct+'%';
-  document.getElementById('hero-xp-val').textContent = h.xp+'/'+h.xpNext;
+  const hpBar = document.getElementById('hero-hp-bar');
+  if (hpBar) { hpBar.style.width=hpPct+'%'; hpBar.className='fighter-bar-fill hp'+(hpPct<25?' low':''); }
+  const mpBar = document.getElementById('hero-mp-bar');
+  if (mpBar) mpBar.style.width = mpPct+'%';
+  const xpBar = document.getElementById('hero-xp-bar');
+  if (xpBar) xpBar.style.width = xpPct+'%';
+  const hpVal = document.getElementById('hero-hp-val');
+  if (hpVal) hpVal.textContent = h.hp+'/'+h.maxhp;
+  const mpVal = document.getElementById('hero-mp-val');
+  if (mpVal) mpVal.textContent = h.mp+'/'+h.maxmp;
+  const xpVal = document.getElementById('hero-xp-val');
+  if (xpVal) xpVal.textContent = h.xp+'/'+h.xpNext;
   renderEnemyBars();
 }
 
@@ -1027,18 +1139,19 @@ function setBtnsDisabled(v) {
     const el = document.getElementById(id);
     if (el) el.disabled = v;
   });
+  document.querySelectorAll('.skill-btn').forEach(b => b.disabled = v);
 }
 
 function setTurnUI(isPlayer) {
   isPlayerTurn = isPlayer;
-  const arrow = document.getElementById('turn-arrow');
-  const lbl   = document.getElementById('turn-lbl');
+  const lbl = document.getElementById('turn-lbl');
+  const ind = document.getElementById('turn-indicator');
   if (isPlayer) {
-    arrow.textContent = '⚔'; arrow.style.color='var(--gold)';
-    lbl.textContent   = 'YOUR TURN'; lbl.style.color='var(--gold)';
+    lbl.textContent = '⚔ YOUR TURN';
+    if (ind) { ind.style.borderColor='rgba(240,192,64,0.6)'; ind.style.color='var(--gold)'; }
   } else {
-    arrow.textContent = '!'; arrow.style.color='var(--red)';
-    lbl.textContent   = 'ENEMY'; lbl.style.color='var(--red)';
+    lbl.textContent = '💀 ENEMY TURN';
+    if (ind) { ind.style.borderColor='rgba(255,60,60,0.6)'; ind.style.color='var(--red)'; }
   }
   setBtnsDisabled(!isPlayer);
   renderSkills();
@@ -1172,39 +1285,40 @@ function enemyTurn() {
     dmg = Math.max(1, Math.floor((e.atk+rnd(-3,4))*(1-defR)) - h.def);
     addLog(`🗡️ ${e.name} "${move}": -${dmg} HP`, 'hit');
   }
-  h.hp = Math.max(0, h.hp - dmg);
-  shakeEl('hero-battle-img');
-  if (defending) { defending = false; addLog('🛡️ Defense ended','sys'); }
+  if (defending) addLog('🛡️ Defense reduced damage!','sys');
 
-  // Boss heal
-  if (e.isBoss && e.hp < e.maxhp*0.3 && rnd(1,4)===1) {
-    const hv = rnd(30,60);
-    e.hp = Math.min(e.maxhp, e.hp + hv);
-    addLog(`🔴 ${e.name} regenerates +${hv} HP!`, 'boss');
-  }
+  enemyAttackAnim('enemy-unit-' + activeEnemyIdx, () => {
+    h.hp = Math.max(0, h.hp - dmg);
+    if (defending) { defending = false; }
 
-  updateBars();
-  if (h.hp <= 0) { setTimeout(onHeroDead, 500); return; }
+    // Boss heal
+    if (e.isBoss && e.hp < e.maxhp*0.3 && rnd(1,4)===1) {
+      const hv = rnd(30,60);
+      e.hp = Math.min(e.maxhp, e.hp + hv);
+      addLog(`🔴 ${e.name} regenerates +${hv} HP!`, 'boss');
+    }
 
-  // Rotate to next alive enemy (for non-boss)
-  if (!isBossFloor(floor)) {
-    let next = activeEnemyIdx;
-    let tries = monsters.length;
-    do {
-      next = (next + 1) % monsters.length;
-      tries--;
-    } while (monsters[next].hp <= 0 && tries > 0);
-    activeEnemyIdx = next;
-    enemy = monsters[activeEnemyIdx];
-    renderEnemies();
-    renderMonsterDots();
-  }
+    updateBars();
+    if (h.hp <= 0) { setTimeout(onHeroDead, 500); return; }
 
-  setTimeout(() => {
-    addLog(`── Your turn — facing ${monsters[activeEnemyIdx].name} ──`, 'sys');
-    busy = false;
-    setTurnUI(true);
-  }, 600);
+    // Rotate to next alive enemy
+    if (!isBossFloor(floor)) {
+      let next = activeEnemyIdx;
+      let tries = monsters.length;
+      do { next = (next+1) % monsters.length; tries--; }
+      while (monsters[next].hp <= 0 && tries > 0);
+      activeEnemyIdx = next;
+      enemy = monsters[activeEnemyIdx];
+      renderEnemies();
+      renderMonsterDots();
+    }
+
+    setTimeout(() => {
+      addLog(`── Your turn — facing ${monsters[activeEnemyIdx].name} ──`, 'sys');
+      busy = false;
+      setTurnUI(true);
+    }, 600);
+  });
 }
 
 // ════════════════════════════════════════════════
@@ -1464,47 +1578,84 @@ function useSelectedItem() {
 function shakeEl(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  el.style.animation = 'none';
+  el.classList.remove('enemy-hit','hero-hit');
   void el.offsetWidth;
-  el.style.animation = '';
-  el.style.transform = 'translateX(-6px)';
-  setTimeout(() => { el.style.transform='translateX(4px)'; }, 60);
-  setTimeout(() => { el.style.transform=''; }, 120);
+  el.classList.add('enemy-hit');
+  setTimeout(() => el.classList.remove('enemy-hit'), 400);
+}
+
+function heroAttackAnim(onHit) {
+  const heroEl = document.getElementById('hero-battle-img');
+  if (!heroEl) { onHit(); return; }
+  heroEl.style.animation = 'none';
+  heroEl.classList.remove('hero-charging');
+  void heroEl.offsetWidth;
+  heroEl.classList.add('hero-charging');
+  setTimeout(() => {
+    onHit();
+  }, 280);
+  setTimeout(() => {
+    heroEl.classList.remove('hero-charging');
+    heroEl.style.animation = '';
+  }, 580);
+}
+
+function enemyAttackAnim(enemyId, onHit) {
+  const enemyEl = document.getElementById(enemyId);
+  const heroEl  = document.getElementById('hero-battle-img');
+  if (!enemyEl) { onHit(); return; }
+  enemyEl.classList.remove('enemy-charging');
+  void enemyEl.offsetWidth;
+  enemyEl.classList.add('enemy-charging');
+  setTimeout(() => {
+    if (heroEl) {
+      heroEl.classList.remove('hero-hit');
+      void heroEl.offsetWidth;
+      heroEl.classList.add('hero-hit');
+      setTimeout(() => heroEl.classList.remove('hero-hit'), 400);
+    }
+    onHit();
+  }, 280);
+  setTimeout(() => enemyEl.classList.remove('enemy-charging'), 580);
 }
 
 function fireProjectile(type, onHit) {
-  const heroEl  = document.getElementById('hero-battle-img');
-  const enemyEl = document.getElementById('enemy-emoji');
-  if (!heroEl || !enemyEl) { onHit(); return; }
-  const hr = heroEl.getBoundingClientRect();
-  const er = enemyEl.getBoundingClientRect();
-  const sx = hr.left+hr.width/2, sy = hr.top+hr.height/2;
-  const ex = er.left+er.width/2, ey = er.top+er.height/2;
-  const emoji = type==='heal'?'💚':type==='drain'?'🌀':type==='cooldown'?'🔄':'⚡';
-  const proj = document.createElement('div');
-  proj.className = 'proj'; proj.textContent = emoji;
-  proj.style.left=sx+'px'; proj.style.top=sy+'px';
-  document.body.appendChild(proj);
-  const dur=350, start=performance.now();
-  function anim(now){
-    const t=Math.min((now-start)/dur,1);
-    const ease=t<0.5?2*t*t:-1+(4-2*t)*t;
-    const x=sx+(ex-sx)*ease, y=sy+(ey-sy)*ease - Math.sin(Math.PI*t)*50;
-    const sc=1+Math.sin(Math.PI*t)*0.5;
-    proj.style.left=x+'px'; proj.style.top=y+'px';
-    proj.style.transform=`translate(-50%,-50%) scale(${sc})`;
-    if(t<1){requestAnimationFrame(anim);}
-    else{
-      proj.remove();
-      const burst=document.createElement('div');
-      burst.className='hit-burst'; burst.textContent=type==='heal'?'💚':'💥';
-      burst.style.left=ex+'px'; burst.style.top=ey+'px';
-      document.body.appendChild(burst);
-      setTimeout(()=>burst.remove(),400);
-      onHit();
+  // For heal/buff — no charge, just burst effect on hero
+  if (type === 'heal' || type === 'cooldown') {
+    const heroEl = document.getElementById('hero-battle-img');
+    const burst = document.createElement('div');
+    burst.className = 'hit-burst';
+    burst.textContent = type === 'heal' ? '💚' : '🔄';
+    if (heroEl) {
+      const r = heroEl.getBoundingClientRect();
+      burst.style.left = (r.left + r.width/2) + 'px';
+      burst.style.top  = (r.top  + r.height/2) + 'px';
     }
+    document.body.appendChild(burst);
+    setTimeout(() => burst.remove(), 400);
+    setTimeout(onHit, 200);
+    return;
   }
-  requestAnimationFrame(anim);
+  // For attack types — hero charges toward enemy
+  heroAttackAnim(() => {
+    const enemyEl = document.getElementById('enemy-unit-' + activeEnemyIdx);
+    if (enemyEl) {
+      const r = enemyEl.getBoundingClientRect();
+      const burst = document.createElement('div');
+      burst.className = 'hit-burst';
+      burst.textContent = '💥';
+      burst.style.left = (r.left + r.width/2) + 'px';
+      burst.style.top  = (r.top  + r.height/2) + 'px';
+      document.body.appendChild(burst);
+      setTimeout(() => burst.remove(), 400);
+      // Flash the enemy unit
+      enemyEl.classList.remove('enemy-hit');
+      void enemyEl.offsetWidth;
+      enemyEl.classList.add('enemy-hit');
+      setTimeout(() => enemyEl.classList.remove('enemy-hit'), 400);
+    }
+    onHit();
+  });
 }
 
 function showToast(msg) {
