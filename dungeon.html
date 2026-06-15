@@ -1573,19 +1573,32 @@ function heroAttackAnim(onHit) {
   const er = enemyEl.getBoundingClientRect();
   const dx = (er.left + er.width/2) - (hr.left + hr.width/2);
   const dy = (er.top  + er.height/2) - (hr.top  + hr.height/2);
-  // Charge 85% of the way there
   const tx = dx * 0.85, ty = dy * 0.85;
 
   heroEl.style.animation = 'none';
-  const anim = heroEl.animate([
-    {transform:'translate(0,0)',    offset:0},
-    {transform:`translate(${tx}px,${ty}px)`, offset:0.45},
-    {transform:`translate(${tx*0.9}px,${ty*0.9}px)`, offset:0.55},
-    {transform:'translate(0,0)',    offset:1}
-  ], {duration:520, easing:'ease-in-out', fill:'none'});
 
-  setTimeout(() => { onHit(); }, 240);
-  anim.onfinish = () => { heroEl.style.animation = ''; };
+  // Phase 1: charge forward — fast start, slow near target (ease-out)
+  const charge = heroEl.animate([
+    {transform:'translate(0,0)'},
+    {transform:`translate(${tx}px,${ty}px)`}
+  ], {duration:420, easing:'cubic-bezier(0.2,0,0.1,1)', fill:'forwards'});
+
+  // Hit at peak slowdown
+  charge.onfinish = () => {
+    onHit();
+    // Phase 2: brief pause at hit position
+    setTimeout(() => {
+      // Phase 3: snap back fast
+      const ret = heroEl.animate([
+        {transform:`translate(${tx}px,${ty}px)`},
+        {transform:'translate(0,0)'}
+      ], {duration:220, easing:'cubic-bezier(0.4,0,1,1)', fill:'forwards'});
+      ret.onfinish = () => {
+        heroEl.style.animation = '';
+        heroEl.style.transform = '';
+      };
+    }, 80);
+  };
 }
 
 function enemyAttackAnim(enemyUnitId, onHit) {
@@ -1599,14 +1612,14 @@ function enemyAttackAnim(enemyUnitId, onHit) {
   const dy = (hr.top  + hr.height/2) - (er.top  + er.height/2);
   const tx = dx * 0.85, ty = dy * 0.85;
 
-  const anim = enemyEl.animate([
-    {transform:'translate(0,0)',    offset:0},
-    {transform:`translate(${tx}px,${ty}px)`, offset:0.45},
-    {transform:`translate(${tx*0.9}px,${ty*0.9}px)`, offset:0.55},
-    {transform:'translate(0,0)',    offset:1}
-  ], {duration:520, easing:'ease-in-out', fill:'none'});
+  // Phase 1: charge — fast then slow
+  const charge = enemyEl.animate([
+    {transform:'translate(0,0)'},
+    {transform:`translate(${tx}px,${ty}px)`}
+  ], {duration:420, easing:'cubic-bezier(0.2,0,0.1,1)', fill:'forwards'});
 
-  setTimeout(() => {
+  charge.onfinish = () => {
+    // Hit effect on hero
     if (heroEl) {
       heroEl.classList.remove('hero-hit');
       void heroEl.offsetWidth;
@@ -1614,7 +1627,17 @@ function enemyAttackAnim(enemyUnitId, onHit) {
       setTimeout(() => heroEl.classList.remove('hero-hit'), 400);
     }
     onHit();
-  }, 240);
+    // Phase 2: pause then snap back
+    setTimeout(() => {
+      const ret = enemyEl.animate([
+        {transform:`translate(${tx}px,${ty}px)`},
+        {transform:'translate(0,0)'}
+      ], {duration:220, easing:'cubic-bezier(0.4,0,1,1)', fill:'forwards'});
+      ret.onfinish = () => {
+        enemyEl.style.transform = '';
+      };
+    }, 80);
+  };
 }
 
 function fireProjectile(type, onHit) {
