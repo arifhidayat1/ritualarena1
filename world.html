@@ -810,7 +810,10 @@ function showDetailView(data) {
   document.getElementById('nft-detail-view').style.display = 'block';
   const username = data.username || '';
   const avatarUrl = data.avatarUrl || ('https://unavatar.io/x/' + username);
-  document.getElementById('nft-detail-avatar').src = avatarUrl;
+  const avatarEl = document.getElementById('nft-detail-avatar');
+  avatarEl.src = avatarUrl;
+  avatarEl.style.display = 'block';
+  avatarEl.onerror = () => { avatarEl.style.display='none'; };
   document.getElementById('nft-detail-name').textContent = data.charName || data.username;
   document.getElementById('nft-detail-username').textContent = '@' + data.username;
   document.getElementById('nft-det-hp').textContent  = Number(data.hp);
