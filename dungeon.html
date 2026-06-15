@@ -226,21 +226,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 }
 @keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 
-/* Attack animations */
-@keyframes heroCharge{
-  0%{transform:translateX(0) translateY(0)}
-  40%{transform:translateX(120px) translateY(-10px)}
-  60%{transform:translateX(110px) translateY(0)}
-  80%{transform:translateX(115px) translateY(-5px)}
-  100%{transform:translateX(0) translateY(0)}
-}
-@keyframes enemyCharge{
-  0%{transform:translateX(0) translateY(0)}
-  40%{transform:translateX(-100px) translateY(-10px)}
-  60%{transform:translateX(-90px) translateY(0)}
-  80%{transform:translateX(-95px) translateY(-5px)}
-  100%{transform:translateX(0) translateY(0)}
-}
+/* Attack animations - distance set dynamically via JS */
 @keyframes hitFlash{
   0%,100%{filter:brightness(1)}
   30%{filter:brightness(3) saturate(0)}
@@ -253,9 +239,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
   75%{transform:translateX(5px)}
   100%{transform:translateX(0)}
 }
-.hero-charging{animation:heroCharge 0.55s ease-in-out forwards !important}
 .enemy-hit{animation:hitFlash 0.35s ease, hitBounce 0.35s ease !important}
-.enemy-charging{animation:enemyCharge 0.55s ease-in-out forwards !important}
 .hero-hit{animation:hitFlash 0.35s ease, hitBounce 0.35s ease !important}
 .hero-battle-name{
   font-size:6px;color:var(--cyan);
@@ -276,10 +260,6 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 @keyframes vsPulse{0%,100%{opacity:1}50%{opacity:0.6}}
 
 /* Enemy side */
-.enemy-side{
-  flex:1;display:flex;flex-direction:column;
-  align-items:center;justify-content:flex-end;padding-bottom:8px;
-}
 .enemy-emoji{
   font-size:100px;
   filter:drop-shadow(0 0 20px rgba(255,80,80,0.6));
@@ -1585,28 +1565,47 @@ function shakeEl(id) {
 }
 
 function heroAttackAnim(onHit) {
-  const heroEl = document.getElementById('hero-battle-img');
-  if (!heroEl) { onHit(); return; }
+  const heroEl  = document.getElementById('hero-battle-img');
+  const enemyEl = document.getElementById('enemy-unit-' + activeEnemyIdx);
+  if (!heroEl || !enemyEl) { onHit(); return; }
+
+  const hr = heroEl.getBoundingClientRect();
+  const er = enemyEl.getBoundingClientRect();
+  const dx = (er.left + er.width/2) - (hr.left + hr.width/2);
+  const dy = (er.top  + er.height/2) - (hr.top  + hr.height/2);
+  // Charge 85% of the way there
+  const tx = dx * 0.85, ty = dy * 0.85;
+
   heroEl.style.animation = 'none';
-  heroEl.classList.remove('hero-charging');
-  void heroEl.offsetWidth;
-  heroEl.classList.add('hero-charging');
-  setTimeout(() => {
-    onHit();
-  }, 280);
-  setTimeout(() => {
-    heroEl.classList.remove('hero-charging');
-    heroEl.style.animation = '';
-  }, 580);
+  const anim = heroEl.animate([
+    {transform:'translate(0,0)',    offset:0},
+    {transform:`translate(${tx}px,${ty}px)`, offset:0.45},
+    {transform:`translate(${tx*0.9}px,${ty*0.9}px)`, offset:0.55},
+    {transform:'translate(0,0)',    offset:1}
+  ], {duration:520, easing:'ease-in-out', fill:'none'});
+
+  setTimeout(() => { onHit(); }, 240);
+  anim.onfinish = () => { heroEl.style.animation = ''; };
 }
 
-function enemyAttackAnim(enemyId, onHit) {
-  const enemyEl = document.getElementById(enemyId);
+function enemyAttackAnim(enemyUnitId, onHit) {
+  const enemyEl = document.getElementById(enemyUnitId);
   const heroEl  = document.getElementById('hero-battle-img');
   if (!enemyEl) { onHit(); return; }
-  enemyEl.classList.remove('enemy-charging');
-  void enemyEl.offsetWidth;
-  enemyEl.classList.add('enemy-charging');
+
+  const er = enemyEl.getBoundingClientRect();
+  const hr = heroEl ? heroEl.getBoundingClientRect() : er;
+  const dx = (hr.left + hr.width/2)  - (er.left + er.width/2);
+  const dy = (hr.top  + hr.height/2) - (er.top  + er.height/2);
+  const tx = dx * 0.85, ty = dy * 0.85;
+
+  const anim = enemyEl.animate([
+    {transform:'translate(0,0)',    offset:0},
+    {transform:`translate(${tx}px,${ty}px)`, offset:0.45},
+    {transform:`translate(${tx*0.9}px,${ty*0.9}px)`, offset:0.55},
+    {transform:'translate(0,0)',    offset:1}
+  ], {duration:520, easing:'ease-in-out', fill:'none'});
+
   setTimeout(() => {
     if (heroEl) {
       heroEl.classList.remove('hero-hit');
@@ -1615,8 +1614,7 @@ function enemyAttackAnim(enemyId, onHit) {
       setTimeout(() => heroEl.classList.remove('hero-hit'), 400);
     }
     onHit();
-  }, 280);
-  setTimeout(() => enemyEl.classList.remove('enemy-charging'), 580);
+  }, 240);
 }
 
 function fireProjectile(type, onHit) {
