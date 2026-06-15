@@ -653,9 +653,10 @@ window.addEventListener('load', () => {
 <!-- NFT PANEL -->
 <div id="nft-panel" style="
   position:fixed;top:45%;right:60px;transform:translateY(-50%);z-index:998;
-  background:rgba(4,4,20,0.97);
-  border:2px solid rgba(168,85,247,0.6);
-  box-shadow:0 0 20px rgba(168,85,247,0.3);
+  background:rgba(4,4,20,0.75);
+  backdrop-filter:blur(10px);
+  border:2px solid rgba(168,85,247,0.5);
+  box-shadow:0 0 20px rgba(168,85,247,0.2);
   padding:16px;width:240px;
   display:none;
   font-family:'Press Start 2P',monospace;
@@ -669,12 +670,13 @@ window.addEventListener('load', () => {
       Mint your X profile as an NFT character to access PvP Arena!
     </div>
     <div style="font-size:6px;color:#6060a0;margin-bottom:4px">X USERNAME</div>
-    <div style="display:flex;gap:6px;margin-bottom:10px">
+    <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center">
+      <img id="nft-input-avatar" src="" style="width:36px;height:36px;border-radius:50%;border:1px solid rgba(168,85,247,0.5);object-fit:cover;display:none;flex-shrink:0">
       <input id="nft-username-input" placeholder="your_username" style="
-        flex:1;background:#050510;border:1px solid #3030a0;
+        flex:1;background:rgba(5,5,16,0.8);border:1px solid #3030a0;
         color:#40d0ff;padding:6px 8px;
         font-family:'Press Start 2P',monospace;font-size:7px;outline:none;
-      ">
+      " oninput="previewXAvatar(this.value)">
     </div>
     <button onclick="generateNFTStats()" id="btn-gen-nft" style="
       width:100%;padding:8px;margin-bottom:6px;
@@ -925,6 +927,17 @@ async function burnNFT() {
   } catch(e) {
     status.textContent = '❌ ' + (e.reason || e.message || 'Error');
   }
+}
+
+// Preview X avatar from username
+function previewXAvatar(username) {
+  username = username.trim().replace('@','');
+  const avatar = document.getElementById('nft-input-avatar');
+  if (!username) { avatar.style.display='none'; return; }
+  // Use unavatar service to get X profile pic
+  avatar.src = 'https://unavatar.io/twitter/' + username;
+  avatar.style.display = 'block';
+  avatar.onerror = () => { avatar.style.display='none'; };
 }
 
 // Auto check NFT on load
