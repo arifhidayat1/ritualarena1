@@ -935,7 +935,7 @@ function previewXAvatar(username) {
   const avatar = document.getElementById('nft-input-avatar');
   if (!username) { avatar.style.display='none'; return; }
   // Use unavatar service to get X profile pic
-  avatar.src = 'https://unavatar.io/twitter/' + username;
+  avatar.src = 'https://unavatar.io/x/' + username;
   avatar.style.display = 'block';
   avatar.onerror = () => { avatar.style.display='none'; };
 }
