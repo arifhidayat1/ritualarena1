@@ -136,6 +136,13 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 .hstat{font-family:'VT323',monospace;font-size:12px;color:#6060a0;text-align:left}
 .hstat span{color:var(--text)}
 
+/* ── ENEMY MULTI ── */
+.enemy-side{display:flex;align-items:flex-end;justify-content:center;gap:18px;flex:1}
+.enemy-unit{display:flex;flex-direction:column;align-items:center;cursor:default;transition:transform 0.2s}
+.enemy-unit.active-enemy{transform:scale(1.15);filter:drop-shadow(0 0 10px rgba(255,200,0,0.7))}
+.enemy-unit.dead-enemy{pointer-events:none}
+.monster-dot.active{background:var(--gold);box-shadow:0 0 6px var(--gold)}
+
 /* ── BATTLE SCREEN ── */
 #screen-battle{padding-top:44px;position:relative;z-index:10}
 .battle-wrap{min-height:calc(100vh - 44px);display:flex;flex-direction:column}
@@ -476,11 +483,8 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
         <div class="vs-txt">VS</div>
       </div>
       <!-- Enemy -->
-      <div class="enemy-side">
-        <span class="enemy-emoji" id="enemy-emoji">👾</span>
-        <div class="enemy-name-tag" id="enemy-name-tag">ENEMY</div>
-        <div class="boss-tag" id="boss-tag" style="display:none">💀 BOSS</div>
-        <div style="font-family:'VT323',monospace;font-size:13px;color:#a06020;margin-top:2px" id="enemy-xp-tag">+0 XP</div>
+      <div class="enemy-side" id="enemy-side">
+        <!-- dynamically rendered by renderEnemies() -->
       </div>
     </div>
     <!-- Battle bottom -->
@@ -511,12 +515,10 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
         </div>
         <div class="bar-section enemy-section">
           <div class="bar-name enemy" id="enemy-bar-name">ENEMY</div>
-          <div class="bar-row rev">
-            <span class="bar-lbl">HP</span>
-            <div class="bar-track"><div class="bar-fill hp" id="enemy-hp-bar" style="width:100%"></div></div>
-            <span class="bar-val" id="enemy-hp-val">—</span>
+          <div id="all-enemy-bars">
+            <!-- rendered by renderEnemyBars() -->
           </div>
-          <div class="bar-row rev" style="margin-top:2px">
+          <div style="margin-top:2px">
             <span style="font-family:'VT323',monospace;font-size:11px;color:#a06020" id="enemy-type-val">—</span>
           </div>
         </div>
@@ -725,6 +727,7 @@ let skillCooldowns = {};
 let totalXP = 0;
 let selectedItem = null;
 let inBattle = false;
+let activeEnemyIdx = 0; // which enemy attacks this round
 
 // ════════════════════════════════════════════════
 // SCREENS
@@ -844,12 +847,15 @@ function renderFloorGrid() {
 function startFloor(f) {
   floor = f;
   monsterIdx = 0;
+  activeEnemyIdx = 0;
   defending = false;
   busy = false;
   skillCooldowns = {};
   monsters = generateFloorMonsters(f);
   document.getElementById('battle-log').innerHTML = '';
-  setupEnemy(monsters[0]);
+  // For non-boss: keep all monsters alive, target first
+  // For boss: same single enemy
+  enemy = monsters[activeEnemyIdx];
   renderBattle();
   showScreen('battle');
   document.getElementById('hud-floor').textContent = '🏚️ FLOOR ' + f + '/25';
@@ -857,7 +863,11 @@ function startFloor(f) {
   setTurnUI(true);
   clearBgForBattle();
   addLog(`⚔️ Floor ${f} — ${isBossFloor(f)?'👑 BOSS BATTLE!':'Battle begins!'}`, isBossFloor(f)?'boss':'sys');
-  addLog(`Enemy: ${enemy.icon} ${enemy.name}`, 'sys');
+  if (!isBossFloor(f)) {
+    monsters.forEach((m,i) => addLog(`Enemy ${i+1}: ${m.icon} ${m.name}`, 'sys'));
+  } else {
+    addLog(`Enemy: ${enemy.icon} ${enemy.name}`, 'sys');
+  }
 }
 
 function isBossFloor(f) { return f % 5 === 0; }
@@ -898,41 +908,92 @@ function setupEnemy(m) {
 }
 
 function renderBattle() {
-  const h = hero, e = enemy;
+  const h = hero;
   // Hero
   const img = document.getElementById('hero-battle-img');
   img.src = h.img;
   document.getElementById('hero-battle-name').textContent = h.name;
   document.getElementById('hero-bar-name').textContent = h.name;
-  // Enemy
-  document.getElementById('enemy-emoji').textContent = e.icon;
-  document.getElementById('enemy-name-tag').textContent = e.name;
-  document.getElementById('enemy-bar-name').textContent = e.name;
-  document.getElementById('enemy-type-val').textContent = e.type;
-  document.getElementById('enemy-xp-tag').textContent = '+' + e.xp + ' XP';
   // Boss tag
   const bossTag = document.getElementById('boss-tag');
-  bossTag.style.display = e.isBoss ? 'block' : 'none';
-  if (e.isBoss) bossTag.textContent = '💀 BOSS — Floor ' + e.floor;
   // Floor banner
   const banner = document.getElementById('floor-banner');
-  banner.textContent = `FLOOR ${floor}/25 ${isBossFloor(floor)?'👑 BOSS':'— Monster '+(monsterIdx+1)+'/'+monsters.length}`;
+  banner.textContent = `FLOOR ${floor}/25 ${isBossFloor(floor)?'👑 BOSS':'— Monster '+(activeEnemyIdx+1)+'/'+monsters.length}`;
   banner.className = 'floor-banner' + (isBossFloor(floor) ? ' boss-banner' : '');
-  // Monster dots
+  // Render enemies
+  renderEnemies();
   renderMonsterDots();
   updateBars();
   renderSkills();
 }
 
+function renderEnemies() {
+  const side = document.getElementById('enemy-side');
+  if (isBossFloor(floor)) {
+    const e = monsters[0];
+    side.innerHTML = `
+      <div class="enemy-unit active-enemy" id="enemy-unit-0">
+        <span class="enemy-emoji" id="enemy-emoji">${e.icon}</span>
+        <div class="enemy-name-tag" id="enemy-name-tag">${e.name}</div>
+        <div class="boss-tag" id="boss-tag">💀 BOSS — Floor ${floor}</div>
+        <div style="font-family:'VT323',monospace;font-size:13px;color:#a06020;margin-top:2px">+${e.xp} XP</div>
+      </div>`;
+    document.getElementById('enemy-type-val').textContent = e.type;
+    document.getElementById('enemy-bar-name').textContent = e.name;
+  } else {
+    side.innerHTML = monsters.map((m, i) => {
+      const isDead = m.hp <= 0;
+      const isActive = i === activeEnemyIdx && !isDead;
+      return `
+        <div class="enemy-unit ${isActive?'active-enemy':''} ${isDead?'dead-enemy':''}" id="enemy-unit-${i}" onclick="${!isDead&&isPlayerTurn?'selectTarget('+i+')':''}">
+          <span class="enemy-emoji" style="font-size:${isActive?'52px':'36px'};opacity:${isDead?0.25:1}">${m.icon}</span>
+          <div class="enemy-name-tag" style="font-size:${isActive?'10px':'8px'};opacity:${isDead?0.3:1}">${isDead?'💀':m.name}</div>
+          ${isActive?`<div style="font-family:'VT323',monospace;font-size:11px;color:#a06020">+${m.xp} XP</div>`:''}
+        </div>`;
+    }).join('');
+    const ae = monsters[activeEnemyIdx];
+    document.getElementById('enemy-type-val').textContent = ae ? ae.type : '—';
+    document.getElementById('enemy-bar-name').textContent = `Enemy ${activeEnemyIdx+1}/${monsters.length}`;
+  }
+}
+
+function renderEnemyBars() {
+  const container = document.getElementById('all-enemy-bars');
+  if (isBossFloor(floor)) {
+    const e = monsters[0];
+    const pct = Math.max(0, e.hp/e.maxhp*100);
+    container.innerHTML = `
+      <div class="bar-row rev">
+        <span class="bar-lbl">HP</span>
+        <div class="bar-track"><div class="bar-fill hp ${pct<25?'low':''}" style="width:${pct}%"></div></div>
+        <span class="bar-val">${Math.max(0,e.hp)}/${e.maxhp}</span>
+      </div>`;
+  } else {
+    container.innerHTML = monsters.map((m, i) => {
+      const pct = Math.max(0, m.hp/m.maxhp*100);
+      const isActive = i === activeEnemyIdx;
+      const isDead = m.hp <= 0;
+      return `
+        <div class="bar-row rev" style="opacity:${isDead?0.3:1};margin-bottom:1px">
+          <span class="bar-lbl" style="font-size:9px;color:${isActive?'#ffd040':'#6060a0'}">${m.icon}</span>
+          <div class="bar-track" style="height:${isActive?'7px':'5px'}">
+            <div class="bar-fill hp ${pct<25?'low':''}" style="width:${pct}%"></div>
+          </div>
+          <span class="bar-val" style="font-size:${isActive?'11px':'9px'}">${isDead?'☠':''+Math.max(0,m.hp)}</span>
+        </div>`;
+    }).join('');
+  }
+}
+
 function renderMonsterDots() {
   const cnt = document.getElementById('monster-count');
-  cnt.innerHTML = monsters.map((_,i) =>
-    `<div class="monster-dot${i<monsterIdx?' dead':''}"></div>`
+  cnt.innerHTML = monsters.map((m,i) =>
+    `<div class="monster-dot${m.hp<=0?' dead':i===activeEnemyIdx?' active':''}"></div>`
   ).join('');
 }
 
 function updateBars() {
-  const h = hero, e = enemy;
+  const h = hero;
   const hpPct = Math.max(0, h.hp/h.maxhp*100);
   const mpPct = h.mp/h.maxmp*100;
   const xpPct = Math.min(100, h.xp/h.xpNext*100);
@@ -943,10 +1004,7 @@ function updateBars() {
   document.getElementById('hero-mp-val').textContent = h.mp+'/'+h.maxmp;
   document.getElementById('hero-xp-bar').style.width = xpPct+'%';
   document.getElementById('hero-xp-val').textContent = h.xp+'/'+h.xpNext;
-  const ehpPct = Math.max(0, e.hp/e.maxhp*100);
-  document.getElementById('enemy-hp-bar').style.width = ehpPct+'%';
-  document.getElementById('enemy-hp-bar').className = 'bar-fill hp' + (ehpPct<25?' low':'');
-  document.getElementById('enemy-hp-val').textContent = Math.max(0,e.hp)+'/'+e.maxhp;
+  renderEnemyBars();
 }
 
 function renderSkills() {
@@ -1018,7 +1076,8 @@ function doAction(type) {
   if (!isPlayerTurn || busy) return;
   busy = true;
   setBtnsDisabled(true);
-  const h = hero, e = enemy;
+  const h = hero;
+  const e = monsters[activeEnemyIdx];
 
   if (type === 'attack') {
     let dmg = Math.max(1, h.atk - e.def + rnd(-4,6));
@@ -1026,8 +1085,8 @@ function doAction(type) {
     if (crit) dmg = Math.floor(dmg * 1.6);
     fireProjectile('atk', () => {
       e.hp = Math.max(0, e.hp - dmg);
-      addLog(`⚔️ Attack: -${dmg} HP${crit?' ⚡CRITICAL!':''}`, 'hit');
-      shakeEl('enemy-emoji');
+      addLog(`⚔️ Attack → ${e.name}: -${dmg} HP${crit?' ⚡CRITICAL!':''}`, 'hit');
+      shakeEl('enemy-unit-'+activeEnemyIdx);
       updateBars();
       if (e.hp <= 0) { setTimeout(onEnemyDead, 300); return; }
       endPlayerTurn();
@@ -1042,7 +1101,8 @@ function doAction(type) {
 
 function useSkill(id) {
   if (!isPlayerTurn || busy) return;
-  const h = hero, e = enemy;
+  const h = hero;
+  const e = monsters[activeEnemyIdx];
   const s = h.skills.find(x => x.id === id);
   if (!s) return;
   if (s.type === 'cooldown' && (skillCooldowns[id]||0) > 0) return;
@@ -1057,8 +1117,8 @@ function useSkill(id) {
       const c = rnd(1,10) > 9;
       if (c) d = Math.floor(d*1.5);
       e.hp = Math.max(0, e.hp - d);
-      addLog(`⚡ ${s.name}: -${d} HP${c?' CRITICAL!':''}`, 'hit');
-      shakeEl('enemy-emoji');
+      addLog(`⚡ ${s.name} → ${e.name}: -${d} HP${c?' CRITICAL!':''}`, 'hit');
+      shakeEl('enemy-unit-'+activeEnemyIdx);
     } else if (s.type === 'heal') {
       const hv = s.heal + rnd(0,6);
       h.hp = Math.min(h.maxhp, h.hp + hv);
@@ -1066,19 +1126,19 @@ function useSkill(id) {
     } else if (s.type === 'multi') {
       const d1 = s.dmg+rnd(-3,6), d2 = s.dmg+rnd(-3,6);
       e.hp = Math.max(0, e.hp - d1 - d2);
-      addLog(`⚡ ${s.name}: -${d1} & -${d2} HP`, 'hit');
-      shakeEl('enemy-emoji');
+      addLog(`⚡ ${s.name} → ${e.name}: -${d1} & -${d2} HP`, 'hit');
+      shakeEl('enemy-unit-'+activeEnemyIdx);
     } else if (s.type === 'sure') {
       e.hp = Math.max(0, e.hp - s.dmg);
-      addLog(`🎯 ${s.name}: -${s.dmg} HP (sure hit!)`, 'hit');
-      shakeEl('enemy-emoji');
+      addLog(`🎯 ${s.name} → ${e.name}: -${s.dmg} HP (sure hit!)`, 'hit');
+      shakeEl('enemy-unit-'+activeEnemyIdx);
     } else if (s.type === 'drain') {
       const d = s.dmg + rnd(-5,6);
       const mg = s.manaHeal || 0;
       e.hp = Math.max(0, e.hp - d);
       h.mp = Math.min(h.maxmp, h.mp + mg);
-      addLog(`🌀 ${s.name}: -${d} HP, +${mg} MP`, 'hit');
-      shakeEl('enemy-emoji');
+      addLog(`🌀 ${s.name} → ${e.name}: -${d} HP, +${mg} MP`, 'hit');
+      shakeEl('enemy-unit-'+activeEnemyIdx);
     } else if (s.type === 'cooldown') {
       const hv = s.heal + rnd(0,8);
       const mg = s.manaHeal || 0;
@@ -1095,7 +1155,8 @@ function useSkill(id) {
 }
 
 function enemyTurn() {
-  const h = hero, e = enemy;
+  const h = hero;
+  const e = monsters[activeEnemyIdx];
   const moves = ['Strike','Slash','Crush','Dark Wave','Shadow Fang'];
   const move = moves[rnd(0, moves.length-1)];
   const t = rnd(1,10);
@@ -1124,8 +1185,23 @@ function enemyTurn() {
 
   updateBars();
   if (h.hp <= 0) { setTimeout(onHeroDead, 500); return; }
+
+  // Rotate to next alive enemy (for non-boss)
+  if (!isBossFloor(floor)) {
+    let next = activeEnemyIdx;
+    let tries = monsters.length;
+    do {
+      next = (next + 1) % monsters.length;
+      tries--;
+    } while (monsters[next].hp <= 0 && tries > 0);
+    activeEnemyIdx = next;
+    enemy = monsters[activeEnemyIdx];
+    renderEnemies();
+    renderMonsterDots();
+  }
+
   setTimeout(() => {
-    addLog('── Your Turn ──','sys');
+    addLog(`── Your turn — facing ${monsters[activeEnemyIdx].name} ──`, 'sys');
     busy = false;
     setTurnUI(true);
   }, 600);
@@ -1136,10 +1212,12 @@ function enemyTurn() {
 // ════════════════════════════════════════════════
 
 function onEnemyDead() {
-  // XP
-  const xpGain = enemy.xp;
+  const e = monsters[activeEnemyIdx];
+  const xpGain = e.xp;
   hero.xp += xpGain;
   totalXP += xpGain;
+  addLog(`💫 ${e.name} defeated! +${xpGain} XP`, 'sys');
+
   let leveledUp = false;
   while (hero.xp >= hero.xpNext) {
     hero.xp -= hero.xpNext;
@@ -1153,24 +1231,31 @@ function onEnemyDead() {
     leveledUp = true;
     addLog(`🎉 LEVEL UP! Now Lv.${hero.level}!`, 'heal');
   }
-  addLog(`💫 ${enemy.name} defeated! +${xpGain} XP`, 'sys');
   updateBars();
-  monsterIdx++;
 
-  // More monsters in floor?
-  if (!isBossFloor(floor) && monsterIdx < monsters.length) {
+  // Check if any monsters still alive
+  const aliveMonsters = monsters.filter(m => m.hp > 0);
+  if (!isBossFloor(floor) && aliveMonsters.length > 0) {
+    // Find next alive enemy
+    let next = activeEnemyIdx;
+    let tries = monsters.length;
+    do {
+      next = (next + 1) % monsters.length;
+      tries--;
+    } while (monsters[next].hp <= 0 && tries > 0);
+    activeEnemyIdx = next;
+    enemy = monsters[activeEnemyIdx];
+    renderEnemies();
+    renderMonsterDots();
     setTimeout(() => {
-      addLog(`── Next Monster ──`, 'sys');
-      setupEnemy(monsters[monsterIdx]);
-      renderBattle();
-      setTurnUI(true);
+      addLog(`── Your turn — facing ${enemy.name} ──`, 'sys');
       busy = false;
-      addLog(`⚔️ ${enemy.icon} ${enemy.name} appears!`, 'sys');
-    }, 800);
+      setTurnUI(true);
+    }, 500);
     return;
   }
 
-  // Floor cleared!
+  // All dead → floor cleared
   setTimeout(onFloorCleared, 500);
 }
 
