@@ -870,26 +870,31 @@ function renderHeroSelect() {
   grid.innerHTML = HEROES.map((h, i) => {
     let spriteHtml;
     if (h.spriteSheet) {
-      const totalW = h.frameW * h.cols;
-      const totalH = h.frameH * (h.hurtRow + 1); // total rows used
-      const offsetY = h.idleRow * h.frameH;
+      const displaySize = 80;
+      const scale = displaySize / h.frameW;
+      const bgW = h.frameW * h.cols * scale;
+      const bgH = h.frameH * (h.hurtRow + 1) * scale;
+      const offsetY = h.idleRow * h.frameH * scale;
       const animName = `cardIdle_${h.id}`;
-      // Inject keyframes dynamically
+
       if (!document.getElementById('kf_' + h.id)) {
         const style = document.createElement('style');
         style.id = 'kf_' + h.id;
         let kf = `@keyframes ${animName}{`;
         for (let f = 0; f < h.cols; f++) {
-          kf += `${Math.round(f/h.cols*100)}%{background-position:-${f*h.frameW}px -${offsetY}px}`;
+          const pct = Math.round(f / h.cols * 100);
+          kf += `${pct}%{background-position:-${f * displaySize}px -${offsetY}px}`;
         }
-        kf += `100%{background-position:0px -${offsetY}px}}`;
+        kf += `}`;
         style.textContent = kf;
         document.head.appendChild(style);
       }
+
       spriteHtml = `<div style="
-        width:80px;height:80px;margin:0 auto 8px;
+        width:${displaySize}px;height:${displaySize}px;margin:0 auto 8px;
         background-image:url('${h.spriteSheet}');
-        background-size:${totalW * (80/h.frameW)}px ${totalH * (80/h.frameH)}px;
+        background-size:${bgW}px ${bgH}px;
+        background-repeat:no-repeat;
         image-rendering:pixelated;
         animation:${animName} 0.6s steps(1) infinite;
       "></div>`;
