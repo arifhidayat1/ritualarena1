@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/world",   "destination": "/world.html"   },
+    { "source": "/dungeon", "destination": "/dungeon.html" },
+    { "source": "/pvp",     "destination": "/pvp.html"     },
+    { "source": "/game",    "destination": "/game.html"    },
+    { "source": "/connect", "destination": "/connect.html" }
+  ]
+}
