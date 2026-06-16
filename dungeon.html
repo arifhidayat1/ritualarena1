@@ -747,6 +747,8 @@ const HEROES = [
   {
     id:'foxxy', name:'Foxxy', cls:'Fire Trickster',
     img:'assets/foxxy.png',
+    spriteSheet:'assets/foxxy.png', frameW:175, frameH:175, cols:4,
+    idleRow:0, walkRow:1, attackRow:2, hurtRow:3,
     hp:120, maxhp:120, mp:100, maxmp:100,
     atk:22, def:6, healPow:35,
     xp:0, level:1, xpNext:100,
@@ -865,9 +867,38 @@ function showScreen(id) {
 
 function renderHeroSelect() {
   const grid = document.getElementById('hero-grid');
-  grid.innerHTML = HEROES.map((h, i) => `
+  grid.innerHTML = HEROES.map((h, i) => {
+    let spriteHtml;
+    if (h.spriteSheet) {
+      const totalW = h.frameW * h.cols;
+      const totalH = h.frameH * (h.hurtRow + 1); // total rows used
+      const offsetY = h.idleRow * h.frameH;
+      const animName = `cardIdle_${h.id}`;
+      // Inject keyframes dynamically
+      if (!document.getElementById('kf_' + h.id)) {
+        const style = document.createElement('style');
+        style.id = 'kf_' + h.id;
+        let kf = `@keyframes ${animName}{`;
+        for (let f = 0; f < h.cols; f++) {
+          kf += `${Math.round(f/h.cols*100)}%{background-position:-${f*h.frameW}px -${offsetY}px}`;
+        }
+        kf += `100%{background-position:0px -${offsetY}px}}`;
+        style.textContent = kf;
+        document.head.appendChild(style);
+      }
+      spriteHtml = `<div style="
+        width:80px;height:80px;margin:0 auto 8px;
+        background-image:url('${h.spriteSheet}');
+        background-size:${totalW * (80/h.frameW)}px ${totalH * (80/h.frameH)}px;
+        image-rendering:pixelated;
+        animation:${animName} 0.6s steps(1) infinite;
+      "></div>`;
+    } else {
+      spriteHtml = `<img class="hero-sprite" src="${h.img}" onerror="this.style.display='none'">`;
+    }
+    return `
     <div class="hero-card ${i===0?'selected':''}" id="hcard${i}" onclick="selectHero(${i})">
-      <img class="hero-sprite" src="${h.img}" onerror="this.style.display='none'">
+      ${spriteHtml}
       <div class="hero-name">${h.name}</div>
       <div class="hero-cls">${h.cls}</div>
       <div class="hero-stats">
@@ -876,8 +907,8 @@ function renderHeroSelect() {
         <div class="hstat">DEF <span>${h.def}</span></div>
         <div class="hstat">MP <span>${h.mp}</span></div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 function selectHero(i) {
