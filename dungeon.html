@@ -218,12 +218,45 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
   flex:1;display:flex;flex-direction:column;
   align-items:center;justify-content:flex-end;padding-bottom:8px;
 }
-.hero-battle-sprite{
-  width:120px;height:120px;object-fit:contain;
+.hero-battle-sprite{ display:none } /* replaced by sprite sheet div */
+
+/* Foxxy sprite sheet */
+.hero-sprite-sheet{
+  width:175px;height:175px;
+  background-image:url('assets/foxxy.png');
+  background-size:700px 700px;
   image-rendering:pixelated;
-  filter:drop-shadow(0 0 16px rgba(80,160,255,0.6));
-  animation:heroFloat 3s ease-in-out infinite;
+  display:block;margin:0 auto;
+  animation:foxxyIdle 0.6s steps(1) infinite;
 }
+@keyframes foxxyIdle{
+  0%  {background-position:0 0}
+  25% {background-position:-175px 0}
+  50% {background-position:-350px 0}
+  75% {background-position:-525px 0}
+}
+@keyframes foxxyWalk{
+  0%  {background-position:0 -175px}
+  25% {background-position:-175px -175px}
+  50% {background-position:-350px -175px}
+  75% {background-position:-525px -175px}
+}
+@keyframes foxxyAttack{
+  0%  {background-position:0 -350px}
+  25% {background-position:-175px -350px}
+  50% {background-position:-350px -350px}
+  75% {background-position:-525px -350px}
+}
+@keyframes foxxyHurt{
+  0%  {background-position:0 -525px}
+  33% {background-position:-175px -525px}
+  66% {background-position:-350px -525px}
+  100%{background-position:-525px -525px}
+}
+.foxxy-walk   {animation:foxxyWalk   0.5s steps(1) infinite !important}
+.foxxy-attack {animation:foxxyAttack 0.42s steps(1) 1       !important}
+.foxxy-hurt   {animation:foxxyHurt   0.4s steps(1) 1        !important}
+
 @keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 
 /* Attack animations - distance set dynamically via JS */
@@ -575,7 +608,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
       <div class="hero-side">
         <div class="fighter-card">
           <div class="fighter-name" id="hero-battle-name">HERO</div>
-          <img id="hero-battle-img" class="hero-battle-sprite" src="" alt="hero">
+        <div id="hero-battle-img" class="hero-sprite-sheet"></div>
           <!-- HP/MP bar below sprite -->
           <div class="fighter-bars">
             <div class="fighter-bar-row">
@@ -712,16 +745,16 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 
 const HEROES = [
   {
-    id:'jez', name:'Jez Runner', cls:'Strong Fighter',
-    img:'jezzCharArena.gif',
-    hp:130, maxhp:130, mp:80, maxmp:80,
-    atk:18, def:8, healPow:30,
+    id:'foxxy', name:'Foxxy', cls:'Fire Trickster',
+    img:'assets/foxxy.png',
+    hp:120, maxhp:120, mp:100, maxmp:100,
+    atk:22, def:6, healPow:35,
     xp:0, level:1, xpNext:100,
     skills:[
-      {id:'s1',name:'Net Strike',desc:'Infernet strike',dmg:28,mpCost:15,type:'dmg'},
-      {id:'s2',name:'AI Compute',desc:'Massive AI damage',dmg:50,mpCost:30,type:'dmg'},
-      {id:'s3',name:'Regen Node',desc:'Restore HP+MP (9 turn cd)',heal:25,manaHeal:15,mpCost:0,cooldown:9,type:'cooldown'},
-      {id:'s4',name:'Fork Net',desc:'Attack twice',dmg:22,mpCost:25,type:'multi'},
+      {id:'s1',name:'Flame Bite',desc:'Quick fire strike',dmg:28,mpCost:15,type:'dmg'},
+      {id:'s2',name:'Fire Burst',desc:'Massive fire damage',dmg:50,mpCost:30,type:'dmg'},
+      {id:'s3',name:'Fox Regen',desc:'Restore HP+MP (9 turn cd)',heal:25,manaHeal:15,mpCost:0,cooldown:9,type:'cooldown'},
+      {id:'s4',name:'Tail Slash',desc:'Attack twice',dmg:22,mpCost:25,type:'multi'},
     ]
   },
   {
@@ -995,9 +1028,7 @@ function setupEnemy(m) {
 
 function renderBattle() {
   const h = hero;
-  // Hero
-  const img = document.getElementById('hero-battle-img');
-  if (img) img.src = h.img;
+  // Hero name
   const heroName = document.getElementById('hero-battle-name');
   if (heroName) heroName.textContent = h.name;
   const heroBarName = document.getElementById('hero-bar-name');
@@ -1575,28 +1606,26 @@ function heroAttackAnim(onHit) {
   const dy = (er.top  + er.height/2) - (hr.top  + hr.height/2);
   const tx = dx * 0.85, ty = dy * 0.85;
 
-  heroEl.style.animation = 'none';
+  // Walk anim while charging
+  heroEl.classList.add('foxxy-walk');
 
-  // Phase 1: charge forward — fast start, slow near target (ease-out)
   const charge = heroEl.animate([
     {transform:'translate(0,0)'},
     {transform:`translate(${tx}px,${ty}px)`}
   ], {duration:420, easing:'cubic-bezier(0.2,0,0.1,1)', fill:'forwards'});
 
-  // Hit at peak slowdown
   charge.onfinish = () => {
+    // Switch to attack anim on hit
+    heroEl.classList.remove('foxxy-walk');
+    heroEl.classList.add('foxxy-attack');
     onHit();
-    // Phase 2: brief pause at hit position
     setTimeout(() => {
-      // Phase 3: snap back fast
+      heroEl.classList.remove('foxxy-attack');
       const ret = heroEl.animate([
         {transform:`translate(${tx}px,${ty}px)`},
         {transform:'translate(0,0)'}
       ], {duration:220, easing:'cubic-bezier(0.4,0,1,1)', fill:'forwards'});
-      ret.onfinish = () => {
-        heroEl.style.animation = '';
-        heroEl.style.transform = '';
-      };
+      ret.onfinish = () => { heroEl.style.transform = ''; };
     }, 80);
   };
 }
@@ -1612,30 +1641,26 @@ function enemyAttackAnim(enemyUnitId, onHit) {
   const dy = (hr.top  + hr.height/2) - (er.top  + er.height/2);
   const tx = dx * 0.85, ty = dy * 0.85;
 
-  // Phase 1: charge — fast then slow
   const charge = enemyEl.animate([
     {transform:'translate(0,0)'},
     {transform:`translate(${tx}px,${ty}px)`}
   ], {duration:420, easing:'cubic-bezier(0.2,0,0.1,1)', fill:'forwards'});
 
   charge.onfinish = () => {
-    // Hit effect on hero
+    // Hero kena → hurt animation
     if (heroEl) {
-      heroEl.classList.remove('hero-hit');
+      heroEl.classList.remove('foxxy-hurt');
       void heroEl.offsetWidth;
-      heroEl.classList.add('hero-hit');
-      setTimeout(() => heroEl.classList.remove('hero-hit'), 400);
+      heroEl.classList.add('foxxy-hurt');
+      setTimeout(() => heroEl.classList.remove('foxxy-hurt'), 420);
     }
     onHit();
-    // Phase 2: pause then snap back
     setTimeout(() => {
       const ret = enemyEl.animate([
         {transform:`translate(${tx}px,${ty}px)`},
         {transform:'translate(0,0)'}
       ], {duration:220, easing:'cubic-bezier(0.4,0,1,1)', fill:'forwards'});
-      ret.onfinish = () => {
-        enemyEl.style.transform = '';
-      };
+      ret.onfinish = () => { enemyEl.style.transform = ''; };
     }, 80);
   };
 }
