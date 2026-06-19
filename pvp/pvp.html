@@ -1,1 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Ritual Arena — PvP</title>
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --pixel:'Press Start 2P',monospace;
+  --vt:'VT323',monospace;
+  --gold:#ffd700;--gold2:#c8a028;
+  --cyan:#40d0ff;--red:#ff4040;
+  --panel:#0a0a1e;--text:#e0e0ff;
+  --bg:#050510;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--vt);min-height:100vh;overflow-x:hidden}
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px}
+
+/* BG */
+.bg-pvp{background:radial-gradient(ellipse at top,#1a0030 0%,#050510 60%)}
+
+/* PANEL */
+.panel{background:var(--panel);border:2px solid #a855f7;width:100%;max-width:420px;padding:20px;box-shadow:0 0 30px rgba(168,85,247,0.2)}
+.panel-title{font-family:var(--pixel);font-size:9px;color:#a855f7;text-align:center;letter-spacing:2px;padding-bottom:12px;border-bottom:1px solid rgba(168,85,247,0.3);margin-bottom:16px}
+
+/* HEADER */
+.pvp-header{width:100%;background:rgba(0,0,0,0.8);border-bottom:1px solid rgba(168,85,247,0.3);padding:8px 16px;display:flex;align-items:center;gap:8px;position:fixed;top:0;left:0;z-index:100}
+.pvp-header-title{font-family:var(--pixel);font-size:7px;color:#a855f7}
+.pvp-header-addr{font-family:monospace;font-size:10px;color:var(--cyan);margin-left:auto}
+
+/* BUTTONS */
+.btn{border:none;cursor:pointer;font-family:var(--pixel);font-size:7px;padding:10px 16px;transition:all 0.15s;letter-spacing:1px}
+.btn-purple{background:linear-gradient(135deg,#6d28d9,#a855f7);color:#fff;border:1px solid #a855f7}
+.btn-purple:hover{box-shadow:0 0 15px rgba(168,85,247,0.5)}
+.btn-gold{background:linear-gradient(135deg,#92650a,#ffd700);color:#000;border:1px solid var(--gold)}
+.btn-red{background:rgba(150,30,30,0.4);color:#ff8080;border:1px solid rgba(200,50,50,0.5)}
+.btn-blue{background:rgba(30,80,180,0.4);color:var(--cyan);border:1px solid rgba(64,128,255,0.5)}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+
+/* GACHA */
+.chest-container{text-align:center;margin:20px 0;cursor:pointer}
+.chest-emoji{font-size:80px;display:block;transition:transform 0.3s;filter:drop-shadow(0 0 20px rgba(168,85,247,0.6))}
+.chest-emoji:hover{transform:scale(1.05)}
+.chest-emoji.shake{animation:shake 0.4s ease-in-out}
+.chest-emoji.open{animation:chestOpen 0.5s ease-out forwards}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px) rotate(-3deg)}75%{transform:translateX(8px) rotate(3deg)}}
+@keyframes chestOpen{0%{transform:scale(1)}50%{transform:scale(1.3) rotate(-5deg)}100%{transform:scale(0);opacity:0}}
+
+/* HERO REVEAL */
+.hero-reveal{display:none;animation:revealAnim 0.5s ease-out forwards}
+@keyframes revealAnim{0%{opacity:0;transform:scale(0.5)}100%{opacity:1;transform:scale(1)}}
+.hero-card{border:2px solid #a855f7;padding:16px;background:rgba(168,85,247,0.05);text-align:center;margin-bottom:12px;position:relative}
+.hero-card.common{border-color:#808080;box-shadow:0 0 10px rgba(128,128,128,0.2)}
+.hero-card.rare{border-color:#4080ff;box-shadow:0 0 15px rgba(64,128,255,0.3)}
+.hero-card.legendary{border-color:#ffd700;box-shadow:0 0 25px rgba(255,215,0,0.5);animation:goldGlow 1.5s ease-in-out infinite}
+@keyframes goldGlow{0%,100%{box-shadow:0 0 15px rgba(255,215,0,0.3)}50%{box-shadow:0 0 35px rgba(255,215,0,0.7)}}
+.rarity-badge{font-family:var(--pixel);font-size:6px;letter-spacing:2px;margin-bottom:8px}
+.hero-name{font-family:var(--pixel);font-size:10px;color:var(--gold);margin:8px 0 4px}
+.hero-stats{display:flex;justify-content:center;gap:16px;font-size:15px;color:#a0a0d0;margin:6px 0}
+.redraw-info{font-family:var(--pixel);font-size:6px;color:#6060a0;text-align:center;margin-bottom:8px}
+
+/* PIXEL HERO SPRITE */
+.hero-sprite{image-rendering:pixelated;display:block;margin:8px auto}
+canvas.hero-canvas{image-rendering:pixelated;display:block;margin:8px auto}
+@keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes heroAttack{0%{transform:translateX(0)}40%{transform:translateX(50px) scaleX(1.1)}70%{transform:translateX(0)}100%{transform:translateX(0)}}
+#battle-hero-img.attacking{animation:heroAttack 0.4s ease-in-out forwards!important}
+
+/* BATTLE SCREEN */
+.battle-bg{background:url('bg_menu.webp') center/cover no-repeat fixed}
+.battle-arena{width:100%;max-width:520px;padding-top:50px}
+.wave-badge{font-family:var(--pixel);font-size:7px;color:#a855f7;background:rgba(0,0,0,0.8);border:1px solid #a855f7;padding:4px 14px;text-align:center;margin:8px auto;display:block;width:fit-content;letter-spacing:2px}
+.battlefield{display:flex;align-items:flex-end;justify-content:space-around;min-height:220px;position:relative;padding:10px}
+.fighter-wrap{text-align:center;flex:1}
+.fighter-name{font-family:var(--pixel);font-size:6px;margin-top:6px}
+.fighter-hp-bar{height:6px;background:#1a1a40;border:1px solid #3030a0;margin:4px auto;max-width:100px;border-radius:2px;overflow:hidden}
+.fighter-hp-fill{height:100%;background:linear-gradient(to right,#ff4040,#ff8040);transition:width 0.4s}
+.vs-mid{font-family:var(--pixel);font-size:14px;color:#a855f7;text-shadow:0 0 15px #a855f7;align-self:center;flex-shrink:0}
+.battle-log-pvp{background:rgba(0,0,0,0.7);border:1px solid rgba(168,85,247,0.3);padding:8px;height:80px;overflow-y:auto;font-size:13px;margin:8px 0}
+.log-hit{color:#ff8080}.log-heal{color:#80ff80}.log-sys{color:#a855f7}.log-enemy{color:#ff6040}
+.cmd-bar{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+.skill-bar{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.cmd-btn{padding:10px 8px;font-family:var(--pixel);font-size:6px;border:1px solid #3030a0;background:rgba(10,10,40,0.8);color:var(--text);cursor:pointer;text-align:center;transition:all 0.15s}
+.cmd-btn:hover:not(:disabled){border-color:#a855f7;color:#a855f7}
+.cmd-btn:disabled{opacity:0.3;cursor:not-allowed}
+.stat-bar-pvp{background:rgba(0,0,0,0.6);border:1px solid rgba(168,85,247,0.3);padding:8px 12px;display:flex;gap:12px;align-items:center;font-size:13px;flex-wrap:wrap;margin-bottom:8px}
+.stat-bar-pvp .bar-wrap{flex:1;min-width:80px}
+.hp-bar-full{height:8px;background:#0a0a30;border:1px solid #2020a0;border-radius:2px;overflow:hidden}
+.hp-fill{height:100%;transition:width 0.4s;border-radius:2px}
+
+/* LEADERBOARD */
+.lb-row-pvp{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid rgba(168,85,247,0.2);margin-bottom:4px;background:rgba(10,0,20,0.5)}
+.lb-row-pvp.me{border-color:#a855f7;background:rgba(168,85,247,0.1)}
+
+/* MISC */
+.dot{width:8px;height:8px;border-radius:50%;background:#ff4040;flex-shrink:0}
+.dot.green{background:#40c040}
+.spinner{display:inline-block;width:10px;height:10px;border:2px solid #a855f7;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid #a855f7;color:#fff;font-family:var(--pixel);font-size:7px;padding:8px 16px;z-index:9999;opacity:0;transition:opacity 0.3s;white-space:nowrap}
+.toast.show{opacity:1}
+
+/* MUSIC BTN */
+#music-btn{position:fixed;bottom:16px;right:16px;z-index:9999;background:rgba(10,10,30,0.85);border:1px solid #a855f7;color:#a855f7;font-family:var(--pixel);font-size:7px;padding:6px 10px;cursor:pointer}
+</style>
+</head>
+<body class="bg-pvp">
+
+<audio id="bg-music" loop>
+  <source src="https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/backsound.mp3" type="audio/mpeg">
+</audio>
+<button id="music-btn" onclick="toggleMusic()">🎵 ON</button>
+
+<!-- PvP HEADER -->
+<div class="pvp-header">
+  <div class="dot" id="hdr-dot"></div>
+  <span class="pvp-header-title">⚔ RITUAL PvP</span>
+  <span class="pvp-header-addr" id="hdr-addr">—</span>
+</div>
+
+<!-- ===== SCREEN: CONNECT ===== -->
+<div id="screen-connect" class="screen active" style="padding-top:50px">
+  <div class="panel">
+    <div class="panel-title">⚔ PvP ARENA</div>
+    <div style="font-family:var(--vt);font-size:14px;color:#8080b0;text-align:center;margin-bottom:20px">NFT holders only · Connect to enter</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn btn-purple" onclick="connectMM()" style="width:100%;display:flex;align-items:center;gap:12px;justify-content:flex-start;padding:12px 16px">
+        <span style="font-size:24px">🦊</span>
+        <span>MetaMask</span>
+      </button>
+      <button class="btn btn-blue" onclick="connectRabby()" style="width:100%;display:flex;align-items:center;gap:12px;justify-content:flex-start;padding:12px 16px">
+        <span style="font-size:24px">🐰</span>
+        <span>Rabby Wallet</span>
+      </button>
+    </div>
+    <div style="margin-top:16px;text-align:center">
+      <a href="index.html" style="font-family:var(--pixel);font-size:6px;color:#6060a0;text-decoration:none">← Back to Menu</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: LOBBY ===== -->
+<div id="screen-lobby" class="screen" style="padding-top:60px">
+  <div class="panel">
+    <div class="panel-title">⚔ PvP LOBBY</div>
+
+    <!-- NFT character info -->
+    <div id="nft-info-box" style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.3);padding:10px;margin-bottom:12px;display:none">
+      <div style="display:flex;align-items:center;gap:10px">
+        <img id="nft-avatar" src="" style="width:40px;height:40px;border-radius:4px;object-fit:cover;border:1px solid #a855f7" onerror="this.style.display='none'">
+        <div>
+          <div style="font-family:var(--pixel);font-size:7px;color:#a855f7" id="nft-name">—</div>
+          <div style="font-size:12px;color:#8080b0" id="nft-stats">—</div>
+        </div>
+        <div id="hero-equipped-badge" style="display:none;margin-left:auto;text-align:center">
+          <img id="lobby-hero-img" src="" style="width:40px;height:40px;image-rendering:pixelated;display:block;margin:0 auto" onerror="this.style.display='none'">
+          <canvas id="lobby-hero-canvas" width="40" height="40" style="display:none"></canvas>
+          <div style="font-family:var(--pixel);font-size:5px;color:var(--gold)" id="lobby-hero-name">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- No NFT warning -->
+    <div id="no-nft-box" style="background:rgba(255,40,40,0.08);border:1px solid rgba(255,40,40,0.3);padding:10px;margin-bottom:12px;text-align:center;display:none">
+      <div style="font-family:var(--pixel);font-size:7px;color:#ff6060;margin-bottom:6px">NFT Required</div>
+      <div style="font-size:13px;color:#8080b0">You need an NFT character to enter PvP</div>
+      <a href="index.html" style="font-family:var(--pixel);font-size:6px;color:#a855f7;display:block;margin-top:8px">← Go mint one</a>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-purple" id="btn-enter-pvp" onclick="enterPvP()" disabled>⚔ Enter PvP</button>
+      <button class="btn btn-gold btn-sm" onclick="showScreen('leaderboard-pvp');loadPvpLeaderboard()">🏆 Ranking</button>
+    </div>
+    <div style="margin-top:12px;text-align:center">
+      <a href="index.html" style="font-family:var(--pixel);font-size:6px;color:#6060a0;text-decoration:none">← Back to Menu</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: GACHA ===== -->
+<div id="screen-gacha" class="screen" style="padding-top:60px">
+  <div class="panel">
+    <div class="panel-title">🎲 SUMMON HERO</div>
+    <div style="font-family:var(--vt);font-size:13px;color:#8080b0;text-align:center;margin-bottom:16px" id="gacha-sub-pvp">Open the chest to summon your PvP hero!</div>
+
+    <div class="redraw-info" id="redraw-info">3 redraws remaining</div>
+
+    <!-- Chest -->
+    <div class="chest-container" id="chest-container" onclick="openChestPvP()">
+      <span class="chest-emoji" id="chest-emoji">📦</span>
+      <div style="font-family:var(--pixel);font-size:6px;color:#6060a0;margin-top:8px" id="chest-tap-hint">Tap to open!</div>
+    </div>
+
+    <!-- Hero reveal -->
+    <div class="hero-reveal" id="hero-reveal-pvp">
+      <div class="hero-card" id="hero-card-pvp">
+        <div class="rarity-badge" id="rarity-badge">—</div>
+        <canvas id="hero-canvas-pvp" width="80" height="80" class="hero-canvas" style="display:none"></canvas>
+        <img id="hero-img-pvp" src="" alt="hero" style="width:80px;height:80px;image-rendering:pixelated;display:block;margin:8px auto;filter:drop-shadow(0 0 12px rgba(168,85,247,0.5))">
+        <div class="hero-name" id="hero-name-pvp">—</div>
+        <div class="hero-stats" id="hero-stats-pvp">—</div>
+        <div style="font-family:var(--vt);font-size:12px;color:var(--cyan);margin:4px 0" id="hero-skill-pvp">—</div>
+        <div style="font-family:var(--vt);font-size:11px;color:#6060a0;font-style:italic" id="hero-lore-pvp">—</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-gold" onclick="confirmHeroPvP()">✅ Take Hero</button>
+        <button class="btn btn-blue" id="btn-redraw-pvp" onclick="redrawPvP()">🎲 Redraw (3)</button>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:12px">
+      <button class="btn btn-red" onclick="showScreen('lobby')" style="font-size:6px">✕ Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: BATTLE ===== -->
+<div id="screen-battle-pvp" class="screen battle-bg" style="padding-top:44px;align-items:stretch">
+  <div class="battle-arena" style="margin:0 auto">
+
+    <!-- Wave badge -->
+    <div class="wave-badge" id="pvp-wave-badge">PvP ROUND 1</div>
+
+    <!-- Player stats top -->
+    <div style="display:flex;gap:6px;padding:0 8px;margin-bottom:4px">
+      <div class="stat-bar-pvp" style="flex:1">
+        <div style="font-family:var(--pixel);font-size:6px;color:#a855f7" id="p-name-pvp">YOU</div>
+        <div class="bar-wrap">
+          <div style="font-size:10px;color:#a0a0d0">HP <span id="p-hp-pvp">—</span></div>
+          <div class="hp-bar-full"><div class="hp-fill" id="p-hp-bar" style="width:100%;background:linear-gradient(to right,#40c040,#80ff80)"></div></div>
+        </div>
+      </div>
+      <div style="font-family:var(--pixel);font-size:8px;color:#a855f7;align-self:center;padding:0 4px">VS</div>
+      <div class="stat-bar-pvp" style="flex:1;text-align:right">
+        <div class="bar-wrap">
+          <div style="font-size:10px;color:#a0a0d0"><span id="e-hp-pvp">—</span> HP</div>
+          <div class="hp-bar-full"><div class="hp-fill" id="e-hp-bar" style="width:100%;background:linear-gradient(to right,#ff8040,#ff4040)"></div></div>
+        </div>
+        <div style="font-family:var(--pixel);font-size:6px;color:#ff6060" id="e-name-pvp">ENEMY</div>
+      </div>
+    </div>
+
+    <!-- Battlefield -->
+    <div class="battlefield">
+      <!-- Player hero -->
+      <div class="fighter-wrap" id="player-fighter">
+        <img id="battle-hero-img" src="" style="width:120px;height:120px;image-rendering:pixelated;display:block;margin:0 auto;filter:drop-shadow(0 0 14px rgba(168,85,247,0.6));animation:heroFloat 3s ease-in-out infinite">
+        <canvas id="battle-hero-canvas" width="100" height="100" style="display:none"></canvas>
+        <div class="fighter-name" style="color:#a855f7" id="battle-hero-name">—</div>
+      </div>
+
+      <div class="vs-mid">VS</div>
+
+      <!-- Enemy -->
+      <div class="fighter-wrap" id="enemy-fighter">
+        <div id="enemy-avatar-wrap">
+          <img id="enemy-avatar-pvp" src="" style="width:100px;height:100px;border-radius:8px;object-fit:cover;border:2px solid #ff4040;filter:drop-shadow(0 0 12px rgba(255,40,40,0.5));display:block;margin:0 auto" onerror="this.style.display='none'">
+        </div>
+        <div class="fighter-name" style="color:#ff6060" id="enemy-name-pvp">@enemy</div>
+      </div>
+    </div>
+
+    <!-- Battle log -->
+    <div class="battle-log-pvp" id="pvp-log"></div>
+
+    <!-- Commands -->
+    <div class="cmd-bar" id="pvp-cmd-bar">
+      <button class="cmd-btn" onclick="pvpAction('attack')">⚔ ATTACK</button>
+      <button class="cmd-btn" onclick="pvpAction('defend')">🛡 DEFEND</button>
+      <button class="cmd-btn" onclick="pvpAction('heal')">💊 HEAL</button>
+      <button class="cmd-btn" onclick="pvpFlee()">🏃 FLEE</button>
+    </div>
+
+    <!-- Hero skill -->
+    <div class="skill-bar" id="pvp-skill-bar"></div>
+
+    <div style="text-align:center;margin-top:8px">
+      <button class="btn btn-red" style="font-size:6px" onclick="pvpFlee()">✕ Surrender</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: VICTORY ===== -->
+<div id="screen-pvp-victory" class="screen battle-bg" style="padding-top:44px">
+  <div class="panel" style="border-color:var(--gold);box-shadow:0 0 30px rgba(255,215,0,0.3)">
+    <div style="font-size:40px;text-align:center;margin-bottom:8px">🏆</div>
+    <div class="panel-title" style="color:var(--gold)">VICTORY!</div>
+    <div style="font-family:var(--vt);font-size:14px;color:#a0a0d0;text-align:center;margin-bottom:12px" id="pvp-vic-msg">—</div>
+    <div style="border:1px solid rgba(255,215,0,0.2);padding:10px;margin-bottom:12px">
+      <div style="font-family:var(--pixel);font-size:6px;color:var(--gold);margin-bottom:8px">── RESULTS ──</div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>Round</span><span id="pvp-vic-round" style="color:#a855f7">—</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>Score</span><span id="pvp-vic-score" style="color:var(--gold);font-family:var(--pixel);font-size:7px">—</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px"><span>Wallet</span><span id="pvp-vic-wallet" style="color:var(--cyan);font-size:11px">—</span></div>
+    </div>
+    <!-- Submit score -->
+    <div id="pvp-submit-box" style="border:1px solid rgba(168,85,247,0.3);padding:10px;margin-bottom:10px;text-align:center">
+      <div style="font-family:var(--vt);font-size:12px;color:#6060a0;margin-bottom:6px">Submit to PvP Leaderboard</div>
+      <div id="pvp-submit-status" style="font-size:12px;min-height:16px;margin-bottom:6px"></div>
+      <button class="btn btn-purple" id="btn-pvp-submit" onclick="submitPvPScore()" style="width:100%">⛓ Submit Score</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-purple" onclick="nextPvPRound()">⚔ Next Round</button>
+      <button class="btn btn-gold" onclick="showScreen('leaderboard-pvp');loadPvpLeaderboard()">🏆 Ranking</button>
+      <button class="btn btn-red" onclick="exitPvP()" style="font-size:6px">🏠 Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: DEFEAT ===== -->
+<div id="screen-pvp-defeat" class="screen battle-bg" style="padding-top:44px">
+  <div class="panel" style="border-color:#ff4040;box-shadow:0 0 20px rgba(255,40,40,0.2)">
+    <div style="font-size:40px;text-align:center;margin-bottom:8px">💀</div>
+    <div class="panel-title" style="color:#ff4040">DEFEATED</div>
+    <div style="font-family:var(--vt);font-size:14px;color:#8080b0;text-align:center;margin-bottom:16px" id="pvp-def-msg">You were defeated...</div>
+    <div class="btn-row">
+      <button class="btn btn-purple" onclick="retryPvP()">🔄 Try Again</button>
+      <button class="btn btn-red" onclick="exitPvP()">🏠 Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: LEADERBOARD PvP ===== -->
+<div id="screen-leaderboard-pvp" class="screen bg-pvp" style="padding-top:60px">
+  <div class="panel">
+    <div class="panel-title">🏆 PvP RANKING</div>
+    <div id="pvp-lb-list" style="max-height:340px;overflow-y:auto;margin-bottom:12px">
+      <div style="font-size:13px;color:#4040a0;text-align:center;padding:16px">Loading...</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-purple" onclick="showScreen('lobby')">← Back</button>
+      <button class="btn btn-blue" onclick="loadPvpLeaderboard()">🔄 Refresh</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const RITUAL_CHAIN_ID = '0x7BB'; // 1979
+const NFT_CONTRACT   = '0x592d75AC5aB1B04cA4109FBa9f08A69fDc2D566C';
+const PVP_CONTRACT = '0xc06D367E65Fcc8D87E4Df9Be6ff925468F63751B';
+
+const NFT_ABI = [
+  'function hasCharacter(address w) external view returns (bool)',
+  'function getCharacterByWallet(address w) external view returns (tuple(string username,string avatarUrl,string charName,string cls,string lore,uint16 hp,uint16 atk,uint16 def,uint16 mp,uint16 healPow,uint256 mintedAt,address owner))',
+  'function getAllCharacters() external view returns (tuple(string username,string avatarUrl,string charName,string cls,string lore,uint16 hp,uint16 atk,uint16 def,uint16 mp,uint16 healPow,uint256 mintedAt,address owner)[])',
+];
+
+const PVP_ABI = [
+  'function submitScore(uint256 score, uint256 wave, string username, string avatarUrl, string charName) external',
+  'function getLeaderboard(uint256 limit) external view returns (tuple(address player,string username,string avatarUrl,string charName,uint256 score,uint256 wave,uint256 timestamp)[])',
+  'function getMyScore() external view returns (tuple(address player,string username,string avatarUrl,string charName,uint256 score,uint256 wave,uint256 timestamp))',
+  'function getEventInfo() external view returns (bool active,string name,string description,string bannerColor,uint256 startTime,uint256 endTime,uint256 totalPlayers)',
+  'function toggleEvent(bool active) external',
+];
+
+let wallet = { address:null, provider:null, connected:false };
+let S = {
+  nftChar: null,
+  pvpHero: null,
+  enemy: null,
+  round: 1,
+  totalScore: 0,
+  totalWins: 0,
+  busy: false,
+  isPlayerTurn: true,
+  defending: false,
+  pvpEnemyPool: [],
+};
+let gachaRedraws = 3;
+let currentGachaHero = null;
+
+// ============================================================
+// HEROES
+// ============================================================
+const HEROES = [
+  { id:'jez', name:'Jez Runner', rarity:'rare', color:'#40d0ff',
+    sprite:'https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/jezzCharArena.gif',
+    hp:40, atk:18, def:8, healPow:20,
+    skill:{id:'s1',name:'Lightning Dash',desc:'Swift cyber strike',dmg:32,mpCost:14,type:'dmg'},
+    lore:'Fastest node runner on Ritual chain.' },
+  { id:'mad', name:'Mad Steel', rarity:'epic', color:'#ff8040',
+    sprite:'https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/madCharArena.gif',
+    hp:55, atk:14, def:18, healPow:28,
+    skill:{id:'s1',name:'Iron Fortress',desc:'Shield and counter-attack',dmg:20,mpCost:10,type:'dmg'},
+    lore:'Unbreakable guardian of the blockchain.' },
+  { id:'flash', name:'Flash Shadow', rarity:'legendary', color:'#a855f7',
+    sprite:'https://raw.githubusercontent.com/arifhidayat1/ritualarena1/main/flashCharArena.gif',
+    hp:35, atk:28, def:5, healPow:15,
+    skill:{id:'s1',name:'Shadow Burst',desc:'Devastating mage strike',dmg:48,mpCost:22,type:'dmg'},
+    lore:'Dark mage who bends consensus to their will.' },
+];
+
+const RARITY_COLORS = { common:'#808080', rare:'#4080ff', epic:'#ff8040', legendary:'#ffd700' };
+
+const PIXEL_ART = {
+  cyan:   [[0,0,1,1,1,1,0,0],[0,1,1,1,1,1,1,0],[1,1,0,1,1,0,1,1],[1,1,1,1,1,1,1,1],[0,1,1,1,1,1,1,0],[0,0,1,1,1,1,0,0],[0,1,0,1,1,0,1,0],[1,0,0,1,1,0,0,1]],
+  orange: [[0,0,1,1,1,1,0,0],[0,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[0,1,1,1,1,1,1,0],[0,1,0,0,0,0,1,0],[1,1,0,0,0,0,1,1]],
+  purple: [[0,0,0,1,1,0,0,0],[0,0,1,1,1,1,0,0],[0,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1],[0,1,1,1,1,1,1,0],[0,0,1,1,1,1,0,0],[0,1,0,1,1,0,1,0],[0,0,0,1,1,0,0,0]],
+};
+const PALETTE = {
+  cyan:   ['#40d0ff','#0080b0','#80e8ff','#ffffff'],
+  orange: ['#ff8040','#a04000','#ffc080','#ffffff'],
+  purple: ['#a855f7','#6020b0','#d090ff','#ffffff'],
+};
+
+function drawHero(canvasId, colorKey, scale=10){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const grid = PIXEL_ART[colorKey] || PIXEL_ART.cyan;
+  const pal  = PALETTE[colorKey]  || PALETTE.cyan;
+  const s = scale;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  grid.forEach((row,y)=>{
+    row.forEach((v,x)=>{
+      if(v){
+        ctx.fillStyle = y<3?pal[0]:y<6?pal[1]:pal[2];
+        ctx.fillRect(x*s,y*s,s,s);
+      }
+    });
+  });
+  // eyes
+  ctx.fillStyle='#fff'; ctx.fillRect(2*s,2*s,s,s); ctx.fillRect(5*s,2*s,s,s);
+  ctx.fillStyle='#000'; ctx.fillRect(2*s+2,2*s+2,s-3,s-3); ctx.fillRect(5*s+2,2*s+2,s-3,s-3);
+}
+
+// ============================================================
+// WALLET
+// ============================================================
+function getProvider(){
+  const providers = (window.ethereum?.providers)||[];
+  return providers.find(p=>p.isMetaMask&&!p.isRabby) || providers.find(p=>p.isRabby) || window.ethereum;
+}
+
+async function connectMM(){ await doConnect(false); }
+async function connectRabby(){ await doConnect(true); }
+
+async function doConnect(preferRabby){
+  try {
+    const allP = (window.ethereum?.providers)||[];
+    let provider = preferRabby
+      ? (allP.find(p=>p.isRabby)||window.rabby||window.ethereum)
+      : (allP.find(p=>p.isMetaMask&&!p.isRabby)||window.ethereum);
+    if(!provider){ showToast('❌ Wallet not found!'); return; }
+    await provider.request({method:'wallet_requestPermissions',params:[{eth_accounts:{}}]});
+    const accounts = await provider.request({method:'eth_accounts'});
+    if(!accounts.length){ showToast('❌ No account selected'); return; }
+    wallet.address = accounts[0];
+    wallet.provider = provider;
+    wallet.connected = true;
+    const chainId = await provider.request({method:'eth_chainId'});
+    if(chainId.toLowerCase() !== RITUAL_CHAIN_ID.toLowerCase()){
+      showToast('⚠️ Please switch to Ritual Testnet!'); return;
+    }
+    onConnected();
+  } catch(e){ showToast('❌ '+(e.message||'Connection failed')); }
+}
+
+async function onConnected(){
+  document.getElementById('hdr-dot').className='dot green';
+  document.getElementById('hdr-addr').textContent=wallet.address.slice(0,6)+'...'+wallet.address.slice(-4);
+  showScreen('lobby');
+  await loadNFTChar();
+
+  // Auto-reconnect on refresh
+  window.addEventListener('load', ()=>{
+    if(wallet.provider) return;
+    const p = getProvider();
+    if(p) p.request({method:'eth_accounts'}).then(a=>{ if(a.length){ wallet.address=a[0]; wallet.provider=p; wallet.connected=true; onConnected(); }}).catch(()=>{});
+  });
+}
+
+async function loadNFTChar(){
+  if(!wallet.address) return;
+  try {
+    const provider = new ethers.providers.Web3Provider(wallet.provider);
+    const contract = new ethers.Contract(NFT_CONTRACT, NFT_ABI, provider);
+    const has = await contract.hasCharacter(wallet.address);
+    if(!has){
+      document.getElementById('no-nft-box').style.display='block';
+      document.getElementById('nft-info-box').style.display='none';
+      document.getElementById('btn-enter-pvp').disabled=true;
+      return;
+    }
+    const data = await contract.getCharacterByWallet(wallet.address);
+    S.nftChar = {
+      username: data.username, name: data.charName||data.username,
+      avatarUrl: data.avatarUrl, cls: data.cls||'NFT Fighter',
+      hp: Number(data.hp), atk: Number(data.atk), def: Number(data.def),
+      mp: Number(data.mp), maxmp: Number(data.mp), healPow: Number(data.healPow),
+    };
+    document.getElementById('nft-info-box').style.display='block';
+    document.getElementById('no-nft-box').style.display='none';
+    document.getElementById('nft-avatar').src = data.avatarUrl||'';
+    document.getElementById('nft-name').textContent = '@'+data.username;
+    document.getElementById('nft-stats').textContent = `${data.cls} · HP ${data.hp} · ATK ${data.atk}`;
+    document.getElementById('btn-enter-pvp').disabled=false;
+
+    // Check existing hero
+    const existingHero = getPvPHero();
+    if(existingHero){
+      S.pvpHero = existingHero;
+      showEquippedHero(existingHero);
+    }
+
+    // Load enemy pool
+    const all = await contract.getAllCharacters();
+    S.pvpEnemyPool = all.filter(c=>c.owner.toLowerCase()!==wallet.address.toLowerCase());
+  } catch(e){ console.error('NFT load:', e.message); }
+}
+
+function showEquippedHero(hero){
+  document.getElementById('hero-equipped-badge').style.display='block';
+  document.getElementById('lobby-hero-name').textContent=hero.name;
+  const img=document.getElementById('lobby-hero-img');
+  if(img){ img.src=hero.sprite; img.style.filter=`drop-shadow(0 0 8px ${hero.color})`; }
+}
+
+// ============================================================
+// GACHA
+// ============================================================
+function enterPvP(){
+  const existingHero = getPvPHero();
+  if(existingHero){
+    S.pvpHero = existingHero;
+    startPvPBattle();
+  } else {
+    gachaRedraws = 3;
+    currentGachaHero = null;
+    document.getElementById('hero-reveal-pvp').style.display='none';
+    document.getElementById('chest-emoji').textContent='📦';
+    document.getElementById('chest-emoji').className='chest-emoji';
+    document.getElementById('chest-tap-hint').style.display='block';
+    document.getElementById('gacha-sub-pvp').textContent='Open the chest to summon your PvP hero!';
+    document.getElementById('redraw-info').textContent='3 redraws remaining';
+    showScreen('gacha');
+  }
+}
+
+function openChestPvP(){
+  const chest = document.getElementById('chest-emoji');
+  if(chest.dataset.opened) return;
+  chest.dataset.opened='1';
+  chest.classList.add('shake');
+  setTimeout(()=>{
+    chest.classList.remove('shake');
+    chest.classList.add('open');
+    document.getElementById('chest-tap-hint').style.display='none';
+    setTimeout(()=>{
+      chest.textContent='✨';
+      chest.style.transform='';
+      chest.style.opacity='1';
+      chest.className='chest-emoji';
+      revealGachaHero();
+    }, 500);
+  }, 400);
+}
+
+function rollPvPHero(){
+  // weighted: jez 40%, mad 35%, flash 25%
+  const r = Math.random()*100;
+  if(r<40) return HEROES[0];
+  if(r<75) return HEROES[1];
+  return HEROES[2];
+}
+
+function revealGachaHero(){
+  const hero = rollPvPHero();
+  currentGachaHero = hero;
+  showGachaHeroCard(hero);
+}
+
+function showGachaHeroCard(hero){
+  const card = document.getElementById('hero-card-pvp');
+  card.className = 'hero-card '+hero.rarity;
+  document.getElementById('rarity-badge').textContent = '✦ '+hero.rarity.toUpperCase()+' ✦';
+  document.getElementById('rarity-badge').style.color = RARITY_COLORS[hero.rarity]||'#808080';
+  document.getElementById('hero-name-pvp').textContent = hero.name;
+  document.getElementById('hero-name-pvp').style.color = hero.color;
+  document.getElementById('hero-stats-pvp').innerHTML =
+    `⚔ ${hero.atk} &nbsp; 🛡 ${hero.def} &nbsp; ❤ ${hero.hp}`;
+  document.getElementById('hero-skill-pvp').textContent = '⚡ '+hero.skill.name+' — '+hero.skill.desc;
+  document.getElementById('hero-lore-pvp').textContent = '"'+hero.lore+'"';
+  const heroImg = document.getElementById('hero-img-pvp');
+  if(heroImg){ heroImg.src=hero.sprite; heroImg.style.filter=`drop-shadow(0 0 16px ${hero.color})`; }
+
+  const btn = document.getElementById('btn-redraw-pvp');
+  btn.disabled = gachaRedraws<=0;
+  btn.textContent = gachaRedraws>0 ? `🎲 Redraw (${gachaRedraws})` : '🎲 No redraws';
+  document.getElementById('redraw-info').textContent =
+    gachaRedraws>0 ? `${gachaRedraws} redraws remaining` : 'No redraws left!';
+
+  const reveal = document.getElementById('hero-reveal-pvp');
+  reveal.style.display='block';
+  reveal.style.animation='none';
+  void reveal.offsetWidth;
+  reveal.style.animation='revealAnim 0.5s ease-out forwards';
+}
+
+function redrawPvP(){
+  if(gachaRedraws<=0) return;
+  gachaRedraws--;
+  currentGachaHero = rollPvPHero();
+  showGachaHeroCard(currentGachaHero);
+}
+
+function confirmHeroPvP(){
+  if(!currentGachaHero) return;
+  S.pvpHero = currentGachaHero;
+  savePvPHero(currentGachaHero);
+  showEquippedHero(currentGachaHero);
+  showToast('🎉 '+currentGachaHero.name+' equipped!');
+  startPvPBattle();
+}
+
+function savePvPHero(hero){
+  const key='pvpHero_'+(wallet.address||'').toLowerCase();
+  localStorage.setItem(key, JSON.stringify(hero));
+}
+function getPvPHero(){
+  const key='pvpHero_'+(wallet.address||'').toLowerCase();
+  try{ return JSON.parse(localStorage.getItem(key)); }catch(e){ return null; }
+}
+
+// ============================================================
+// BATTLE
+// ============================================================
+function pickPvPEnemy(){
+  if(!S.pvpEnemyPool.length) return generateFakeEnemy();
+  const nft = S.pvpEnemyPool[Math.floor(Math.random()*S.pvpEnemyPool.length)];
+  // Deterministic hero for enemy based on address
+  const seed = nft.owner.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  const enemyHero = HEROES[seed%HEROES.length];
+  const round = S.round||1;
+  const scale = Math.pow(1.12, round-1);
+  return {
+    username: nft.username||'unknown',
+    avatarUrl: nft.avatarUrl||'',
+    name: '@'+nft.username,
+    heroName: enemyHero.name,
+    heroPixels: enemyHero.pixels,
+    hp:   Math.floor((Number(nft.hp)   + enemyHero.hp)  * scale),
+    maxhp:Math.floor((Number(nft.hp)   + enemyHero.hp)  * scale),
+    atk:  Math.floor((Number(nft.atk)  + enemyHero.atk) * scale),
+    def:  Math.floor((Number(nft.def)  + enemyHero.def)),
+    healPow: enemyHero.healPow,
+    skill: enemyHero.skill,
+  };
+}
+
+function generateFakeEnemy(){
+  const names=['CryptoWarrior','NodeGuardian','ChainMaster','RitualKnight','BlockSage'];
+  const n = names[Math.floor(Math.random()*names.length)];
+  const h = HEROES[Math.floor(Math.random()*HEROES.length)];
+  return { username:n, avatarUrl:'', name:'@'+n, heroName:h.name, heroPixels:h.pixels,
+    hp:120, maxhp:120, atk:20, def:10, healPow:18, skill:h.skill };
+}
+
+function buildPlayerChar(){
+  const nft = S.nftChar;
+  const hero = S.pvpHero;
+  if(!nft||!hero) return null;
+  return {
+    name: hero.name,
+    hp:   nft.hp + hero.hp,   maxhp: nft.hp + hero.hp,
+    atk:  nft.atk + hero.atk,
+    def:  nft.def + hero.def,
+    mp:   nft.mp||80,         maxmp: nft.mp||80,
+    healPow: nft.healPow + hero.healPow,
+    skill: hero.skill,
+    defending: false,
+    pixels: hero.pixels,
+  };
+}
+
+function rnd(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+function startPvPBattle(){
+  const player = buildPlayerChar();
+  if(!player){ showToast('❌ No character data!'); return; }
+  S.player = player;
+  S.enemy  = pickPvPEnemy();
+  S.busy   = false;
+  S.isPlayerTurn = true;
+  S.defending = false;
+
+  // Update UI
+  document.getElementById('pvp-wave-badge').textContent = 'PvP ROUND '+S.round;
+  document.getElementById('p-name-pvp').textContent = '@'+(S.nftChar?.username||'YOU');
+  document.getElementById('e-name-pvp').textContent  = S.enemy.name;
+  document.getElementById('battle-hero-name').textContent = player.name;
+  document.getElementById('enemy-name-pvp').textContent   = S.enemy.name;
+  document.getElementById('enemy-avatar-pvp').src = S.enemy.avatarUrl;
+
+  const heroImg=document.getElementById('battle-hero-img');
+  if(heroImg){ heroImg.src=S.pvpHero.sprite; heroImg.style.filter=`drop-shadow(0 0 14px ${S.pvpHero.color})`; }
+  updatePvPBars();
+  renderPvPSkill();
+
+  var bl=document.getElementById('pvp-log'); if(bl) bl.innerHTML='';
+  pvpLog('⚔️ PvP Round '+S.round+'! vs '+S.enemy.name,'sys');
+  pvpLog('Enemy hero: '+S.enemy.heroName,'sys');
+  pvpLog('Your turn!','sys');
+
+  showScreen('battle-pvp');
+  setCommandsEnabled(true);
+}
+
+function updatePvPBars(){
+  const p=S.player, e=S.enemy;
+  document.getElementById('p-hp-pvp').textContent=p.hp+'/'+p.maxhp;
+  document.getElementById('e-hp-pvp').textContent=e.hp+'/'+e.maxhp;
+  document.getElementById('p-hp-bar').style.width=(p.hp/p.maxhp*100)+'%';
+  document.getElementById('e-hp-bar').style.width=(e.hp/e.maxhp*100)+'%';
+}
+
+function renderPvPSkill(){
+  const skill = S.player?.skill;
+  if(!skill) return;
+  document.getElementById('pvp-skill-bar').innerHTML=`
+    <button class="cmd-btn" onclick="pvpUseSkill()" style="border-color:#a855f7;color:#a855f7;grid-column:span 2">
+      ⚡ ${skill.name} (MP:${skill.mpCost}) — ${skill.desc}
+    </button>`;
+}
+
+function setCommandsEnabled(v){
+  document.querySelectorAll('.cmd-btn').forEach(b=>b.disabled=!v);
+}
+
+function pvpLog(msg, type='sys'){
+  const el=document.getElementById('pvp-log');
+  if(!el) return;
+  const div=document.createElement('div');
+  div.className='log-'+type;
+  div.textContent=msg;
+  el.appendChild(div);
+  el.scrollTop=el.scrollHeight;
+}
+
+function pvpAction(type){
+  if(!S.isPlayerTurn||S.busy) return;
+  S.busy=true;
+  setCommandsEnabled(false);
+  const p=S.player, e=S.enemy;
+
+  if(type==='attack'){
+    let dmg=Math.max(1,p.atk-e.def+rnd(-4,6));
+    const crit=rnd(1,10)>8; if(crit) dmg=Math.floor(dmg*1.6);
+    e.hp=Math.max(0,e.hp-dmg);
+    pvpLog('⚔️ Attack: -'+dmg+' HP'+(crit?' CRITICAL!':''),'hit');
+    // Hero attack animation
+    const heroImg=document.getElementById('battle-hero-img');
+    if(heroImg){ heroImg.classList.add('attacking'); setTimeout(()=>heroImg.classList.remove('attacking'),400); }
+    shakeEnemy();
+    updatePvPBars();
+    if(e.hp<=0){ setTimeout(pvpVictory,400); return; }
+  } else if(type==='defend'){
+    S.defending=true;
+    pvpLog('🛡️ Defending — -60% damage this turn!','sys');
+  } else if(type==='heal'){
+    if(p.mp<20){ S.busy=false; setCommandsEnabled(true); showToast('Not enough MP!'); return; }
+    p.mp=Math.max(0,p.mp-20);
+    const h=p.healPow+rnd(0,8);
+    p.hp=Math.min(p.maxhp,p.hp+h);
+    pvpLog('💊 Heal: +'+h+' HP','heal');
+    updatePvPBars();
+  }
+  setTimeout(enemyTurnPvP, 600);
+}
+
+function pvpUseSkill(){
+  if(!S.isPlayerTurn||S.busy) return;
+  const p=S.player, e=S.enemy, sk=p.skill;
+  if(p.mp<sk.mpCost){ showToast('Not enough MP!'); return; }
+  S.busy=true; setCommandsEnabled(false);
+  p.mp=Math.max(0,p.mp-sk.mpCost);
+  let dmg=sk.dmg+rnd(-5,8);
+  const crit=rnd(1,10)>9; if(crit) dmg=Math.floor(dmg*1.5);
+  e.hp=Math.max(0,e.hp-dmg);
+  pvpLog('⚡ '+sk.name+': -'+dmg+' HP'+(crit?' CRITICAL!':''),'hit');
+  shakeEnemy();
+  updatePvPBars();
+  if(e.hp<=0){ setTimeout(pvpVictory,400); return; }
+  setTimeout(enemyTurnPvP,600);
+}
+
+function enemyTurnPvP(){
+  const p=S.player, e=S.enemy;
+  const defR = S.defending?0.6:0;
+  S.defending=false;
+  const moves=['Strike','Heavy Blow','Quick Attack','Counter'];
+  const move=moves[rnd(0,moves.length-1)];
+  const t=rnd(1,10);
+  let dmg;
+  if(t>=9) dmg=Math.max(1,Math.floor((e.atk+rnd(5,10))*1.5*(1-defR))-p.def);
+  else dmg=Math.max(1,Math.floor((e.atk+rnd(-3,4))*(1-defR))-p.def);
+  p.hp=Math.max(0,p.hp-dmg);
+  pvpLog('🗡️ '+e.name+' "'+move+'": -'+dmg+' HP','enemy');
+  shakePlayer();
+  updatePvPBars();
+  if(p.hp<=0){ setTimeout(pvpDefeat,400); return; }
+  S.busy=false; S.isPlayerTurn=true;
+  setCommandsEnabled(true);
+  pvpLog('── Your Turn ──','sys');
+}
+
+function shakeEnemy(){
+  const el=document.getElementById('enemy-fighter');
+  if(!el) return;
+  el.style.animation='none'; void el.offsetWidth;
+  el.style.animation='pvpShake 0.3s ease'; setTimeout(()=>el.style.animation='',300);
+}
+function shakePlayer(){
+  const el=document.getElementById('player-fighter');
+  if(!el) return;
+  el.style.animation='none'; void el.offsetWidth;
+  el.style.animation='pvpShake 0.3s ease'; setTimeout(()=>el.style.animation='',300);
+}
+
+function pvpVictory(){
+  S.totalWins++;
+  const score = Math.floor(1000 * S.round * (S.player.atk/10));
+  S.totalScore += score;
+  document.getElementById('pvp-vic-msg').textContent=S.enemy.name+' defeated! (Round '+S.round+')';
+  document.getElementById('pvp-vic-round').textContent='Round '+S.round;
+  document.getElementById('pvp-vic-score').textContent=S.totalScore.toLocaleString()+' pts';
+  document.getElementById('pvp-vic-wallet').textContent=wallet.address.slice(0,6)+'...'+wallet.address.slice(-4);
+  document.getElementById('btn-pvp-submit').disabled=false;
+  document.getElementById('btn-pvp-submit').textContent='⛓ Submit Score';
+  document.getElementById('pvp-submit-status').textContent='';
+  document.getElementById('pvp-submit-box').style.display=PVP_CONTRACT?'block':'none';
+  showScreen('pvp-victory');
+}
+
+function pvpDefeat(){
+  document.getElementById('pvp-def-msg').textContent='Defeated by '+S.enemy.name+'...';
+  showScreen('pvp-defeat');
+}
+
+function pvpFlee(){
+  exitPvP();
+}
+
+function nextPvPRound(){
+  S.round++;
+  startPvPBattle();
+}
+
+function retryPvP(){
+  S.round=1; S.totalScore=0; S.totalWins=0;
+  startPvPBattle();
+}
+
+function exitPvP(){
+  S.round=1; S.totalScore=0; S.totalWins=0;
+  showScreen('lobby');
+}
+
+// ============================================================
+// SUBMIT SCORE ON-CHAIN
+// ============================================================
+async function submitPvPScore(){
+  const btn=document.getElementById('btn-pvp-submit');
+  const status=document.getElementById('pvp-submit-status');
+  btn.disabled=true; btn.textContent='⏳ Submitting...';
+  status.innerHTML='<span class="spinner"></span> Waiting for signature...';
+  try {
+    const provider=new ethers.providers.Web3Provider(wallet.provider);
+    const signer=provider.getSigner();
+    const contract=new ethers.Contract(PVP_CONTRACT,PVP_ABI,signer);
+    // charName = hero name (Jez Runner, Mad Steel, Flash Shadow)
+    const tx=await contract.submitScore(
+      S.totalScore, S.round,
+      S.nftChar?.username||'unknown',
+      S.nftChar?.avatarUrl||'',
+      S.pvpHero?.name||'Unknown Hero'
+    );
+    status.innerHTML='<span class="spinner"></span> Confirming...';
+    await tx.wait();
+    status.textContent='✅ Score submitted to chain!';
+    btn.textContent='✅ Submitted!';
+    showToast('🏆 PvP score on-chain!');
+  } catch(e){
+    if(e.message?.includes('Score not higher')) showToast('❌ Score not higher than your best!');
+    else { status.textContent='❌ '+(e.reason||e.message); btn.disabled=false; btn.textContent='⛓ Submit Score'; }
+  }
+}
+
+// ============================================================
+// LEADERBOARD
+// ============================================================
+async function loadPvpLeaderboard(){
+  const el=document.getElementById('pvp-lb-list');
+  if(!el) return;
+  el.innerHTML='<div style="font-size:13px;color:#4040a0;text-align:center;padding:16px"><span class="spinner"></span> Loading...</div>';
+
+  try {
+    const provider=new ethers.providers.Web3Provider(wallet.provider);
+    const contract=new ethers.Contract(PVP_CONTRACT,PVP_ABI,provider);
+    const scores=await contract.getLeaderboard(20);
+    if(!scores.length){
+      el.innerHTML='<div style="font-size:13px;color:#4040a0;text-align:center;padding:16px">No scores yet — be the first!</div>';
+      return;
+    }
+    el.innerHTML=scores.map((s,i)=>{
+      const isMe=wallet.address&&s.player.toLowerCase()===wallet.address.toLowerCase();
+      const rank=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+      return `<div class="lb-row-pvp ${isMe?'me':''}">
+        <div style="width:20px;text-align:center;font-size:12px;flex-shrink:0">${rank}</div>
+        ${s.avatarUrl?`<img src="${s.avatarUrl}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid #a855f7;flex-shrink:0" onerror="this.style.display='none'">`:
+          '<div style="width:28px;height:28px;border-radius:50%;background:#1a0030;border:1px solid #a855f7;flex-shrink:0"></div>'}
+        <div style="flex:1;min-width:0">
+          <div style="font-family:var(--pixel);font-size:6px;color:#d080ff">@${s.username||'unknown'}${isMe?' ← You':''}</div>
+          <div style="font-size:11px;color:#6060a0">${s.charName||''} · Round ${s.wave}</div>
+        </div>
+        <div style="font-family:var(--pixel);font-size:7px;color:#a855f7;flex-shrink:0">${Number(s.score).toLocaleString()}</div>
+      </div>`;
+    }).join('');
+  } catch(e){
+    // Fallback to localStorage
+    const key='pvpScores_local';
+    let scores=[];
+    try{ scores=JSON.parse(localStorage.getItem(key)||'[]'); }catch(err){}
+    if(!scores.length){
+      el.innerHTML='<div style="font-size:13px;color:#4040a0;text-align:center;padding:16px">No scores yet!</div>';
+      return;
+    }
+    el.innerHTML='<div style="font-size:11px;color:#4040a0;text-align:center;margin-bottom:8px">📋 Local data</div>'+
+    scores.slice(0,20).map((s,i)=>{
+      const isMe=wallet.address&&s.address?.toLowerCase()===wallet.address.toLowerCase();
+      const rank=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+      return `<div class="lb-row-pvp ${isMe?'me':''}">
+        <div style="width:20px;text-align:center;font-size:12px">${rank}</div>
+        <div style="flex:1"><div style="font-family:var(--pixel);font-size:6px;color:#d080ff">@${s.username||'?'}${isMe?' ← You':''}</div>
+        <div style="font-size:11px;color:#6060a0">${s.heroName||''}</div></div>
+        <div style="font-family:var(--pixel);font-size:7px;color:#a855f7">${(s.score||0).toLocaleString()}</div>
+      </div>`;
+    }).join('');
+  }
+}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById('screen-'+id);
+  if(el) el.classList.add('active');
+}
+
+function showToast(msg){
+  let t=document.querySelector('.toast');
+  if(!t){ t=document.createElement('div'); t.className='toast'; document.body.appendChild(t); }
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// Music
+const bgMusic=document.getElementById('bg-music');
+let musicOn=true;
+function toggleMusic(){
+  if(musicOn){ bgMusic.pause(); document.getElementById('music-btn').textContent='🔇 OFF'; musicOn=false; }
+  else{ bgMusic.play(); document.getElementById('music-btn').textContent='🎵 ON'; musicOn=true; }
+}
+document.addEventListener('click',function startM(){
+  if(musicOn&&bgMusic.paused){ bgMusic.volume=0.35; bgMusic.play().catch(()=>{}); }
+  document.removeEventListener('click',startM);
+},{once:true});
+
+// CSS for shake animation
+const style=document.createElement('style');
+style.textContent='@keyframes pvpShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}';
+document.head.appendChild(style);
+
+// Auto-reconnect
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    const p=getProvider();
+    if(!p||sessionStorage.getItem('wallet_disconnected')==='1') return;
+    p.request({method:'eth_accounts'}).then(a=>{
+      if(a.length){ wallet.address=a[0]; wallet.provider=p; wallet.connected=true; onConnected(); }
+    }).catch(()=>{});
+  },600);
+});
+</script>
+</body>
+</html>
 
