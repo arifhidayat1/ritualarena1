@@ -227,7 +227,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
   background-size:700px 700px;
   image-rendering:pixelated;
   display:block;margin:0 auto;
-  animation:foxxyIdle 0.6s steps(1) infinite;
+  animation:foxxyIdle 0.6s steps(4) infinite;
 }
 @keyframes foxxyIdle{
   0%  {background-position:0 0}
@@ -253,9 +253,9 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
   66% {background-position:-350px -525px}
   100%{background-position:-525px -525px}
 }
-.foxxy-walk   {animation:foxxyWalk   0.5s steps(1) infinite !important}
-.foxxy-attack {animation:foxxyAttack 0.42s steps(1) 1       !important}
-.foxxy-hurt   {animation:foxxyHurt   0.4s steps(1) 1        !important}
+.foxxy-walk   {animation:foxxyWalk   0.5s steps(4) infinite !important}
+.foxxy-attack {animation:foxxyAttack 0.42s steps(4) 1       !important}
+.foxxy-hurt   {animation:foxxyHurt   0.4s steps(4) 1        !important}
 
 @keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 
