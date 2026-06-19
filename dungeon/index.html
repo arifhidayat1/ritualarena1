@@ -608,7 +608,9 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
       <div class="hero-side">
         <div class="fighter-card">
           <div class="fighter-name" id="hero-battle-name">HERO</div>
-        <div id="hero-battle-img" class="hero-sprite-sheet"></div>
+        <div id="hero-battle-wrap" style="display:inline-block">
+          <div id="hero-battle-img" class="hero-sprite-sheet"></div>
+        </div>
           <!-- HP/MP bar below sprite -->
           <div class="fighter-bars">
             <div class="fighter-bar-row">
@@ -896,7 +898,7 @@ function renderHeroSelect() {
         background-size:${bgW}px ${bgH}px;
         background-repeat:no-repeat;
         image-rendering:pixelated;
-        animation:${animName} 0.6s steps(1) infinite;
+        animation:${animName} 0.6s steps(4) infinite;
       "></div>`;
     } else {
       spriteHtml = `<img class="hero-sprite" src="${h.img}" onerror="this.style.display='none'">`;
@@ -1632,47 +1634,49 @@ function shakeEl(id) {
 }
 
 function heroAttackAnim(onHit) {
-  const heroEl  = document.getElementById('hero-battle-img');
-  const enemyEl = document.getElementById('enemy-unit-' + activeEnemyIdx);
-  if (!heroEl || !enemyEl) { onHit(); return; }
+  const heroWrap = document.getElementById('hero-battle-wrap');
+  const heroEl   = document.getElementById('hero-battle-img');
+  const enemyEl  = document.getElementById('enemy-unit-' + activeEnemyIdx);
+  if (!heroWrap || !heroEl || !enemyEl) { onHit(); return; }
 
-  const hr = heroEl.getBoundingClientRect();
+  const hr = heroWrap.getBoundingClientRect();
   const er = enemyEl.getBoundingClientRect();
   const dx = (er.left + er.width/2) - (hr.left + hr.width/2);
   const dy = (er.top  + er.height/2) - (hr.top  + hr.height/2);
   const tx = dx * 0.85, ty = dy * 0.85;
 
-  // Walk anim while charging
+  // Walk anim on sprite element (background-position only)
   heroEl.classList.add('foxxy-walk');
 
-  const charge = heroEl.animate([
+  // Position movement on the WRAPPER (transform only) — fully decoupled
+  const charge = heroWrap.animate([
     {transform:'translate(0,0)'},
     {transform:`translate(${tx}px,${ty}px)`}
   ], {duration:420, easing:'cubic-bezier(0.2,0,0.1,1)', fill:'forwards'});
 
   charge.onfinish = () => {
-    // Switch to attack anim on hit
     heroEl.classList.remove('foxxy-walk');
     heroEl.classList.add('foxxy-attack');
     onHit();
     setTimeout(() => {
       heroEl.classList.remove('foxxy-attack');
-      const ret = heroEl.animate([
+      const ret = heroWrap.animate([
         {transform:`translate(${tx}px,${ty}px)`},
         {transform:'translate(0,0)'}
       ], {duration:220, easing:'cubic-bezier(0.4,0,1,1)', fill:'forwards'});
-      ret.onfinish = () => { heroEl.style.transform = ''; };
+      ret.onfinish = () => { heroWrap.style.transform = ''; };
     }, 80);
   };
 }
 
 function enemyAttackAnim(enemyUnitId, onHit) {
-  const enemyEl = document.getElementById(enemyUnitId);
-  const heroEl  = document.getElementById('hero-battle-img');
+  const enemyEl  = document.getElementById(enemyUnitId);
+  const heroEl   = document.getElementById('hero-battle-img');
+  const heroWrap = document.getElementById('hero-battle-wrap');
   if (!enemyEl) { onHit(); return; }
 
   const er = enemyEl.getBoundingClientRect();
-  const hr = heroEl ? heroEl.getBoundingClientRect() : er;
+  const hr = heroWrap ? heroWrap.getBoundingClientRect() : er;
   const dx = (hr.left + hr.width/2)  - (er.left + er.width/2);
   const dy = (hr.top  + hr.height/2) - (er.top  + er.height/2);
   const tx = dx * 0.85, ty = dy * 0.85;
