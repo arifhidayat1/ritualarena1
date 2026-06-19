@@ -449,6 +449,7 @@ async function doConnect(preferRabby){
       ? (allP.find(p=>p.isRabby)||window.rabby||window.ethereum)
       : (allP.find(p=>p.isMetaMask&&!p.isRabby)||window.ethereum);
     if(!provider){ showToast('❌ Wallet not found!'); return; }
+    // Force account selection prompt
     await provider.request({method:'wallet_requestPermissions',params:[{eth_accounts:{}}]});
     const accounts = await provider.request({method:'eth_accounts'});
     if(!accounts.length){ showToast('❌ No account selected'); return; }
@@ -459,6 +460,7 @@ async function doConnect(preferRabby){
     if(chainId.toLowerCase() !== RITUAL_CHAIN_ID.toLowerCase()){
       showToast('⚠️ Please switch to Ritual Testnet!'); return;
     }
+    sessionStorage.removeItem('wallet_disconnected');
     onConnected();
   } catch(e){ showToast('❌ '+(e.message||'Connection failed')); }
 }
@@ -979,17 +981,26 @@ const style=document.createElement('style');
 style.textContent='@keyframes pvpShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}';
 document.head.appendChild(style);
 
-// Auto-reconnect
+// Auto-reconnect — check localStorage session from main game
 window.addEventListener('load',()=>{
   setTimeout(()=>{
+    if(sessionStorage.getItem('wallet_disconnected')==='1') return;
     const p=getProvider();
-    if(!p||sessionStorage.getItem('wallet_disconnected')==='1') return;
-    p.request({method:'eth_accounts'}).then(a=>{
-      if(a.length){ wallet.address=a[0]; wallet.provider=p; wallet.connected=true; onConnected(); }
+    if(!p) return;
+    p.request({method:'eth_accounts'}).then(async a=>{
+      if(!a.length) return;
+      wallet.address=a[0];
+      wallet.provider=p;
+      wallet.connected=true;
+      const chainId=await p.request({method:'eth_chainId'});
+      if(chainId.toLowerCase()!==RITUAL_CHAIN_ID.toLowerCase()){
+        showToast('⚠️ Please switch to Ritual Testnet!');
+        return;
+      }
+      onConnected();
     }).catch(()=>{});
   },600);
 });
 </script>
 </body>
 </html>
-
