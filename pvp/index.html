@@ -981,10 +981,47 @@ const style=document.createElement('style');
 style.textContent='@keyframes pvpShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}';
 document.head.appendChild(style);
 
-// Auto-reconnect — check localStorage session from main game
+// Auto-reconnect — check session from world map first, fallback to eth_accounts
 window.addEventListener('load',()=>{
-  setTimeout(()=>{
+  setTimeout(async ()=>{
     if(sessionStorage.getItem('wallet_disconnected')==='1') return;
+
+    const sessAddr = sessionStorage.getItem('wallet_address');
+    const sessConnected = sessionStorage.getItem('wallet_connected') === '1';
+    const isDemo = sessionStorage.getItem('wallet_demo') === '1';
+
+    if (isDemo && sessAddr) {
+      wallet.address = sessAddr;
+      wallet.connected = true;
+      onConnected();
+      return;
+    }
+
+    if (sessConnected && sessAddr) {
+      const p2 = getProvider();
+      if (p2) {
+        try {
+          const accounts = await p2.request({method:'eth_accounts'});
+          if (accounts.length) {
+            wallet.address = accounts[0];
+            wallet.provider = p2;
+            wallet.connected = true;
+            const chainId = await p2.request({method:'eth_chainId'});
+            if (chainId.toLowerCase() !== RITUAL_CHAIN_ID.toLowerCase()) {
+              showToast('⚠️ Please switch to Ritual Testnet!');
+              return;
+            }
+            onConnected();
+            return;
+          }
+        } catch(e) {}
+      }
+      wallet.address = sessAddr;
+      wallet.connected = true;
+      onConnected();
+      return;
+    }
+
     const p=getProvider();
     if(!p) return;
     p.request({method:'eth_accounts'}).then(async a=>{
