@@ -218,14 +218,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
   flex:1;display:flex;flex-direction:column;
   align-items:center;justify-content:flex-end;padding-bottom:8px;
 }
-.hero-battle-sprite{ display:none } /* replaced by sprite sheet div */
-
-/* Generic hero sprite sheet - background/size set dynamically via JS per hero */
-.hero-sprite-sheet{
-  width:175px;height:175px;
-  image-rendering:pixelated;
-  display:block;margin:0 auto;
-}
+.hero-battle-sprite{ display:none } /* obsolete, replaced by canvas */
 
 @keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 
@@ -578,7 +571,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
       <div class="hero-side">
         <div class="fighter-card">
           <div class="fighter-name" id="hero-battle-name">HERO</div>
-        <div id="hero-battle-img" class="hero-sprite-sheet"></div>
+        <canvas id="hero-battle-img" width="175" height="175" style="display:block;margin:0 auto;image-rendering:pixelated"></canvas>
           <!-- HP/MP bar below sprite -->
           <div class="fighter-bars">
             <div class="fighter-bar-row">
@@ -1057,60 +1050,140 @@ function renderBattle() {
   renderSkills();
 }
 
-// Generate per-hero sprite-sheet CSS (idle/walk/attack/hurt) dynamically
+// ════════════════════════════════════════════════
+// CANVAS SPRITE ENGINE - single source of truth, no CSS animation conflicts
+// ════════════════════════════════════════════════
+const heroSpriteState = {
+  img: null,          // loaded Image object
+  loaded: false,
+  frameW: 0, frameH: 0, cols: 4,
+  idleRow: 0, walkRow: 1, attackRow: 2, hurtRow: 3,
+  currentRow: 0,       // which animation row is playing
+  currentFrame: 0,      // which frame in that row
+  fps: 8,               // frames per second for idle/walk loop
+  rafId: null,
+  lastFrameTime: 0,
+  oneShot: false,       // true for attack/hurt (plays once then returns to idle)
+  oneShotDone: null,    // callback when one-shot anim finishes
+};
+
 function setupHeroSpriteSheet(h) {
-  const heroEl = document.getElementById('hero-battle-img');
-  if (!heroEl) return;
+  const canvas = document.getElementById('hero-battle-img');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+
+  // stop any previous animation loop
+  if (heroSpriteState.rafId) {
+    cancelAnimationFrame(heroSpriteState.rafId);
+    heroSpriteState.rafId = null;
+  }
 
   if (!h.spriteSheet) {
-    // No sprite sheet - fallback to static image
-    heroEl.style.backgroundImage = `url('${h.img}')`;
-    heroEl.style.backgroundSize = 'contain';
-    heroEl.style.animation = 'none';
-    heroEl.className = 'hero-sprite-sheet';
+    // Fallback: static image, no sprite sheet
+    heroSpriteState.loaded = false;
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = 175;
+      canvas.height = 175;
+      ctx.clearRect(0,0,175,175);
+      // fit image into canvas preserving aspect ratio
+      const scale = Math.min(175/img.width, 175/img.height);
+      const dw = img.width*scale, dh = img.height*scale;
+      ctx.drawImage(img, (175-dw)/2, (175-dh)/2, dw, dh);
+    };
+    img.src = h.img;
     return;
   }
 
-  const fw = h.frameW, fh = h.frameH, cols = h.cols;
-  const rows = (h.hurtRow !== undefined ? h.hurtRow : 3) + 1;
-  const totalW = fw * cols, totalH = fh * rows;
-  const safeId = h.id.replace(/[^a-zA-Z0-9]/g, '');
+  heroSpriteState.frameW = h.frameW;
+  heroSpriteState.frameH = h.frameH;
+  heroSpriteState.cols = h.cols;
+  heroSpriteState.idleRow = h.idleRow;
+  heroSpriteState.walkRow = h.walkRow;
+  heroSpriteState.attackRow = h.attackRow;
+  heroSpriteState.hurtRow = h.hurtRow;
+  heroSpriteState.currentRow = h.idleRow;
+  heroSpriteState.currentFrame = 0;
+  heroSpriteState.oneShot = false;
+  heroSpriteState.loaded = false;
 
-  // Normalize visual size: target ~175px max dimension regardless of source frame size
+  // Normalize display size to ~175px max dimension
   const targetMax = 175;
-  const dispScale = targetMax / Math.max(fw, fh);
+  const dispScale = targetMax / Math.max(h.frameW, h.frameH);
+  canvas.width = Math.round(h.frameW * dispScale);
+  canvas.height = Math.round(h.frameH * dispScale);
+  canvas.style.width = canvas.width + 'px';
+  canvas.style.height = canvas.height + 'px';
 
-  heroEl.style.width = (fw * dispScale) + 'px';
-  heroEl.style.height = (fh * dispScale) + 'px';
-  heroEl.style.backgroundImage = `url('${h.spriteSheet}')`;
-  heroEl.style.backgroundSize = `${totalW * dispScale}px ${totalH * dispScale}px`;
-  heroEl.className = 'hero-sprite-sheet';
+  const img = new Image();
+  img.onload = () => {
+    heroSpriteState.img = img;
+    heroSpriteState.loaded = true;
+    startHeroSpriteLoop();
+  };
+  img.src = h.spriteSheet;
+}
 
-  const styleId = 'hero_battle_kf_' + safeId;
-  if (!document.getElementById(styleId)) {
-    const style = document.createElement('style');
-    style.id = styleId;
-    const rowDef = (name, rowIdx) => {
-      let kf = `@keyframes ${name}_${safeId}{`;
-      for (let f = 0; f < cols; f++) {
-        const pct = Math.round(f / cols * 100);
-        kf += `${pct}%{background-position:-${f*fw*dispScale}px -${rowIdx*fh*dispScale}px}`;
+function drawHeroFrame() {
+  const canvas = document.getElementById('hero-battle-img');
+  if (!canvas || !heroSpriteState.loaded) return;
+  const ctx = canvas.getContext('2d');
+  const s = heroSpriteState;
+  const sx = s.currentFrame * s.frameW;
+  const sy = s.currentRow * s.frameH;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(
+    s.img,
+    sx, sy, s.frameW, s.frameH,
+    0, 0, canvas.width, canvas.height
+  );
+}
+
+function startHeroSpriteLoop() {
+  const s = heroSpriteState;
+  s.lastFrameTime = performance.now();
+  function loop(now) {
+    const interval = 1000 / s.fps;
+    if (now - s.lastFrameTime >= interval) {
+      s.lastFrameTime = now;
+      s.currentFrame++;
+      if (s.currentFrame >= s.cols) {
+        if (s.oneShot) {
+          // one-shot animation finished -> return to idle
+          s.oneShot = false;
+          s.currentRow = s.idleRow;
+          s.currentFrame = 0;
+          if (s.oneShotDone) { const cb = s.oneShotDone; s.oneShotDone = null; cb(); }
+        } else {
+          s.currentFrame = 0;
+        }
       }
-      kf += `100%{background-position:-${(cols-1)*fw*dispScale}px -${rowIdx*fh*dispScale}px}}`;
-      return kf;
-    };
-    let css = rowDef('heroIdle', h.idleRow) + rowDef('heroWalk', h.walkRow) +
-              rowDef('heroAttack', h.attackRow) + rowDef('heroHurt', h.hurtRow);
-    css += `.hero-idle-${safeId}{animation:heroIdle_${safeId} 0.6s steps(${cols}) infinite}`;
-    css += `.hero-walk-${safeId}{animation:heroWalk_${safeId} 0.5s steps(${cols}) infinite !important}`;
-    css += `.hero-attack-${safeId}{animation:heroAttack_${safeId} 0.42s steps(${cols}) 1 !important}`;
-    css += `.hero-hurt-${safeId}{animation:heroHurt_${safeId} 0.4s steps(${cols}) 1 !important}`;
-    style.textContent = css;
-    document.head.appendChild(style);
+      drawHeroFrame();
+    }
+    s.rafId = requestAnimationFrame(loop);
   }
+  s.rafId = requestAnimationFrame(loop);
+}
 
-  heroEl.classList.add('hero-idle-' + safeId);
-  heroEl.dataset.heroId = safeId; // remember for attack/hurt class toggling
+// Switch to a row that loops (idle/walk)
+function heroSpritePlayLoop(rowName) {
+  const s = heroSpriteState;
+  s.oneShot = false;
+  s.currentRow = s[rowName + 'Row'];
+  s.currentFrame = 0;
+  drawHeroFrame();
+}
+
+// Switch to a row that plays once then returns to idle (attack/hurt)
+function heroSpritePlayOnce(rowName, fps, onDone) {
+  const s = heroSpriteState;
+  s.fps = fps || 10;
+  s.oneShot = true;
+  s.currentRow = s[rowName + 'Row'];
+  s.currentFrame = 0;
+  s.oneShotDone = onDone || null;
+  drawHeroFrame();
 }
 
 function renderEnemies() {
@@ -1667,18 +1740,14 @@ function heroAttackAnim(onHit) {
   const enemyEl = document.getElementById('enemy-unit-' + activeEnemyIdx);
   if (!heroEl || !enemyEl) { onHit(); return; }
 
-  const hid = heroEl.dataset.heroId || '';
-
   const hr = heroEl.getBoundingClientRect();
   const er = enemyEl.getBoundingClientRect();
   const dx = (er.left + er.width/2) - (hr.left + hr.width/2);
   const dy = (er.top  + er.height/2) - (hr.top  + hr.height/2);
   const tx = dx * 0.85, ty = dy * 0.85;
 
-  if (hid) {
-    heroEl.classList.remove('hero-idle-' + hid);
-    heroEl.classList.add('hero-walk-' + hid);
-  }
+  // Sprite frame animation (independent of position movement)
+  if (heroSpriteState.loaded) heroSpritePlayLoop('walk');
 
   const charge = heroEl.animate([
     {transform:'translate(0,0)'},
@@ -1686,21 +1755,17 @@ function heroAttackAnim(onHit) {
   ], {duration:420, easing:'cubic-bezier(0.2,0,0.1,1)', fill:'forwards'});
 
   charge.onfinish = () => {
-    if (hid) {
-      heroEl.classList.remove('hero-walk-' + hid);
-      heroEl.classList.add('hero-attack-' + hid);
+    if (heroSpriteState.loaded) {
+      heroSpritePlayOnce('attack', 12);
     }
     onHit();
     setTimeout(() => {
-      if (hid) {
-        heroEl.classList.remove('hero-attack-' + hid);
-        heroEl.classList.add('hero-idle-' + hid);
-      }
       const ret = heroEl.animate([
         {transform:`translate(${tx}px,${ty}px)`},
         {transform:'translate(0,0)'}
       ], {duration:220, easing:'cubic-bezier(0.4,0,1,1)', fill:'forwards'});
       ret.onfinish = () => { heroEl.style.transform = ''; };
+      if (heroSpriteState.loaded) heroSpritePlayLoop('idle');
     }, 80);
   };
 }
@@ -1709,8 +1774,6 @@ function enemyAttackAnim(enemyUnitId, onHit) {
   const enemyEl = document.getElementById(enemyUnitId);
   const heroEl  = document.getElementById('hero-battle-img');
   if (!enemyEl) { onHit(); return; }
-
-  const hid = heroEl ? (heroEl.dataset.heroId || '') : '';
 
   const er = enemyEl.getBoundingClientRect();
   const hr = heroEl ? heroEl.getBoundingClientRect() : er;
@@ -1724,15 +1787,9 @@ function enemyAttackAnim(enemyUnitId, onHit) {
   ], {duration:420, easing:'cubic-bezier(0.2,0,0.1,1)', fill:'forwards'});
 
   charge.onfinish = () => {
-    // Hero kena → hurt animation
-    if (heroEl && hid) {
-      heroEl.classList.remove('hero-idle-' + hid, 'hero-hurt-' + hid);
-      void heroEl.offsetWidth;
-      heroEl.classList.add('hero-hurt-' + hid);
-      setTimeout(() => {
-        heroEl.classList.remove('hero-hurt-' + hid);
-        heroEl.classList.add('hero-idle-' + hid);
-      }, 420);
+    // Hero kena → hurt animation (canvas-based, auto-returns to idle)
+    if (heroSpriteState.loaded) {
+      heroSpritePlayOnce('hurt', 10);
     }
     onHit();
     setTimeout(() => {
