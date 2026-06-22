@@ -220,42 +220,12 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 }
 .hero-battle-sprite{ display:none } /* replaced by sprite sheet div */
 
-/* Foxxy sprite sheet */
+/* Generic hero sprite sheet - background/size set dynamically via JS per hero */
 .hero-sprite-sheet{
   width:175px;height:175px;
-  background-image:url('assets/foxxy.png');
-  background-size:700px 700px;
   image-rendering:pixelated;
   display:block;margin:0 auto;
-  animation:foxxyIdle 0.6s steps(1) infinite;
 }
-@keyframes foxxyIdle{
-  0%  {background-position:0 0}
-  25% {background-position:-175px 0}
-  50% {background-position:-350px 0}
-  75% {background-position:-525px 0}
-}
-@keyframes foxxyWalk{
-  0%  {background-position:0 -175px}
-  25% {background-position:-175px -175px}
-  50% {background-position:-350px -175px}
-  75% {background-position:-525px -175px}
-}
-@keyframes foxxyAttack{
-  0%  {background-position:0 -350px}
-  25% {background-position:-175px -350px}
-  50% {background-position:-350px -350px}
-  75% {background-position:-525px -350px}
-}
-@keyframes foxxyHurt{
-  0%  {background-position:0 -525px}
-  33% {background-position:-175px -525px}
-  66% {background-position:-350px -525px}
-  100%{background-position:-525px -525px}
-}
-.foxxy-walk   {animation:foxxyWalk   0.5s steps(1) infinite !important}
-.foxxy-attack {animation:foxxyAttack 0.42s steps(1) 1       !important}
-.foxxy-hurt   {animation:foxxyHurt   0.4s steps(1) 1        !important}
 
 @keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 
@@ -760,16 +730,18 @@ const HEROES = [
     ]
   },
   {
-    id:'val', name:'Mad Steel', cls:'Strong Guardian',
-    img:'madCharArena.gif',
+    id:'val', name:'Blind Huntress', cls:'Shadow Hunter',
+    img:'assets/huntress_sheet.png',
+    spriteSheet:'assets/huntress_sheet.png', frameW:180, frameH:360, cols:4,
+    idleRow:0, walkRow:1, attackRow:2, hurtRow:3,
     hp:170, maxhp:170, mp:60, maxmp:60,
     atk:22, def:16, healPow:40,
     xp:0, level:1, xpNext:100,
     skills:[
-      {id:'s1',name:'Slash TX',desc:'Rogue transaction strike',dmg:32,mpCost:18,type:'dmg'},
-      {id:'s2',name:'Consensus',desc:'Consensus explosion',dmg:55,mpCost:35,type:'dmg'},
-      {id:'s3',name:'Epoch Regen',desc:'Full restore (12 turn cd)',heal:50,manaHeal:40,mpCost:0,cooldown:12,type:'cooldown'},
-      {id:'s4',name:'Finality',desc:'Sure hit always',dmg:38,mpCost:28,type:'sure'},
+      {id:'s1',name:'Shadow Strike',desc:'Swift blade strike',dmg:32,mpCost:18,type:'dmg'},
+      {id:'s2',name:'Piercing Dash',desc:'Explosive dash attack',dmg:55,mpCost:35,type:'dmg'},
+      {id:'s3',name:'Night Regen',desc:'Full restore (12 turn cd)',heal:50,manaHeal:40,mpCost:0,cooldown:12,type:'cooldown'},
+      {id:'s4',name:'True Sight',desc:'Sure hit always',dmg:38,mpCost:28,type:'sure'},
     ]
   },
   {
@@ -870,8 +842,9 @@ function renderHeroSelect() {
   grid.innerHTML = HEROES.map((h, i) => {
     let spriteHtml;
     if (h.spriteSheet) {
-      const displaySize = 80;
-      const scale = displaySize / h.frameW;
+      const displayW = 90;
+      const displayH = Math.round(displayW * (h.frameH / h.frameW));
+      const scale = displayW / h.frameW;
       const bgW = h.frameW * h.cols * scale;
       const bgH = h.frameH * (h.hurtRow + 1) * scale;
       const offsetY = h.idleRow * h.frameH * scale;
@@ -883,7 +856,7 @@ function renderHeroSelect() {
         let kf = `@keyframes ${animName}{`;
         for (let f = 0; f < h.cols; f++) {
           const pct = Math.round(f / h.cols * 100);
-          kf += `${pct}%{background-position:-${f * displaySize}px -${offsetY}px}`;
+          kf += `${pct}%{background-position:-${f * displayW}px -${offsetY}px}`;
         }
         kf += `}`;
         style.textContent = kf;
@@ -891,7 +864,7 @@ function renderHeroSelect() {
       }
 
       spriteHtml = `<div style="
-        width:${displaySize}px;height:${displaySize}px;margin:0 auto 8px;
+        width:${displayW}px;height:${displayH}px;margin:0 auto 8px;
         background-image:url('${h.spriteSheet}');
         background-size:${bgW}px ${bgH}px;
         background-repeat:no-repeat;
@@ -1069,6 +1042,8 @@ function renderBattle() {
   if (heroName) heroName.textContent = h.name;
   const heroBarName = document.getElementById('hero-bar-name');
   if (heroBarName) heroBarName.textContent = h.name;
+  // Setup hero sprite sheet dynamically per selected hero
+  setupHeroSpriteSheet(h);
   // Floor banner
   const banner = document.getElementById('floor-banner');
   if (banner) {
@@ -1080,6 +1055,62 @@ function renderBattle() {
   renderMonsterDots();
   updateBars();
   renderSkills();
+}
+
+// Generate per-hero sprite-sheet CSS (idle/walk/attack/hurt) dynamically
+function setupHeroSpriteSheet(h) {
+  const heroEl = document.getElementById('hero-battle-img');
+  if (!heroEl) return;
+
+  if (!h.spriteSheet) {
+    // No sprite sheet - fallback to static image
+    heroEl.style.backgroundImage = `url('${h.img}')`;
+    heroEl.style.backgroundSize = 'contain';
+    heroEl.style.animation = 'none';
+    heroEl.className = 'hero-sprite-sheet';
+    return;
+  }
+
+  const fw = h.frameW, fh = h.frameH, cols = h.cols;
+  const rows = (h.hurtRow !== undefined ? h.hurtRow : 3) + 1;
+  const totalW = fw * cols, totalH = fh * rows;
+  const safeId = h.id.replace(/[^a-zA-Z0-9]/g, '');
+
+  // Normalize visual size: target ~175px max dimension regardless of source frame size
+  const targetMax = 175;
+  const dispScale = targetMax / Math.max(fw, fh);
+
+  heroEl.style.width = (fw * dispScale) + 'px';
+  heroEl.style.height = (fh * dispScale) + 'px';
+  heroEl.style.backgroundImage = `url('${h.spriteSheet}')`;
+  heroEl.style.backgroundSize = `${totalW * dispScale}px ${totalH * dispScale}px`;
+  heroEl.className = 'hero-sprite-sheet';
+
+  const styleId = 'hero_battle_kf_' + safeId;
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style');
+    style.id = styleId;
+    const rowDef = (name, rowIdx) => {
+      let kf = `@keyframes ${name}_${safeId}{`;
+      for (let f = 0; f < cols; f++) {
+        const pct = Math.round(f / cols * 100);
+        kf += `${pct}%{background-position:-${f*fw*dispScale}px -${rowIdx*fh*dispScale}px}`;
+      }
+      kf += `100%{background-position:-${(cols-1)*fw*dispScale}px -${rowIdx*fh*dispScale}px}}`;
+      return kf;
+    };
+    let css = rowDef('heroIdle', h.idleRow) + rowDef('heroWalk', h.walkRow) +
+              rowDef('heroAttack', h.attackRow) + rowDef('heroHurt', h.hurtRow);
+    css += `.hero-idle-${safeId}{animation:heroIdle_${safeId} 0.6s steps(${cols}) infinite}`;
+    css += `.hero-walk-${safeId}{animation:heroWalk_${safeId} 0.5s steps(${cols}) infinite !important}`;
+    css += `.hero-attack-${safeId}{animation:heroAttack_${safeId} 0.42s steps(${cols}) 1 !important}`;
+    css += `.hero-hurt-${safeId}{animation:heroHurt_${safeId} 0.4s steps(${cols}) 1 !important}`;
+    style.textContent = css;
+    document.head.appendChild(style);
+  }
+
+  heroEl.classList.add('hero-idle-' + safeId);
+  heroEl.dataset.heroId = safeId; // remember for attack/hurt class toggling
 }
 
 function renderEnemies() {
@@ -1636,13 +1667,15 @@ function heroAttackAnim(onHit) {
   const enemyEl = document.getElementById('enemy-unit-' + activeEnemyIdx);
   if (!heroEl || !enemyEl) { onHit(); return; }
 
+  const hid = heroEl.dataset.heroId || '';
+
   const hr = heroEl.getBoundingClientRect();
   const er = enemyEl.getBoundingClientRect();
   const dx = (er.left + er.width/2) - (hr.left + hr.width/2);
   const dy = (er.top  + er.height/2) - (hr.top  + hr.height/2);
   const tx = dx * 0.85, ty = dy * 0.85;
 
-  heroEl.classList.add('foxxy-walk');
+  if (hid) heroEl.classList.add('hero-walk-' + hid);
 
   const charge = heroEl.animate([
     {transform:'translate(0,0)'},
@@ -1650,11 +1683,13 @@ function heroAttackAnim(onHit) {
   ], {duration:420, easing:'cubic-bezier(0.2,0,0.1,1)', fill:'forwards'});
 
   charge.onfinish = () => {
-    heroEl.classList.remove('foxxy-walk');
-    heroEl.classList.add('foxxy-attack');
+    if (hid) {
+      heroEl.classList.remove('hero-walk-' + hid);
+      heroEl.classList.add('hero-attack-' + hid);
+    }
     onHit();
     setTimeout(() => {
-      heroEl.classList.remove('foxxy-attack');
+      if (hid) heroEl.classList.remove('hero-attack-' + hid);
       const ret = heroEl.animate([
         {transform:`translate(${tx}px,${ty}px)`},
         {transform:'translate(0,0)'}
@@ -1669,6 +1704,8 @@ function enemyAttackAnim(enemyUnitId, onHit) {
   const heroEl  = document.getElementById('hero-battle-img');
   if (!enemyEl) { onHit(); return; }
 
+  const hid = heroEl ? (heroEl.dataset.heroId || '') : '';
+
   const er = enemyEl.getBoundingClientRect();
   const hr = heroEl ? heroEl.getBoundingClientRect() : er;
   const dx = (hr.left + hr.width/2)  - (er.left + er.width/2);
@@ -1682,11 +1719,11 @@ function enemyAttackAnim(enemyUnitId, onHit) {
 
   charge.onfinish = () => {
     // Hero kena → hurt animation
-    if (heroEl) {
-      heroEl.classList.remove('foxxy-hurt');
+    if (heroEl && hid) {
+      heroEl.classList.remove('hero-hurt-' + hid);
       void heroEl.offsetWidth;
-      heroEl.classList.add('foxxy-hurt');
-      setTimeout(() => heroEl.classList.remove('foxxy-hurt'), 420);
+      heroEl.classList.add('hero-hurt-' + hid);
+      setTimeout(() => heroEl.classList.remove('hero-hurt-' + hid), 420);
     }
     onHit();
     setTimeout(() => {
