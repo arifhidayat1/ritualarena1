@@ -1675,7 +1675,10 @@ function heroAttackAnim(onHit) {
   const dy = (er.top  + er.height/2) - (hr.top  + hr.height/2);
   const tx = dx * 0.85, ty = dy * 0.85;
 
-  if (hid) heroEl.classList.add('hero-walk-' + hid);
+  if (hid) {
+    heroEl.classList.remove('hero-idle-' + hid);
+    heroEl.classList.add('hero-walk-' + hid);
+  }
 
   const charge = heroEl.animate([
     {transform:'translate(0,0)'},
@@ -1689,7 +1692,10 @@ function heroAttackAnim(onHit) {
     }
     onHit();
     setTimeout(() => {
-      if (hid) heroEl.classList.remove('hero-attack-' + hid);
+      if (hid) {
+        heroEl.classList.remove('hero-attack-' + hid);
+        heroEl.classList.add('hero-idle-' + hid);
+      }
       const ret = heroEl.animate([
         {transform:`translate(${tx}px,${ty}px)`},
         {transform:'translate(0,0)'}
@@ -1720,10 +1726,13 @@ function enemyAttackAnim(enemyUnitId, onHit) {
   charge.onfinish = () => {
     // Hero kena → hurt animation
     if (heroEl && hid) {
-      heroEl.classList.remove('hero-hurt-' + hid);
+      heroEl.classList.remove('hero-idle-' + hid, 'hero-hurt-' + hid);
       void heroEl.offsetWidth;
       heroEl.classList.add('hero-hurt-' + hid);
-      setTimeout(() => heroEl.classList.remove('hero-hurt-' + hid), 420);
+      setTimeout(() => {
+        heroEl.classList.remove('hero-hurt-' + hid);
+        heroEl.classList.add('hero-idle-' + hid);
+      }, 420);
     }
     onHit();
     setTimeout(() => {
