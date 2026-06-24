@@ -17,11 +17,10 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
   font-family:'Press Start 2P',monospace;color:var(--text);
   image-rendering:pixelated}
 
-/* ── SCREENS ── */
 .screen{display:none;min-height:100vh;position:relative;z-index:10}
 .screen.active{display:block}
 
-/* ── BG (matches dungeon.html) ── */
+/* ── BG (reuses dungeon background, tinted purple) ── */
 #pvp-bg-layer{
   position:fixed;inset:0;z-index:0;pointer-events:none;
   background:url('assets/background_dungeon.png') center/cover no-repeat;
@@ -31,92 +30,54 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 }
 #pvp-bg-layer.clear{filter:brightness(0.85) hue-rotate(280deg) saturate(1.3);transform:scale(1)}
 
-#pvp-overlay{
-  position:fixed;inset:0;z-index:2;pointer-events:none;
-  background:rgba(20,0,30,0.40);
-  transition:background 0.6s ease;
-}
+#pvp-overlay{position:fixed;inset:0;z-index:2;pointer-events:none;background:rgba(20,0,30,0.40);transition:background 0.6s ease}
 #pvp-overlay.battle{background:rgba(0,0,0,0.05)}
 
 #pvp-particles{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden;transition:opacity 0.6s ease}
 #pvp-particles.battle{opacity:0.15}
-.pvp-particle{
-  position:absolute;border-radius:50%;
-  background:radial-gradient(circle, rgba(255,80,220,0.85) 0%, rgba(168,85,247,0.4) 50%, transparent 70%);
-  animation:pvpParticleFall linear infinite;
-}
-@keyframes pvpParticleFall{
-  0%{transform:translateY(-10px) rotate(0deg);opacity:0}
-  10%{opacity:1}
-  90%{opacity:0.6}
-  100%{transform:translateY(110vh) rotate(360deg);opacity:0}
-}
+.pvp-particle{position:absolute;border-radius:50%;background:radial-gradient(circle, rgba(255,80,220,0.85) 0%, rgba(168,85,247,0.4) 50%, transparent 70%);animation:pvpParticleFall linear infinite}
+@keyframes pvpParticleFall{0%{transform:translateY(-10px) rotate(0deg);opacity:0}10%{opacity:1}90%{opacity:0.6}100%{transform:translateY(110vh) rotate(360deg);opacity:0}}
 
 /* ── HUD ── */
-.hud{
-  position:fixed;top:0;left:0;right:0;z-index:50;
-  background:rgba(4,4,20,0.97);border-bottom:2px solid var(--purple);
-  padding:6px 14px;display:flex;align-items:center;gap:10px;font-size:7px;
-}
+.hud{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(4,4,20,0.97);border-bottom:2px solid var(--purple);padding:6px 14px;display:flex;align-items:center;gap:10px;font-size:7px}
 .hud-title{color:var(--purple);font-size:8px}
 .hud-right{margin-left:auto;display:flex;gap:10px;align-items:center}
 .hud-rank{font-family:'VT323',monospace;font-size:13px;color:var(--gold)}
+.hud-btn{background:rgba(60,20,20,0.8);border:1px solid rgba(180,50,50,0.5);color:#ff8080;padding:3px 8px;font-size:6px;cursor:pointer;font-family:'Press Start 2P',monospace}
+.hud-btn.lb{background:rgba(20,60,40,0.8);border-color:rgba(50,180,100,0.5);color:#80ffb0}
 
-/* ── GACHA SCREEN ── */
+/* ── GATE ── */
+#screen-gate{padding-top:60px;background:transparent;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.gate-box{width:90%;max-width:340px;background:var(--panel);border:2px solid var(--purple);box-shadow:0 0 30px rgba(168,85,247,0.25);padding:24px;text-align:center}
+.gate-icon{font-size:40px;margin-bottom:10px}
+.gate-title{font-size:10px;color:var(--purple);margin-bottom:8px}
+.gate-sub{font-family:'VT323',monospace;font-size:14px;color:#8060a0;margin-bottom:16px;line-height:1.5}
+.spinner{display:inline-block;width:10px;height:10px;border:2px solid rgba(255,255,255,0.2);border-top-color:var(--purple);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── GACHA ── */
 #screen-gacha{padding-top:60px;background:transparent;min-height:100vh}
 .gacha-header{text-align:center;padding:20px}
 .gacha-title{font-size:11px;color:var(--purple);text-shadow:0 0 20px var(--purple);margin-bottom:6px}
 .gacha-sub{font-family:'VT323',monospace;font-size:16px;color:#8060a0}
-
-.gacha-stage{
-  display:flex;justify-content:center;align-items:center;
-  gap:14px;padding:30px 16px;min-height:220px;position:relative;
-}
-.gacha-slot{
-  width:90px;height:110px;border:2px solid rgba(168,85,247,0.4);
-  background:rgba(10,10,30,0.8);display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  transition:all 0.15s;position:relative;overflow:hidden;
-}
-.gacha-slot img{width:60px;height:60px;object-fit:contain;image-rendering:pixelated;margin-bottom:4px}
+.gacha-stage{display:flex;justify-content:center;align-items:flex-end;gap:14px;padding:30px 16px;min-height:220px;position:relative;flex-wrap:wrap}
+.gacha-slot{width:110px;min-height:150px;border:2px solid rgba(168,85,247,0.4);background:rgba(10,10,30,0.8);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all 0.15s;position:relative;overflow:hidden;padding:8px 4px}
+.gacha-slot canvas{image-rendering:pixelated;margin-bottom:4px}
 .gacha-slot .gacha-name{font-size:6px;color:#8060a0;text-align:center;padding:0 2px}
-.gacha-slot.spinning{
-  animation:gachaSpin 0.12s linear infinite;
-  border-color:var(--gold);
-}
-@keyframes gachaSpin{
-  0%,100%{transform:translateY(0) scale(1)}
-  50%{transform:translateY(-6px) scale(1.04)}
-}
-.gacha-slot.winner{
-  border-color:var(--gold);
-  box-shadow:0 0 24px rgba(240,192,64,0.7);
-  background:rgba(50,40,5,0.9);
-  animation:winnerPulse 1s ease-in-out infinite alternate;
-}
-@keyframes winnerPulse{
-  from{box-shadow:0 0 16px rgba(240,192,64,0.5)}
-  to{box-shadow:0 0 36px rgba(240,192,64,0.95)}
-}
+.gacha-slot.spinning{animation:gachaSpin 0.12s linear infinite;border-color:var(--gold)}
+@keyframes gachaSpin{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.04)}}
+.gacha-slot.winner{border-color:var(--gold);box-shadow:0 0 24px rgba(240,192,64,0.7);background:rgba(50,40,5,0.9);animation:winnerPulse 1s ease-in-out infinite alternate}
+@keyframes winnerPulse{from{box-shadow:0 0 16px rgba(240,192,64,0.5)}to{box-shadow:0 0 36px rgba(240,192,64,0.95)}}
 .gacha-slot .gacha-name.winner-name{color:var(--gold)}
 
-.gacha-result{
-  text-align:center;padding:0 16px;display:none;
-}
+.gacha-result{text-align:center;padding:0 16px;display:none}
 .gacha-result.show{display:block;animation:fadeUp 0.4s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .gr-label{font-size:7px;color:var(--gold);margin-bottom:8px;letter-spacing:1px}
-.gr-stats{
-  display:grid;grid-template-columns:1fr 1fr;gap:6px;
-  max-width:280px;margin:0 auto 16px;
-  background:rgba(0,0,0,0.4);border:1px solid rgba(240,192,64,0.3);padding:12px;
-}
+.gr-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-width:280px;margin:0 auto 16px;background:rgba(0,0,0,0.4);border:1px solid rgba(240,192,64,0.3);padding:12px}
 .gr-stat{font-family:'VT323',monospace;font-size:14px;color:#8060a0;text-align:left}
 .gr-stat span{color:var(--text)}
-.gr-boost{
-  font-family:'VT323',monospace;font-size:13px;color:var(--purple);
-  margin-bottom:14px;
-}
+.gr-boost{font-family:'VT323',monospace;font-size:13px;color:var(--purple);margin-bottom:14px}
 
 /* ── OPPONENT SELECT ── */
 #screen-opponent{padding-top:60px;background:transparent;min-height:100vh}
@@ -124,11 +85,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 .opp-title{font-size:10px;color:var(--purple);text-shadow:0 0 16px var(--purple);margin-bottom:4px}
 .opp-sub{font-family:'VT323',monospace;font-size:15px;color:#8060a0}
 .opp-list{display:flex;flex-direction:column;gap:8px;padding:16px;max-width:420px;margin:0 auto}
-.opp-card{
-  display:flex;align-items:center;gap:12px;
-  border:2px solid rgba(60,60,120,0.6);background:rgba(10,10,30,0.8);
-  padding:10px 14px;cursor:pointer;transition:all 0.12s;
-}
+.opp-card{display:flex;align-items:center;gap:12px;border:2px solid rgba(60,60,120,0.6);background:rgba(10,10,30,0.8);padding:10px 14px;cursor:pointer;transition:all 0.12s}
 .opp-card:hover{border-color:var(--purple);background:rgba(40,15,55,0.85);transform:translateX(3px)}
 .opp-avatar{width:42px;height:42px;border-radius:6px;object-fit:cover;border:1px solid rgba(168,85,247,0.5);flex-shrink:0;background:#111}
 .opp-info{flex:1}
@@ -137,41 +94,46 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 .opp-power{font-family:'VT323',monospace;font-size:12px;color:var(--cyan);margin-top:2px}
 .opp-arrow{font-size:12px;color:var(--purple)}
 
-/* ── BATTLE SCREEN (reuses dungeon layout) ── */
+/* ── BATTLE (matches dungeon battlefield layout) ── */
 #screen-battle{padding-top:44px;position:relative;z-index:10}
 .battle-wrap{min-height:calc(100vh - 44px);display:flex;flex-direction:column;position:relative}
+.match-banner{text-align:center;padding:8px;font-size:8px;letter-spacing:2px;background:rgba(40,0,50,0.6);border-bottom:1px solid rgba(168,85,247,0.4);position:relative;z-index:5;color:var(--purple)}
 
-.match-banner{
-  text-align:center;padding:8px;font-size:8px;letter-spacing:2px;
-  background:rgba(40,0,50,0.6);border-bottom:1px solid rgba(168,85,247,0.4);
-  position:relative;z-index:5;color:var(--purple);
-}
+.battlefield{flex:1;display:flex;align-items:center;justify-content:center;position:relative;min-height:340px;gap:0;padding:10px 60px 40px 60px}
 
-.battlefield{
-  flex:1;display:flex;align-items:center;justify-content:center;
-  position:relative;min-height:200px;padding:10px 70px;gap:0;
-}
-.fighter-side{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:8px;gap:6px}
-.fighter-sprite{width:110px;height:110px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 0 16px rgba(80,160,255,0.6))}
-.fighter-sprite.enemy-sprite-img{filter:drop-shadow(0 0 16px rgba(255,80,80,0.6))}
-.fighter-avatar-badge{
-  width:34px;height:34px;border-radius:50%;object-fit:cover;
-  border:2px solid var(--red);position:absolute;top:-6px;right:-6px;
-}
-.fighter-sprite-wrap{position:relative}
-.fighter-name-tag{
-  font-size:6px;color:#fff;text-shadow:0 0 6px rgba(0,0,0,0.9);
-  background:rgba(0,0,0,0.6);padding:2px 8px;
+.fighter-card{display:flex;flex-direction:column;align-items:center;gap:4px}
+.fighter-name{font-family:'Press Start 2P',monospace;font-size:7px;color:#fff;text-shadow:0 0 6px rgba(0,0,0,0.9);background:rgba(0,0,0,0.55);padding:2px 7px;letter-spacing:0.5px}
+.fighter-bars{width:100%;max-width:130px;padding:2px 0;display:flex;flex-direction:column;gap:3px}
+.fighter-bar-row{display:flex;align-items:center;gap:4px}
+.fighter-bar-track{flex:1;height:6px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.1);overflow:hidden}
+.fighter-bar-fill{height:100%;transition:width 0.35s ease}
+.fighter-bar-fill.hp{background:linear-gradient(90deg,#10c050,#60ff70)}
+.fighter-bar-fill.hp.low{background:linear-gradient(90deg,#c05010,#ff7030)}
+.fighter-bar-fill.mp{background:linear-gradient(90deg,#1840c0,#5080ff)}
+.fighter-bar-val{font-family:'VT323',monospace;font-size:11px;color:#e0e0e0;width:40px;flex-shrink:0;text-align:right}
+
+.hero-side{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:8px}
+.enemy-side{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:8px}
+
+.enemy-sprite-wrap{position:relative;width:175px;height:175px;display:flex;align-items:center;justify-content:center}
+.enemy-avatar-badge{
+  width:36px;height:36px;border-radius:50%;object-fit:cover;
+  border:2px solid var(--red);box-shadow:0 0 10px rgba(255,64,64,0.6);
+  position:absolute;top:-4px;right:-4px;background:#111;
 }
 @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-.fighter-sprite{animation:floatY 3s ease-in-out infinite}
+.enemy-sprite-wrap, #hero-battle-img{animation:floatY 3s ease-in-out infinite}
+
+@keyframes hitFlash{0%,100%{filter:brightness(1)}30%{filter:brightness(3) saturate(0)}60%{filter:brightness(2) hue-rotate(20deg)}}
+@keyframes hitBounce{0%{transform:translateX(0)}25%{transform:translateX(14px)}50%{transform:translateX(-8px)}75%{transform:translateX(5px)}100%{transform:translateX(0)}}
+.enemy-hit{animation:hitFlash 0.35s ease, hitBounce 0.35s ease !important}
+.hero-hit{animation:hitFlash 0.35s ease, hitBounce 0.35s ease !important}
 
 .vs-mid{display:flex;flex-direction:column;align-items:center;padding:0 8px;flex-shrink:0}
 .vs-txt{font-size:clamp(14px,3vw,22px);color:var(--purple);text-shadow:0 0 12px var(--purple),2px 2px 0 #000;animation:vsPulse 1.5s ease-in-out infinite}
 @keyframes vsPulse{0%,100%{opacity:1}50%{opacity:0.6}}
 
 .battle-bottom{background:rgba(4,4,20,0.97);border-top:2px solid var(--purple)}
-
 .status-bars{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;padding:6px 10px;border-bottom:1px solid rgba(168,85,247,0.15);background:rgba(0,0,0,0.4)}
 .bar-section.enemy-section{text-align:right}
 .bar-name{font-size:6px;color:var(--gold);margin-bottom:3px}
@@ -192,24 +154,14 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 
 .commands{padding:6px 10px 4px}
 .cmd-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:5px}
-.cmd-btn{
-  font-family:'Press Start 2P',monospace;font-size:6px;border:0;cursor:pointer;
-  padding:7px 4px 5px;background:rgba(30,15,45,0.9);
-  border-top:2px solid rgba(168,85,247,0.5);border-left:2px solid rgba(168,85,247,0.5);
-  border-bottom:2px solid rgba(20,20,60,0.9);border-right:2px solid rgba(20,20,60,0.9);
-  color:var(--text);transition:all 0.1s;text-align:center;
-}
+.cmd-btn{font-family:'Press Start 2P',monospace;font-size:6px;border:0;cursor:pointer;padding:7px 4px 5px;background:rgba(30,15,45,0.9);border-top:2px solid rgba(168,85,247,0.5);border-left:2px solid rgba(168,85,247,0.5);border-bottom:2px solid rgba(20,20,60,0.9);border-right:2px solid rgba(20,20,60,0.9);color:var(--text);transition:all 0.1s;text-align:center}
 .cmd-btn:hover:not(:disabled){border-top-color:var(--gold);border-left-color:var(--gold);background:rgba(50,35,5,0.9)}
 .cmd-btn:disabled{opacity:0.3;cursor:not-allowed}
 .cmd-icon{font-size:14px;display:block;margin-bottom:1px}
 .cmd-name{color:var(--gold);font-size:5px}
 
 .skill-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
-.skill-btn{
-  font-family:'Press Start 2P',monospace;font-size:5px;
-  background:rgba(15,10,35,0.9);border:1px solid rgba(120,60,200,0.5);
-  color:var(--text);padding:5px 3px;cursor:pointer;text-align:center;transition:all 0.1s;
-}
+.skill-btn{font-family:'Press Start 2P',monospace;font-size:5px;background:rgba(15,10,35,0.9);border:1px solid rgba(120,60,200,0.5);color:var(--text);padding:5px 3px;cursor:pointer;text-align:center;transition:all 0.1s}
 .skill-btn:hover:not(:disabled){border-color:var(--cyan);background:rgba(10,20,60,0.95)}
 .skill-btn:disabled{opacity:0.3;cursor:not-allowed}
 .sk-name{color:var(--cyan);font-size:5px;display:block}
@@ -238,15 +190,22 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 .px-red{background:#600;color:#ff8080;border:2px solid var(--red);box-shadow:2px 2px 0 #000}
 .px-sm{padding:7px 12px;font-size:6px}
 
-/* ── CONNECT GATE ── */
-#screen-gate{padding-top:60px;background:transparent;min-height:100vh;display:flex;align-items:center;justify-content:center}
-.gate-box{
-  width:90%;max-width:340px;background:var(--panel);border:2px solid var(--purple);
-  box-shadow:0 0 30px rgba(168,85,247,0.25);padding:24px;text-align:center;
-}
-.gate-icon{font-size:40px;margin-bottom:10px}
-.gate-title{font-size:10px;color:var(--purple);margin-bottom:8px}
-.gate-sub{font-family:'VT323',monospace;font-size:14px;color:#8060a0;margin-bottom:16px;line-height:1.5}
+/* ── LEADERBOARD ── */
+#leaderboard-panel{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center}
+#leaderboard-panel.show{display:flex}
+.lb-box{background:#0a0a20;border:2px solid var(--gold);width:92%;max-width:420px;padding:18px;max-height:80vh;overflow-y:auto}
+.lb-title{font-size:9px;color:var(--gold);margin-bottom:12px;border-bottom:1px solid rgba(240,192,64,0.3);padding-bottom:8px}
+.lb-row{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid rgba(255,255,255,0.05)}
+.lb-rank{font-family:'VT323',monospace;font-size:16px;color:#8060a0;width:24px;flex-shrink:0;text-align:center}
+.lb-rank.top1{color:var(--gold)}
+.lb-rank.top2{color:#c0c0c0}
+.lb-rank.top3{color:#cd7f32}
+.lb-avatar{width:32px;height:32px;border-radius:6px;object-fit:cover;border:1px solid rgba(240,192,64,0.4);background:#111;flex-shrink:0}
+.lb-info{flex:1}
+.lb-name{font-size:7px;color:var(--text)}
+.lb-handle{font-family:'VT323',monospace;font-size:11px;color:#6060a0}
+.lb-score{font-family:'VT323',monospace;font-size:15px;color:var(--gold)}
+.lb-empty{text-align:center;font-family:'VT323',monospace;font-size:14px;color:#6060a0;padding:20px}
 
 /* ── TOAST/PROJECTILE ── */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0a0a30;border:2px solid var(--purple);color:var(--text);padding:8px 18px;z-index:9999;font-size:7px;animation:toastIn 0.2s;pointer-events:none;white-space:nowrap}
@@ -262,26 +221,25 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 </head>
 <body>
 
-<!-- Background layers (same system as dungeon.html) -->
 <div id="pvp-bg-layer"></div>
 <div id="pvp-particles"></div>
 <div id="pvp-overlay"></div>
 
-<!-- HUD -->
 <div class="hud" id="hud" style="display:none">
   <span class="hud-title">⚔ PvP ARENA</span>
   <div class="hud-right">
     <span class="hud-rank">🏆 <span id="hud-rank-val">0</span></span>
-    <button onclick="goWorld()" style="background:rgba(60,20,20,0.8);border:1px solid rgba(180,50,50,0.5);color:#ff8080;padding:3px 8px;font-size:6px;cursor:pointer;font-family:'Press Start 2P',monospace">🚪 EXIT</button>
+    <button class="hud-btn lb" onclick="openLeaderboard()">📋 RANKS</button>
+    <button class="hud-btn" onclick="goWorld()">🚪 EXIT</button>
   </div>
 </div>
 
-<!-- SCREEN: WALLET GATE -->
+<!-- SCREEN: WALLET/NFT GATE -->
 <div id="screen-gate" class="screen active">
   <div class="gate-box">
     <div class="gate-icon">🔒</div>
     <div class="gate-title">NFT REQUIRED</div>
-    <div class="gate-sub" id="gate-msg">Checking your wallet & NFT status...</div>
+    <div class="gate-sub" id="gate-msg"><span class="spinner"></span>Checking wallet...</div>
     <button class="px-btn px-red px-sm" onclick="goWorld()">← Back to World</button>
   </div>
 </div>
@@ -319,19 +277,21 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
   <div class="battle-wrap">
     <div class="match-banner" id="match-banner">RANK MATCH</div>
     <div class="battlefield">
-      <div class="fighter-side">
-        <div class="fighter-sprite-wrap">
-          <img id="hero-img" class="fighter-sprite" src="" alt="hero">
+      <div class="hero-side">
+        <div class="fighter-card">
+          <div class="fighter-name" id="hero-name-tag">HERO</div>
+          <canvas id="hero-battle-img" width="175" height="175" style="display:block;margin:0 auto;image-rendering:pixelated"></canvas>
         </div>
-        <div class="fighter-name-tag" id="hero-name-tag">HERO</div>
       </div>
       <div class="vs-mid"><div class="vs-txt">VS</div></div>
-      <div class="fighter-side">
-        <div class="fighter-sprite-wrap">
-          <img id="enemy-img" class="fighter-sprite enemy-sprite-img" src="" alt="enemy">
-          <img id="enemy-avatar-badge" class="fighter-avatar-badge" src="" alt="">
+      <div class="enemy-side">
+        <div class="fighter-card">
+          <div class="fighter-name" id="enemy-name-tag">@opponent</div>
+          <div class="enemy-sprite-wrap" id="enemy-sprite-wrap">
+            <canvas id="enemy-battle-img" width="175" height="175" style="display:block;margin:0 auto;image-rendering:pixelated"></canvas>
+            <img id="enemy-avatar-badge" class="enemy-avatar-badge" src="" alt="">
+          </div>
         </div>
-        <div class="fighter-name-tag" id="enemy-name-tag">@opponent</div>
       </div>
     </div>
     <div class="battle-bottom">
@@ -414,9 +374,20 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
   </div>
 </div>
 
+<!-- LEADERBOARD PANEL -->
+<div id="leaderboard-panel">
+  <div class="lb-box">
+    <div class="lb-title">🏆 LEADERBOARD</div>
+    <div id="lb-list"><div class="lb-empty">Loading...</div></div>
+    <div style="text-align:center;margin-top:10px">
+      <button class="px-btn px-red px-sm" onclick="closeLeaderboard()">✕ Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ════════════════════════════════════════════════
-// CONFIG / DATA
+// CONFIG / CONTRACTS
 // ════════════════════════════════════════════════
 const NFT_CONTRACT = '0x592d75AC5aB1B04cA4109FBa9f08A69fDc2D566C';
 const NFT_ABI = [
@@ -430,39 +401,47 @@ const EVENT_ABI = [
   'function getMyScore() external view returns (tuple(address player, string username, string avatarUrl, string charName, uint256 score, uint256 wave, uint256 timestamp))',
   'function getLeaderboard(uint256 limit) external view returns (tuple(address player, string username, string avatarUrl, string charName, uint256 score, uint256 wave, uint256 timestamp)[])',
   'function getEventInfo() external view returns (bool active, string name, string description, string bannerColor, uint256 startTime, uint256 endTime, uint256 totalPlayers)',
-  'function getTotalPlayers() external view returns (uint256)',
 ];
-const RANK_KEY = 'pvp_rank_v1'; // local mirror, on-chain is source of truth once submitted
+const RANK_KEY = 'pvp_rank_v1';
 
+// ════════════════════════════════════════════════
+// HEROES — synced with dungeon.html roster
+// ════════════════════════════════════════════════
 const HEROES = [
   {
-    id:'jez', name:'Jez Runner', cls:'Strong Fighter', img:'jezzCharArena.gif',
-    hp:130, maxhp:130, mp:80, maxmp:80, atk:18, def:8, healPow:30,
+    id:'foxxy', name:'Foxxy', cls:'Fire Trickster',
+    spriteSheet:'assets/foxxy.png', frameW:175, frameH:175, cols:4,
+    idleRow:0, walkRow:1, attackRow:2, hurtRow:3,
+    hp:120, maxhp:120, mp:100, maxmp:100, atk:22, def:6, healPow:35,
     skills:[
-      {id:'s1',name:'Net Strike',dmg:28,mpCost:15,type:'dmg'},
-      {id:'s2',name:'AI Compute',dmg:50,mpCost:30,type:'dmg'},
-      {id:'s3',name:'Regen Node',heal:25,manaHeal:15,mpCost:0,cooldown:9,type:'cooldown'},
-      {id:'s4',name:'Fork Net',dmg:22,mpCost:25,type:'multi'},
+      {id:'s1',name:'Flame Bite',dmg:28,mpCost:15,type:'dmg'},
+      {id:'s2',name:'Fire Burst',dmg:50,mpCost:30,type:'dmg'},
+      {id:'s3',name:'Fox Regen',heal:25,manaHeal:15,mpCost:0,cooldown:9,type:'cooldown'},
+      {id:'s4',name:'Tail Slash',dmg:22,mpCost:25,type:'multi'},
     ]
   },
   {
-    id:'val', name:'Mad Steel', cls:'Strong Guardian', img:'madCharArena.gif',
+    id:'val', name:'Blind Huntress', cls:'Shadow Hunter',
+    spriteSheet:'assets/huntress_sheet.png', frameW:180, frameH:360, cols:4,
+    idleRow:0, walkRow:1, attackRow:2, hurtRow:3,
     hp:170, maxhp:170, mp:60, maxmp:60, atk:22, def:16, healPow:40,
     skills:[
-      {id:'s1',name:'Slash TX',dmg:32,mpCost:18,type:'dmg'},
-      {id:'s2',name:'Consensus',dmg:55,mpCost:35,type:'dmg'},
-      {id:'s3',name:'Epoch Regen',heal:50,manaHeal:40,mpCost:0,cooldown:12,type:'cooldown'},
-      {id:'s4',name:'Finality',dmg:38,mpCost:28,type:'sure'},
+      {id:'s1',name:'Shadow Strike',dmg:32,mpCost:18,type:'dmg'},
+      {id:'s2',name:'Piercing Dash',dmg:55,mpCost:35,type:'dmg'},
+      {id:'s3',name:'Night Regen',heal:50,manaHeal:40,mpCost:0,cooldown:12,type:'cooldown'},
+      {id:'s4',name:'True Sight',dmg:38,mpCost:28,type:'sure'},
     ]
   },
   {
-    id:'flash', name:'Flash Shadow', cls:'Strong Mage', img:'flashCharArena.gif',
+    id:'flash', name:'Crow Wraith', cls:'Shadow Mage',
+    spriteSheet:'assets/crow_sheet.png', frameW:192, frameH:192, cols:4,
+    idleRow:0, walkRow:1, attackRow:2, hurtRow:3,
     hp:95, maxhp:95, mp:130, maxmp:130, atk:29, def:5, healPow:20,
     skills:[
-      {id:'s1',name:'Deploy',dmg:22,mpCost:10,type:'dmg'},
-      {id:'s2',name:'Reentrancy',dmg:65,mpCost:40,type:'dmg'},
-      {id:'s3',name:'Audit',heal:18,mpCost:12,type:'heal'},
-      {id:'s4',name:'MEV Drain',dmg:32,manaHeal:20,mpCost:18,type:'drain'},
+      {id:'s1',name:'Wing Slash',dmg:22,mpCost:10,type:'dmg'},
+      {id:'s2',name:'Crimson Surge',dmg:65,mpCost:40,type:'dmg'},
+      {id:'s3',name:'Dark Veil',heal:18,mpCost:12,type:'heal'},
+      {id:'s4',name:'Soul Drain',dmg:32,manaHeal:20,mpCost:18,type:'drain'},
     ]
   },
 ];
@@ -485,17 +464,12 @@ const OPPONENT_POOL = [
   'hazelnty_','0xdenta','shinjiihhh','NineMay_ID','0x_kippo','YeaItsHeat',
   'flylucifer666','0xMjz','0xsenjuro','rzstwnn_','0xDontol','TheMajeour',
   '0xyoyooo_','0xskypots','nadsarmonads',
-].map(handle => ({
-  handle,
-  name: handle,
-  power: rndPower(handle),
-}));
+].map(handle => ({ handle, name: handle, power: rndPower(handle) }));
 
-// Deterministic-ish power level per handle so it doesn't reshuffle every render
 function rndPower(handle){
   let hash = 0;
   for (let i=0;i<handle.length;i++) hash = (hash*31 + handle.charCodeAt(i)) % 9973;
-  return 1 + (hash % 3); // power 1..3
+  return 1 + (hash % 3);
 }
 
 // ════════════════════════════════════════════════
@@ -510,7 +484,6 @@ let busy = false;
 let defending = false;
 let skillCooldowns = {};
 let rankPoints = 0;
-let debugMode = false;
 
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -518,11 +491,10 @@ function showScreen(id){
   document.getElementById('hud').style.display = (id==='gate') ? 'none' : 'flex';
   if (id==='battle') clearBgForBattle(); else blurBgForMenu();
 }
-
 function rnd(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
 
 // ════════════════════════════════════════════════
-// BACKGROUND / PARTICLES (matches dungeon.html system)
+// BACKGROUND / PARTICLES
 // ════════════════════════════════════════════════
 function spawnPvpParticles(){
   const container = document.getElementById('pvp-particles');
@@ -546,7 +518,7 @@ function blurBgForMenu(){
 }
 
 // ════════════════════════════════════════════════
-// WALLET / NFT GATE
+// WALLET / NFT GATE (fixed: never stuck on "checking...")
 // ════════════════════════════════════════════════
 function getProvider(){
   const providers = window.ethereum?.providers || [];
@@ -558,25 +530,38 @@ async function initGate(){
   const sessAddr = sessionStorage.getItem('wallet_address');
   const sessConnected = sessionStorage.getItem('wallet_connected') === '1';
   const isDemo = sessionStorage.getItem('wallet_demo') === '1';
+  const gateMsg = document.getElementById('gate-msg');
 
-  if (isDemo || !sessConnected || !sessAddr) {
-    document.getElementById('gate-msg').textContent =
-      isDemo ? '❌ Demo mode cannot access PvP. Connect a real wallet and mint an NFT first!'
-             : '❌ Please connect your wallet from the World map first!';
+  if (isDemo) {
+    gateMsg.innerHTML = '❌ Demo mode cannot access PvP.<br>Connect a real wallet and mint an NFT from the World map first!';
+    return;
+  }
+  if (!sessConnected || !sessAddr) {
+    gateMsg.innerHTML = '❌ Please connect your wallet from the World map first!';
+    return;
+  }
+  if (!window.ethereum) {
+    gateMsg.innerHTML = '❌ No wallet provider found in this browser.';
     return;
   }
 
-  document.getElementById('gate-msg').textContent = '⏳ Checking NFT ownership...';
+  gateMsg.innerHTML = '<span class="spinner"></span>Checking NFT ownership...';
 
   try {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const contract = new ethers.Contract(NFT_CONTRACT, NFT_ABI, provider);
-    const has = await contract.hasCharacter(sessAddr);
+
+    // Race against a timeout so a stalled RPC never leaves the user stuck forever
+    const has = await Promise.race([
+      contract.hasCharacter(sessAddr),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 12000)),
+    ]);
+
     if (!has) {
-      document.getElementById('gate-msg').innerHTML =
-        '❌ You need an NFT to enter PvP Arena!<br><br>Go back to World and mint one via the 🎖️ icon.';
+      gateMsg.innerHTML = '❌ You need an NFT to enter PvP Arena!<br><br>Go back to World and mint one via the 🎖️ icon.';
       return;
     }
+
     const data = await contract.getCharacterByWallet(sessAddr);
     nftData = {
       username: data.username, avatarUrl: data.avatarUrl,
@@ -588,12 +573,14 @@ async function initGate(){
     loadRank();
     startGacha();
   } catch(e){
-    document.getElementById('gate-msg').textContent = '❌ Error checking NFT: ' + (e.message||'Unknown');
+    console.warn('NFT check failed:', e);
+    gateMsg.innerHTML = '❌ Could not verify NFT (network issue).<br><br>' +
+      '<button class="px-btn px-purple px-sm" onclick="initGate()" style="margin-top:8px">🔄 Retry</button>';
   }
 }
 
 // ════════════════════════════════════════════════
-// RANK (localStorage)
+// RANK (local mirror)
 // ════════════════════════════════════════════════
 function loadRank(){
   rankPoints = parseInt(localStorage.getItem(RANK_KEY) || '0', 10);
@@ -606,47 +593,103 @@ function saveRank(){
 
 async function submitScoreOnChain(){
   const addr = sessionStorage.getItem('wallet_address');
-  if (!addr || !nftData) return; // demo / no nft -> skip silently
+  if (!addr || !nftData) return;
   try {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer   = provider.getSigner();
     const contract = new ethers.Contract(EVENT_CONTRACT, EVENT_ABI, signer);
 
-    // Check event is active first to avoid a guaranteed revert
     let info;
     try { info = await contract.getEventInfo(); } catch(e) { return; }
     if (!info || !info.active) return;
 
     const tx = await contract.submitScore(
-      rankPoints,
-      rankPoints, // wave field reused as same value; adjust if you track waves separately
-      nftData.username || '',
-      nftData.avatarUrl || '',
-      nftData.charName || hero.name
+      rankPoints, rankPoints,
+      nftData.username || '', nftData.avatarUrl || '', nftData.charName || hero.name
     );
     addLog('⛓️ Submitting score on-chain...', 'sys');
     await tx.wait();
     addLog('✅ Score saved on-chain!', 'heal');
   } catch(e) {
-    // Most common revert: "Score not higher than your best" — that's fine, just skip
     console.warn('On-chain submit skipped:', e.reason || e.message);
   }
 }
 
 // ════════════════════════════════════════════════
-// GACHA
+// LEADERBOARD
+// ════════════════════════════════════════════════
+function openLeaderboard(){
+  document.getElementById('leaderboard-panel').classList.add('show');
+  loadLeaderboard();
+}
+function closeLeaderboard(){
+  document.getElementById('leaderboard-panel').classList.remove('show');
+}
+async function loadLeaderboard(){
+  const list = document.getElementById('lb-list');
+  list.innerHTML = '<div class="lb-empty"><span class="spinner"></span>Loading leaderboard...</div>';
+  try {
+    const rpcProvider = window.ethereum
+      ? new ethers.providers.Web3Provider(window.ethereum)
+      : null;
+    if (!rpcProvider) { list.innerHTML = '<div class="lb-empty">No wallet provider available</div>'; return; }
+    const contract = new ethers.Contract(EVENT_CONTRACT, EVENT_ABI, rpcProvider);
+    const rows = await Promise.race([
+      contract.getLeaderboard(20),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 12000)),
+    ]);
+    if (!rows || rows.length === 0) {
+      list.innerHTML = '<div class="lb-empty">No scores submitted yet.<br>Be the first to win a match!</div>';
+      return;
+    }
+    list.innerHTML = rows.map((r, i) => {
+      const rankClass = i===0?'top1':i===1?'top2':i===2?'top3':'';
+      const avatar = r.avatarUrl || `https://unavatar.io/x/${r.username}`;
+      return `<div class="lb-row">
+        <div class="lb-rank ${rankClass}">${i+1}</div>
+        <img class="lb-avatar" src="${avatar}" onerror="this.src='https://unavatar.io/x/${r.username}'">
+        <div class="lb-info">
+          <div class="lb-name">${r.charName || r.username || 'Unknown'}</div>
+          <div class="lb-handle">@${r.username || '—'}</div>
+        </div>
+        <div class="lb-score">${Number(r.score)}</div>
+      </div>`;
+    }).join('');
+  } catch(e){
+    console.warn('Leaderboard load failed:', e);
+    list.innerHTML = '<div class="lb-empty">❌ Could not load leaderboard.<br>' +
+      '<button class="px-btn px-purple px-sm" onclick="loadLeaderboard()" style="margin-top:8px">🔄 Retry</button></div>';
+  }
+}
+
+// ════════════════════════════════════════════════
+// GACHA — canvas mini sprite preview per slot
 // ════════════════════════════════════════════════
 function startGacha(){
   showScreen('gacha');
   const stage = document.getElementById('gacha-stage');
   document.getElementById('gacha-result').classList.remove('show');
 
-  stage.innerHTML = HEROES.map((h,i)=>`
-    <div class="gacha-slot spinning" id="gslot${i}">
-      <img src="${h.img}" onerror="this.style.display='none'">
+  stage.innerHTML = HEROES.map((h,i)=>{
+    const dispScale = 64 / Math.max(h.frameW, h.frameH);
+    const cw = Math.round(h.frameW*dispScale), ch = Math.round(h.frameH*dispScale);
+    return `<div class="gacha-slot spinning" id="gslot${i}">
+      <canvas id="gcanvas${i}" width="${cw}" height="${ch}" style="image-rendering:pixelated"></canvas>
       <div class="gacha-name">${h.name}</div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
+
+  // draw idle frame 0 for each
+  HEROES.forEach((h,i)=>{
+    const canvas = document.getElementById('gcanvas'+i);
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, h.idleRow*h.frameH, h.frameW, h.frameH, 0, 0, canvas.width, canvas.height);
+    };
+    img.src = h.spriteSheet;
+  });
 
   let ticks = 0;
   const maxTicks = 22;
@@ -654,14 +697,10 @@ function startGacha(){
 
   const interval = setInterval(()=>{
     ticks++;
-    stage.querySelectorAll('.gacha-slot').forEach((el,i)=>{
-      el.style.transform = (ticks%2===0) ? 'translateY(-4px)' : 'translateY(0)';
-    });
     if (ticks >= maxTicks){
       clearInterval(interval);
       stage.querySelectorAll('.gacha-slot').forEach((el,i)=>{
         el.classList.remove('spinning');
-        el.style.transform='';
         if (i===winnerIdx){
           el.classList.add('winner');
           el.querySelector('.gacha-name').classList.add('winner-name');
@@ -678,9 +717,8 @@ function finishGacha(idx){
   const base = HEROES[idx];
   hero = JSON.parse(JSON.stringify(base));
 
-  // Apply NFT stat boost (NFT contributes a % of its own stats as bonus)
   if (nftData) {
-    const boostPct = 0.5; // NFT contributes 50% of its stats as bonus
+    const boostPct = 0.5;
     hero.maxhp += Math.floor(nftData.hp * boostPct);
     hero.hp = hero.maxhp;
     hero.maxmp += Math.floor(nftData.mp * boostPct);
@@ -708,7 +746,6 @@ function finishGacha(idx){
 function goOpponentSelect(){
   showScreen('opponent');
   const list = document.getElementById('opp-list');
-  // Shuffle and pick 4 opponents
   const pool = [...OPPONENT_POOL].sort(()=>Math.random()-0.5).slice(0,4);
   list.innerHTML = pool.map((o,i)=>`
     <div class="opp-card" onclick="selectOpponent(${i})" data-idx="${i}">
@@ -723,7 +760,6 @@ function goOpponentSelect(){
   `).join('');
   window._oppPool = pool;
 }
-
 function selectOpponent(idx){
   opponent = window._oppPool[idx];
   startBattle();
@@ -736,11 +772,150 @@ function generateEnemyStats(){
   const power = opponent.power;
   const scale = 0.85 + power*0.18 + Math.random()*0.15;
   return {
-    name: opponent.name,
-    handle: opponent.handle,
+    name: opponent.name, handle: opponent.handle,
     hp: Math.floor(140*scale), maxhp: Math.floor(140*scale),
     atk: Math.floor(16*scale), def: Math.floor(8*scale),
   };
+}
+
+// ── Canvas hero sprite engine (matches dungeon.html) ──
+const heroSpriteState = {
+  img:null, loaded:false, frameW:0, frameH:0, cols:4,
+  idleRow:0, walkRow:1, attackRow:2, hurtRow:3,
+  currentRow:0, currentFrame:0, fps:8, rafId:null, lastFrameTime:0,
+  oneShot:false, oneShotDone:null,
+};
+
+function setupHeroSpriteSheet(h){
+  const canvas = document.getElementById('hero-battle-img');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  if (heroSpriteState.rafId) { cancelAnimationFrame(heroSpriteState.rafId); heroSpriteState.rafId = null; }
+
+  heroSpriteState.frameW = h.frameW; heroSpriteState.frameH = h.frameH; heroSpriteState.cols = h.cols;
+  heroSpriteState.idleRow = h.idleRow; heroSpriteState.walkRow = h.walkRow;
+  heroSpriteState.attackRow = h.attackRow; heroSpriteState.hurtRow = h.hurtRow;
+  heroSpriteState.currentRow = h.idleRow; heroSpriteState.currentFrame = 0;
+  heroSpriteState.oneShot = false; heroSpriteState.loaded = false;
+
+  const targetMax = 175;
+  const dispScale = targetMax / Math.max(h.frameW, h.frameH);
+  canvas.width = Math.round(h.frameW * dispScale);
+  canvas.height = Math.round(h.frameH * dispScale);
+  canvas.style.width = canvas.width + 'px';
+  canvas.style.height = canvas.height + 'px';
+
+  const img = new Image();
+  img.onload = () => { heroSpriteState.img = img; heroSpriteState.loaded = true; startHeroSpriteLoop(); };
+  img.src = h.spriteSheet;
+}
+
+function drawHeroFrame(){
+  const canvas = document.getElementById('hero-battle-img');
+  if (!canvas || !heroSpriteState.loaded) return;
+  const ctx = canvas.getContext('2d');
+  const s = heroSpriteState;
+  const sx = s.currentFrame * s.frameW, sy = s.currentRow * s.frameH;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(s.img, sx, sy, s.frameW, s.frameH, 0, 0, canvas.width, canvas.height);
+}
+
+function startHeroSpriteLoop(){
+  const s = heroSpriteState;
+  s.lastFrameTime = performance.now();
+  function loop(now){
+    const interval = 1000/s.fps;
+    if (now - s.lastFrameTime >= interval){
+      s.lastFrameTime = now; s.currentFrame++;
+      if (s.currentFrame >= s.cols){
+        if (s.oneShot){
+          s.oneShot = false; s.currentRow = s.idleRow; s.currentFrame = 0;
+          if (s.oneShotDone){ const cb = s.oneShotDone; s.oneShotDone = null; cb(); }
+        } else { s.currentFrame = 0; }
+      }
+      drawHeroFrame();
+    }
+    s.rafId = requestAnimationFrame(loop);
+  }
+  s.rafId = requestAnimationFrame(loop);
+}
+
+function heroSpritePlayOnce(rowName, fps, onDone){
+  const s = heroSpriteState;
+  s.fps = fps || 10; s.oneShot = true;
+  s.currentRow = s[rowName+'Row']; s.currentFrame = 0; s.oneShotDone = onDone || null;
+  drawHeroFrame();
+}
+
+// ── Canvas enemy sprite engine (mirrors hero, independent state) ──
+const enemySpriteState = {
+  img:null, loaded:false, frameW:0, frameH:0, cols:4,
+  idleRow:0, walkRow:1, attackRow:2, hurtRow:3,
+  currentRow:0, currentFrame:0, fps:8, rafId:null, lastFrameTime:0,
+  oneShot:false, oneShotDone:null,
+};
+
+function setupEnemySpriteSheet(h){
+  const canvas = document.getElementById('enemy-battle-img');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  if (enemySpriteState.rafId) { cancelAnimationFrame(enemySpriteState.rafId); enemySpriteState.rafId = null; }
+
+  enemySpriteState.frameW = h.frameW; enemySpriteState.frameH = h.frameH; enemySpriteState.cols = h.cols;
+  enemySpriteState.idleRow = h.idleRow; enemySpriteState.walkRow = h.walkRow;
+  enemySpriteState.attackRow = h.attackRow; enemySpriteState.hurtRow = h.hurtRow;
+  enemySpriteState.currentRow = h.idleRow; enemySpriteState.currentFrame = 0;
+  enemySpriteState.oneShot = false; enemySpriteState.loaded = false;
+
+  const targetMax = 175;
+  const dispScale = targetMax / Math.max(h.frameW, h.frameH);
+  canvas.width = Math.round(h.frameW * dispScale);
+  canvas.height = Math.round(h.frameH * dispScale);
+  canvas.style.width = canvas.width + 'px';
+  canvas.style.height = canvas.height + 'px';
+
+  const img = new Image();
+  img.onload = () => { enemySpriteState.img = img; enemySpriteState.loaded = true; startEnemySpriteLoop(); };
+  img.src = h.spriteSheet;
+}
+
+function drawEnemyFrame(){
+  const canvas = document.getElementById('enemy-battle-img');
+  if (!canvas || !enemySpriteState.loaded) return;
+  const ctx = canvas.getContext('2d');
+  const s = enemySpriteState;
+  const sx = s.currentFrame * s.frameW, sy = s.currentRow * s.frameH;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(s.img, sx, sy, s.frameW, s.frameH, 0, 0, canvas.width, canvas.height);
+}
+
+function startEnemySpriteLoop(){
+  const s = enemySpriteState;
+  s.lastFrameTime = performance.now();
+  function loop(now){
+    const interval = 1000/s.fps;
+    if (now - s.lastFrameTime >= interval){
+      s.lastFrameTime = now; s.currentFrame++;
+      if (s.currentFrame >= s.cols){
+        if (s.oneShot){
+          s.oneShot = false; s.currentRow = s.idleRow; s.currentFrame = 0;
+          if (s.oneShotDone){ const cb = s.oneShotDone; s.oneShotDone = null; cb(); }
+        } else { s.currentFrame = 0; }
+      }
+      drawEnemyFrame();
+    }
+    s.rafId = requestAnimationFrame(loop);
+  }
+  s.rafId = requestAnimationFrame(loop);
+}
+
+function enemySpritePlayOnce(rowName, fps, onDone){
+  const s = enemySpriteState;
+  s.fps = fps || 10; s.oneShot = true;
+  s.currentRow = s[rowName+'Row']; s.currentFrame = 0; s.oneShotDone = onDone || null;
+  drawEnemyFrame();
 }
 
 function startBattle(){
@@ -749,13 +924,16 @@ function startBattle(){
   document.getElementById('battle-log').innerHTML='';
   document.getElementById('match-banner').textContent = `RANK MATCH vs @${opponent.handle}`;
 
-  document.getElementById('hero-img').src = hero.img;
   document.getElementById('hero-name-tag').textContent = hero.name;
   document.getElementById('hero-bar-name').textContent = hero.name;
+  setupHeroSpriteSheet(hero);
 
-  document.getElementById('enemy-img').src = hero.img; // placeholder silhouette using hero sprite style
-  document.getElementById('enemy-img').style.filter='drop-shadow(0 0 16px rgba(255,80,80,0.6)) grayscale(0.4) hue-rotate(320deg)';
+  // Enemy gets a random hero sprite + X avatar badge in the corner
+  const enemyHeroSprite = HEROES[rnd(0, HEROES.length-1)];
+  enemy.spriteHero = enemyHeroSprite;
+  setupEnemySpriteSheet(enemyHeroSprite);
   document.getElementById('enemy-avatar-badge').src = `https://unavatar.io/x/${opponent.handle}`;
+  document.getElementById('enemy-avatar-badge').onerror = function(){ this.style.display='none'; };
   document.getElementById('enemy-name-tag').textContent = `@${opponent.handle}`;
   document.getElementById('enemy-bar-name').textContent = opponent.name;
 
@@ -811,10 +989,7 @@ function addLog(msg,type=''){
   log.appendChild(d); log.scrollTop=log.scrollHeight;
 }
 
-function endPlayerTurn(){
-  busy=false; tickCooldowns(); setTurnUI(false);
-  setTimeout(enemyTurn,800);
-}
+function endPlayerTurn(){ busy=false; tickCooldowns(); setTurnUI(false); setTimeout(enemyTurn,800); }
 function tickCooldowns(){ for(const k in skillCooldowns){ if(skillCooldowns[k]>0) skillCooldowns[k]--; } }
 
 function doAction(type){
@@ -825,10 +1000,11 @@ function doAction(type){
     let dmg=Math.max(1,h.atk-e.def+rnd(-4,6));
     const crit=rnd(1,10)>8;
     if(crit) dmg=Math.floor(dmg*1.6);
+    heroSpritePlayOnce('attack', 10, () => {});
     fireProjectile('atk',()=>{
       e.hp=Math.max(0,e.hp-dmg);
       addLog(`⚔️ Attack: -${dmg} HP${crit?' ⚡CRITICAL!':''}`,'hit');
-      shakeEl('enemy-img'); updateBars();
+      shakeEl('enemy-sprite-wrap'); enemySpritePlayOnce('hurt', 10, () => {}); updateBars();
       if(e.hp<=0){ setTimeout(onEnemyDead,300); return; }
       endPlayerTurn();
     });
@@ -847,22 +1023,23 @@ function useSkill(id){
   if(s.type!=='cooldown' && h.mp<s.mpCost) return;
   busy=true; setBtnsDisabled(true);
   if(s.type!=='cooldown') h.mp=Math.max(0,h.mp-s.mpCost);
+  heroSpritePlayOnce('attack', 10, () => {});
 
   fireProjectile(s.type,()=>{
     if(s.type==='dmg'){
       let d=s.dmg+rnd(-5,10); const c=rnd(1,10)>9; if(c) d=Math.floor(d*1.5);
-      e.hp=Math.max(0,e.hp-d); addLog(`⚡ ${s.name}: -${d} HP${c?' CRITICAL!':''}`,'hit'); shakeEl('enemy-img');
+      e.hp=Math.max(0,e.hp-d); addLog(`⚡ ${s.name}: -${d} HP${c?' CRITICAL!':''}`,'hit'); shakeEl('enemy-sprite-wrap'); enemySpritePlayOnce('hurt', 10, () => {});
     } else if(s.type==='heal'){
       const hv=s.heal+rnd(0,6); h.hp=Math.min(h.maxhp,h.hp+hv); addLog(`💚 ${s.name}: +${hv} HP`,'heal');
     } else if(s.type==='multi'){
       const d1=s.dmg+rnd(-3,6), d2=s.dmg+rnd(-3,6);
-      e.hp=Math.max(0,e.hp-d1-d2); addLog(`⚡ ${s.name}: -${d1} & -${d2} HP`,'hit'); shakeEl('enemy-img');
+      e.hp=Math.max(0,e.hp-d1-d2); addLog(`⚡ ${s.name}: -${d1} & -${d2} HP`,'hit'); shakeEl('enemy-sprite-wrap'); enemySpritePlayOnce('hurt', 10, () => {});
     } else if(s.type==='sure'){
-      e.hp=Math.max(0,e.hp-s.dmg); addLog(`🎯 ${s.name}: -${s.dmg} HP (sure hit!)`,'hit'); shakeEl('enemy-img');
+      e.hp=Math.max(0,e.hp-s.dmg); addLog(`🎯 ${s.name}: -${s.dmg} HP (sure hit!)`,'hit'); shakeEl('enemy-sprite-wrap'); enemySpritePlayOnce('hurt', 10, () => {});
     } else if(s.type==='drain'){
       const d=s.dmg+rnd(-5,6), mg=s.manaHeal||0;
       e.hp=Math.max(0,e.hp-d); h.mp=Math.min(h.maxmp,h.mp+mg);
-      addLog(`🌀 ${s.name}: -${d} HP, +${mg} MP`,'hit'); shakeEl('enemy-img');
+      addLog(`🌀 ${s.name}: -${d} HP, +${mg} MP`,'hit'); shakeEl('enemy-sprite-wrap'); enemySpritePlayOnce('hurt', 10, () => {});
     } else if(s.type==='cooldown'){
       const hv=s.heal+rnd(0,8), mg=s.manaHeal||0;
       h.hp=Math.min(h.maxhp,h.hp+hv); h.mp=Math.min(h.maxmp,h.mp+mg);
@@ -879,6 +1056,7 @@ function enemyTurn(){
   const h=hero,e=enemy;
   const moves=['Strike','Counter','Combo','Rush','Power Hit'];
   const move=moves[rnd(0,moves.length-1)];
+  enemySpritePlayOnce('attack', 10, () => {});
   const t=rnd(1,10); const defR=defending?0.6:0;
   let dmg;
   if(t>=9){
@@ -891,7 +1069,9 @@ function enemyTurn(){
     dmg=Math.max(1,Math.floor((e.atk+rnd(-3,4))*(1-defR))-h.def);
     addLog(`🗡️ @${opponent.handle} "${move}": -${dmg} HP`,'hit');
   }
-  h.hp=Math.max(0,h.hp-dmg); shakeEl('hero-img');
+  h.hp=Math.max(0,h.hp-dmg);
+  heroSpritePlayOnce('hurt', 10, () => {});
+  shakeEl('hero-battle-img');
   if(defending){ defending=false; addLog('🛡️ Defense ended','sys'); }
   updateBars();
   if(h.hp<=0){ setTimeout(onHeroDead,500); return; }
@@ -931,13 +1111,11 @@ function doFlee(){
 // ════════════════════════════════════════════════
 function shakeEl(id){
   const el=document.getElementById(id); if(!el) return;
-  el.style.animation='none'; void el.offsetWidth; el.style.animation='';
-  el.style.transform='translateX(-6px)';
-  setTimeout(()=>{el.style.transform='translateX(4px)';},60);
-  setTimeout(()=>{el.style.transform='';},120);
+  el.classList.add(id.includes('enemy')?'enemy-hit':'hero-hit');
+  setTimeout(()=>{ el.classList.remove('enemy-hit','hero-hit'); },350);
 }
 function fireProjectile(type,onHit){
-  const heroEl=document.getElementById('hero-img'), enemyEl=document.getElementById('enemy-img');
+  const heroEl=document.getElementById('hero-battle-img'), enemyEl=document.getElementById('enemy-sprite-wrap');
   if(!heroEl||!enemyEl){ onHit(); return; }
   const hr=heroEl.getBoundingClientRect(), er=enemyEl.getBoundingClientRect();
   const sx=hr.left+hr.width/2, sy=hr.top+hr.height/2;
@@ -970,13 +1148,10 @@ function fireProjectile(type,onHit){
 }
 
 // ════════════════════════════════════════════════
-// NAV
+// NAV / INIT
 // ════════════════════════════════════════════════
 function goWorld(){ window.location.href='/world'; }
 
-// ════════════════════════════════════════════════
-// INIT
-// ════════════════════════════════════════════════
 window.addEventListener('load', ()=>{
   spawnPvpParticles();
   setTimeout(initGate, 500);
