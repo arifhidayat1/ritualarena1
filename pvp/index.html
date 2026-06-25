@@ -56,12 +56,12 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── GACHA ── */
-#screen-gacha{padding-top:60px;background:transparent;min-height:100vh}
-.gacha-header{text-align:center;padding:20px}
-.gacha-title{font-size:11px;color:var(--purple);text-shadow:0 0 20px var(--purple);margin-bottom:6px}
-.gacha-sub{font-family:'VT323',monospace;font-size:16px;color:#8060a0}
-.gacha-stage{display:flex;justify-content:center;align-items:flex-end;gap:14px;padding:30px 16px;min-height:220px;position:relative;flex-wrap:wrap}
-.gacha-slot{width:110px;min-height:150px;border:2px solid rgba(168,85,247,0.4);background:rgba(10,10,30,0.8);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all 0.15s;position:relative;overflow:hidden;padding:8px 4px}
+#screen-gacha{padding-top:48px;background:transparent;min-height:100vh}
+.gacha-header{text-align:center;padding:10px 16px 4px}
+.gacha-title{font-size:10px;color:var(--purple);text-shadow:0 0 20px var(--purple);margin-bottom:5px}
+.gacha-sub{font-family:'VT323',monospace;font-size:14px;color:#8060a0}
+.gacha-stage{display:flex;justify-content:center;align-items:flex-end;gap:10px;padding:14px 16px;min-height:140px;position:relative;flex-wrap:wrap}
+.gacha-slot{width:88px;min-height:115px;border:2px solid rgba(168,85,247,0.4);background:rgba(10,10,30,0.8);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all 0.15s;position:relative;overflow:hidden;padding:6px 4px}
 .gacha-slot canvas{image-rendering:pixelated;margin-bottom:4px}
 .gacha-slot .gacha-name{font-size:6px;color:#8060a0;text-align:center;padding:0 2px}
 .gacha-slot.spinning{animation:gachaSpin 0.12s linear infinite;border-color:var(--gold)}
@@ -78,6 +78,8 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 .gr-stat{font-family:'VT323',monospace;font-size:14px;color:#8060a0;text-align:left}
 .gr-stat span{color:var(--text)}
 .gr-boost{font-family:'VT323',monospace;font-size:13px;color:var(--purple);margin-bottom:14px}
+.gacha-rank-display{font-family:'VT323',monospace;font-size:15px;color:var(--gold);margin-top:12px}
+.gacha-rank-display span{color:var(--cyan);font-size:17px}
 
 /* ── OPPONENT SELECT ── */
 #screen-opponent{padding-top:60px;background:transparent;min-height:100vh}
@@ -122,7 +124,9 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
   position:absolute;top:-4px;right:-4px;background:#111;
 }
 @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-.enemy-sprite-wrap, #hero-battle-img{animation:floatY 3s ease-in-out infinite}
+.enemy-sprite-wrap{animation:floatY 3s ease-in-out infinite}
+#hero-battle-img{animation:floatY 3s ease-in-out infinite}
+.enemy-sprite-wrap canvas{transform:scaleX(-1)}
 
 @keyframes hitFlash{0%,100%{filter:brightness(1)}30%{filter:brightness(3) saturate(0)}60%{filter:brightness(2) hue-rotate(20deg)}}
 @keyframes hitBounce{0%{transform:translateX(0)}25%{transform:translateX(14px)}50%{transform:translateX(-8px)}75%{transform:translateX(5px)}100%{transform:translateX(0)}}
@@ -228,7 +232,6 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 <div class="hud" id="hud" style="display:none">
   <span class="hud-title">⚔ PvP ARENA</span>
   <div class="hud-right">
-    <span class="hud-rank">🏆 <span id="hud-rank-val">0</span></span>
     <button class="hud-btn lb" onclick="openLeaderboard()">📋 RANKS</button>
     <button class="hud-btn" onclick="goWorld()">🚪 EXIT</button>
   </div>
@@ -257,6 +260,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
     <div class="gr-stats" id="gr-stats"></div>
     <div class="gr-boost" id="gr-boost"></div>
     <button class="px-btn px-purple" onclick="goOpponentSelect()" style="width:100%;max-width:280px">▶ Find Opponent</button>
+    <div class="gacha-rank-display" id="gacha-rank-display">🏆 Your Rank: <span id="gacha-rank-val">0</span></div>
   </div>
 </div>
 
@@ -554,7 +558,7 @@ async function initGate(){
     // Race against a timeout so a stalled RPC never leaves the user stuck forever
     const has = await Promise.race([
       contract.hasCharacter(sessAddr),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 12000)),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000)),
     ]);
 
     if (!has) {
@@ -584,11 +588,15 @@ async function initGate(){
 // ════════════════════════════════════════════════
 function loadRank(){
   rankPoints = parseInt(localStorage.getItem(RANK_KEY) || '0', 10);
-  document.getElementById('hud-rank-val').textContent = rankPoints;
+  syncRankUI();
 }
 function saveRank(){
   localStorage.setItem(RANK_KEY, String(rankPoints));
-  document.getElementById('hud-rank-val').textContent = rankPoints;
+  syncRankUI();
+}
+function syncRankUI(){
+  const a = document.getElementById('gacha-rank-val');
+  if (a) a.textContent = rankPoints;
 }
 
 async function submitScoreOnChain(){
@@ -636,7 +644,7 @@ async function loadLeaderboard(){
     const contract = new ethers.Contract(EVENT_CONTRACT, EVENT_ABI, rpcProvider);
     const rows = await Promise.race([
       contract.getLeaderboard(20),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 12000)),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000)),
     ]);
     if (!rows || rows.length === 0) {
       list.innerHTML = '<div class="lb-empty">No scores submitted yet.<br>Be the first to win a match!</div>';
@@ -671,7 +679,7 @@ function startGacha(){
   document.getElementById('gacha-result').classList.remove('show');
 
   stage.innerHTML = HEROES.map((h,i)=>{
-    const dispScale = 64 / Math.max(h.frameW, h.frameH);
+    const dispScale = 50 / Math.max(h.frameW, h.frameH);
     const cw = Math.round(h.frameW*dispScale), ch = Math.round(h.frameH*dispScale);
     return `<div class="gacha-slot spinning" id="gslot${i}">
       <canvas id="gcanvas${i}" width="${cw}" height="${ch}" style="image-rendering:pixelated"></canvas>
@@ -737,7 +745,9 @@ function finishGacha(idx){
   document.getElementById('gr-boost').innerHTML = nftData
     ? `🎖️ NFT boost applied from @${nftData.username}'s stats`
     : '';
-  document.getElementById('gacha-result').classList.add('show');
+  const resultEl = document.getElementById('gacha-result');
+  resultEl.classList.add('show');
+  resultEl.scrollIntoView({ behavior:'smooth', block:'center' });
 }
 
 // ════════════════════════════════════════════════
