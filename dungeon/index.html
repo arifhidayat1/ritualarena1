@@ -377,6 +377,83 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 .log-hit{color:#ff9090}.log-heal{color:#90ff90}.log-mp{color:#9090ff}
 .log-sys{color:#9090b0}.log-boss{color:#ff6060}
 
+/* ── FLOATING COMBAT TEXT ── */
+.float-text{
+  position:fixed;z-index:9999;pointer-events:none;
+  font-family:'Press Start 2P',monospace;font-weight:bold;
+  text-shadow:2px 2px 0 #000, -1px -1px 0 #000;
+  animation:floatUp 0.9s ease-out forwards;
+  will-change:transform,opacity;
+}
+.float-text.dmg{color:#ff5050;font-size:22px}
+.float-text.dmg.crit{color:#ffd000;font-size:30px}
+.float-text.heal{color:#50ff70;font-size:20px}
+.float-text.mp{color:#7090ff;font-size:18px}
+.float-text.miss{color:#c0c0c0;font-size:18px}
+@keyframes floatUp{
+  0%  {transform:translateY(0) scale(0.4);opacity:0}
+  20% {transform:translateY(-12px) scale(1.25);opacity:1}
+  40% {transform:translateY(-26px) scale(1)}
+  100%{transform:translateY(-70px) scale(0.9);opacity:0}
+}
+
+/* ── HIT IMPACT FLASH ── */
+.impact-flash{
+  position:fixed;z-index:9998;pointer-events:none;
+  width:90px;height:90px;margin:-45px 0 0 -45px;
+  background:radial-gradient(circle, rgba(255,240,180,0.95) 0%, rgba(255,140,40,0.5) 40%, transparent 70%);
+  border-radius:50%;
+  animation:impactPop 0.35s ease-out forwards;
+}
+@keyframes impactPop{
+  0%  {transform:scale(0.2);opacity:1}
+  100%{transform:scale(1.4);opacity:0}
+}
+.impact-spark{
+  position:fixed;z-index:9998;pointer-events:none;
+  width:6px;height:6px;background:#ffe080;border-radius:50%;
+  box-shadow:0 0 6px #ffb040;
+  animation:sparkFly 0.45s ease-out forwards;
+}
+@keyframes sparkFly{
+  0%  {transform:translate(0,0) scale(1);opacity:1}
+  100%{transform:translate(var(--sx),var(--sy)) scale(0);opacity:0}
+}
+
+/* ── SCREEN SHAKE ── */
+@keyframes screenShake{
+  0%,100%{transform:translate(0,0)}
+  15%{transform:translate(-6px,3px)}
+  30%{transform:translate(5px,-4px)}
+  45%{transform:translate(-5px,-2px)}
+  60%{transform:translate(4px,4px)}
+  75%{transform:translate(-3px,2px)}
+}
+.shake{animation:screenShake 0.35s ease-in-out}
+
+/* ── TURN INDICATOR GLOW PULSE ── */
+.turn-indicator{ transition:all 0.3s }
+.turn-indicator.your-turn{
+  animation:turnPulse 1.6s ease-in-out infinite;
+}
+@keyframes turnPulse{
+  0%,100%{box-shadow:0 0 8px rgba(96,200,120,0.4)}
+  50%{box-shadow:0 0 20px rgba(96,200,120,0.85)}
+}
+
+/* ── ACTIVE ENEMY TARGET RING ── */
+.enemy-unit.active-target::after{
+  content:'';position:absolute;inset:-6px;
+  border:2px solid rgba(255,80,80,0.8);border-radius:8px;
+  animation:targetPulse 1.2s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes targetPulse{
+  0%,100%{opacity:0.4;transform:scale(1)}
+  50%{opacity:1;transform:scale(1.04)}
+}
+
+
 /* ── VICTORY/DEAD SCREENS ── */
 .result-overlay{
   min-height:100vh;display:flex;flex-direction:column;
@@ -1217,7 +1294,7 @@ function renderEnemies() {
       const isActive = i === activeEnemyIdx && !isDead;
       const pct = Math.max(0, m.hp/m.maxhp*100);
       return `
-        <div class="enemy-unit fighter-card ${isActive?'active-enemy':''} ${isDead?'dead-enemy':''}" id="enemy-unit-${i}">
+        <div class="enemy-unit fighter-card ${isActive?'active-enemy active-target':''} ${isDead?'dead-enemy':''}" id="enemy-unit-${i}" style="position:relative">
           <div class="fighter-name" style="font-size:${isActive?'7px':'6px'};color:${isActive?'#ffd080':'#ffffff'}">${m.name}</div>
           <span class="enemy-sprite">${isDead?'💀':m.icon}</span>
           ${!isDead?`
@@ -1301,10 +1378,10 @@ function setTurnUI(isPlayer) {
   const ind = document.getElementById('turn-indicator');
   if (isPlayer) {
     lbl.textContent = '⚔ YOUR TURN';
-    if (ind) { ind.style.borderColor='rgba(240,192,64,0.6)'; ind.style.color='var(--gold)'; }
+    if (ind) { ind.style.borderColor='rgba(240,192,64,0.6)'; ind.style.color='var(--gold)'; ind.classList.add('your-turn'); }
   } else {
     lbl.textContent = '💀 ENEMY TURN';
-    if (ind) { ind.style.borderColor='rgba(255,60,60,0.6)'; ind.style.color='var(--red)'; }
+    if (ind) { ind.style.borderColor='rgba(255,60,60,0.6)'; ind.style.color='var(--red)'; ind.classList.remove('your-turn'); }
   }
   setBtnsDisabled(!isPlayer);
   renderSkills();
@@ -1324,6 +1401,65 @@ function addLog(msg, type='') {
   log.appendChild(d);
   log.scrollTop = log.scrollHeight;
 }
+
+// ════════════════════════════════════════════════
+// VISUAL EFFECTS (purely cosmetic, no game-logic impact)
+// ════════════════════════════════════════════════
+
+/// Floating combat text at the center of a target element.
+function floatText(targetEl, text, kind='dmg', crit=false) {
+  if (!targetEl) return;
+  const r = targetEl.getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'float-text ' + kind + (crit ? ' crit' : '');
+  el.textContent = text;
+  el.style.left = (r.left + r.width/2 + (Math.random()*30-15)) + 'px';
+  el.style.top  = (r.top + r.height*0.35) + 'px';
+  el.style.transform = 'translateX(-50%)';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 950);
+}
+
+/// Bright impact flash + radial sparks at the center of a target element.
+function impactAt(targetEl) {
+  if (!targetEl) return;
+  const r = targetEl.getBoundingClientRect();
+  const cx = r.left + r.width/2;
+  const cy = r.top + r.height/2;
+
+  const flash = document.createElement('div');
+  flash.className = 'impact-flash';
+  flash.style.left = cx + 'px';
+  flash.style.top  = cy + 'px';
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 360);
+
+  // radial sparks
+  const n = 7;
+  for (let i = 0; i < n; i++) {
+    const ang = (Math.PI*2 * i/n) + Math.random()*0.5;
+    const dist = 28 + Math.random()*22;
+    const sp = document.createElement('div');
+    sp.className = 'impact-spark';
+    sp.style.left = cx + 'px';
+    sp.style.top  = cy + 'px';
+    sp.style.setProperty('--sx', Math.cos(ang)*dist + 'px');
+    sp.style.setProperty('--sy', Math.sin(ang)*dist + 'px');
+    document.body.appendChild(sp);
+    setTimeout(() => sp.remove(), 460);
+  }
+}
+
+/// Brief screen shake. Strength scales loosely with damage.
+function screenShake() {
+  const wrap = document.querySelector('.battle-wrap') || document.getElementById('screen-battle');
+  if (!wrap) return;
+  wrap.classList.remove('shake');
+  void wrap.offsetWidth; // restart animation
+  wrap.classList.add('shake');
+  setTimeout(() => wrap.classList.remove('shake'), 360);
+}
+
 
 function endPlayerTurn() {
   busy = false;
@@ -1352,6 +1488,10 @@ function doAction(type) {
     fireProjectile('atk', () => {
       e.hp = Math.max(0, e.hp - dmg);
       addLog(`⚔️ Attack → ${e.name}: -${dmg} HP${crit?' ⚡CRITICAL!':''}`, 'hit');
+      const enemyEl = document.getElementById('enemy-unit-'+activeEnemyIdx);
+      impactAt(enemyEl);
+      floatText(enemyEl, '-'+dmg, 'dmg', crit);
+      screenShake();
       shakeEl('enemy-unit-'+activeEnemyIdx);
       updateBars();
       if (e.hp <= 0) { setTimeout(onEnemyDead, 300); return; }
@@ -1378,25 +1518,31 @@ function useSkill(id) {
   if (s.type !== 'cooldown') h.mp = Math.max(0, h.mp - s.mpCost);
 
   fireProjectile(s.type, () => {
+    const enemyEl = document.getElementById('enemy-unit-'+activeEnemyIdx);
+    const heroEl = document.getElementById('hero-battle-img');
     if (s.type === 'dmg') {
       let d = s.dmg + rnd(-5,10);
       const c = rnd(1,10) > 9;
       if (c) d = Math.floor(d*1.5);
       e.hp = Math.max(0, e.hp - d);
       addLog(`⚡ ${s.name} → ${e.name}: -${d} HP${c?' CRITICAL!':''}`, 'hit');
+      impactAt(enemyEl); floatText(enemyEl, '-'+d, 'dmg', c); screenShake();
       shakeEl('enemy-unit-'+activeEnemyIdx);
     } else if (s.type === 'heal') {
       const hv = s.heal + rnd(0,6);
       h.hp = Math.min(h.maxhp, h.hp + hv);
       addLog(`💚 ${s.name}: +${hv} HP`, 'heal');
+      floatText(heroEl, '+'+hv, 'heal');
     } else if (s.type === 'multi') {
       const d1 = s.dmg+rnd(-3,6), d2 = s.dmg+rnd(-3,6);
       e.hp = Math.max(0, e.hp - d1 - d2);
       addLog(`⚡ ${s.name} → ${e.name}: -${d1} & -${d2} HP`, 'hit');
+      impactAt(enemyEl); floatText(enemyEl, '-'+(d1+d2), 'dmg', true); screenShake();
       shakeEl('enemy-unit-'+activeEnemyIdx);
     } else if (s.type === 'sure') {
       e.hp = Math.max(0, e.hp - s.dmg);
       addLog(`🎯 ${s.name} → ${e.name}: -${s.dmg} HP (sure hit!)`, 'hit');
+      impactAt(enemyEl); floatText(enemyEl, '-'+s.dmg, 'dmg'); screenShake();
       shakeEl('enemy-unit-'+activeEnemyIdx);
     } else if (s.type === 'drain') {
       const d = s.dmg + rnd(-5,6);
@@ -1404,6 +1550,8 @@ function useSkill(id) {
       e.hp = Math.max(0, e.hp - d);
       h.mp = Math.min(h.maxmp, h.mp + mg);
       addLog(`🌀 ${s.name} → ${e.name}: -${d} HP, +${mg} MP`, 'hit');
+      impactAt(enemyEl); floatText(enemyEl, '-'+d, 'dmg'); screenShake();
+      if (mg > 0) setTimeout(() => floatText(heroEl, '+'+mg, 'mp'), 200);
       shakeEl('enemy-unit-'+activeEnemyIdx);
     } else if (s.type === 'cooldown') {
       const hv = s.heal + rnd(0,8);
@@ -1412,6 +1560,8 @@ function useSkill(id) {
       h.mp = Math.min(h.maxmp, h.mp + mg);
       skillCooldowns[id] = s.cooldown;
       addLog(`🔄 ${s.name}: +${hv} HP, +${mg} MP — cd ${s.cooldown}t`, 'heal');
+      floatText(heroEl, '+'+hv, 'heal');
+      if (mg > 0) setTimeout(() => floatText(heroEl, '+'+mg, 'mp'), 200);
     }
     updateBars();
     if (e.hp <= 0) { setTimeout(onEnemyDead, 300); return; }
@@ -1443,6 +1593,12 @@ function enemyTurn() {
   enemyAttackAnim('enemy-unit-' + activeEnemyIdx, () => {
     h.hp = Math.max(0, h.hp - dmg);
     if (defending) { defending = false; }
+    const heroEl = document.getElementById('hero-battle-img');
+    const isCrit = (t >= 9);
+    impactAt(heroEl);
+    floatText(heroEl, '-'+dmg, 'dmg', isCrit);
+    screenShake();
+    shakeEl('hero-battle-img');
 
     // Boss heal
     if (e.isBoss && e.hp < e.maxhp*0.3 && rnd(1,4)===1) {
