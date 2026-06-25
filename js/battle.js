@@ -487,3 +487,56 @@ function startGame(){
     addLog('Your turn — choose an action!','sys');
   } else { _origStartGame(); }
 }
+
+// === AI JUDGE TRIGGER (ditambahkan otomatis) ===
+async function triggerAIJudge() {
+  const floorId = window.S?.floor || 1;
+  const battleLog = `Floor ${floorId} cleared! Player defeated the enemy. HP remaining: ${window.playerHP || 'N/A'}.`;
+
+  console.log("🎮 Victory detected - calling AI Judge...");
+  await callAIJudge(floorId, battleLog);
+}
+
+// Override victory function jika ada
+const originalVictory = window.victory || window.endBattle;
+if (originalVictory) {
+  window.victory = async function(...args) {
+    await originalVictory.apply(this, args);
+    setTimeout(triggerAIJudge, 800); // tunggu UI selesai
+  };
+} else {
+  // Fallback: panggil saat tombol Next Floor diklik
+  document.addEventListener('click', (e) => {
+    if (e.target.textContent.includes('Next Floor') || e.target.textContent.includes('Next')) {
+      setTimeout(triggerAIJudge, 500);
+    }
+  });
+}
+
+// === AI JUDGE TRIGGER (Final) ===
+console.log("🧠 AI Judge Trigger Loaded in battle.js");
+
+async function triggerAIJudge() {
+  const floorId = window.S?.floor || window.currentFloor || 1;
+  const battleLog = `Floor ${floorId} cleared! Player won the battle.`;
+
+  console.log(`🎯 Triggering AI Judge for Floor ${floorId}`);
+
+  if (typeof callAIJudge === "function") {
+    await callAIJudge(floorId, battleLog);
+  } else {
+    console.log("❌ callAIJudge not found");
+  }
+}
+
+// Panggil otomatis saat victory
+setTimeout(() => {
+  if (typeof victory === "function") {
+    const originalVictory = victory;
+    window.victory = async function(...args) {
+      await originalVictory.apply(this, args);
+      setTimeout(triggerAIJudge, 1000);
+    };
+    console.log("✅ Victory function overridden with AI Judge");
+  }
+}, 2000);
