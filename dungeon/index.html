@@ -1377,8 +1377,7 @@ function startBossSpriteAnim(boss) {
       draw();
       bossSpriteTimer = setInterval(draw, 100);
     };
-    const base = window.location.href.replace(/[^/]+$/, '');
-    _bossImg.src = base + src;
+    _bossImg.src = src;
   }
 }
 function renderEnemyBars() {
