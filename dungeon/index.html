@@ -265,29 +265,9 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
   line-height:1;display:block;
 }
 @keyframes enemyFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-/* Boss sprite animation */
-.boss-sprite-anim{
-  display:inline-block;width:120px;height:120px;
-  background:url('assets/boss1_validator_idle.png') 0 0 / 960px 120px no-repeat;
-  animation:bossIdle 0.8s steps(8) infinite;
-  image-rendering:pixelated;
-  filter:drop-shadow(0 0 12px rgba(255,80,80,0.7));
+to{background-position:-960px 0}
 }
-@keyframes bossIdle{
-  from{background-position:0 0}
-  to{background-position:-960px 0}
-}
-/* Boss sprite animation */
-.boss-sprite-anim{
-  display:inline-block;width:120px;height:120px;
-  background:url('assets/boss1_validator_idle.png') 0 0 / 960px 120px no-repeat;
-  animation:bossIdle 0.8s steps(8) infinite;
-  image-rendering:pixelated;
-  filter:drop-shadow(0 0 12px rgba(255,80,80,0.7));
-}
-@keyframes bossIdle{
-  from{background-position:0 0}
-  to{background-position:-960px 0}
+to{background-position:-960px 0}
 }
 .enemy-name-tag{
   font-size:6px;color:var(--red);
@@ -870,7 +850,7 @@ const MONSTER_POOL = [
 
 // Boss pool
 const BOSS_POOL = [
-  {name:'The Validator',  type:'Elite Guardian',   icon:'🛡️', sprite:'boss1_validator_idle.png', spriteFrames:8, sprite:'boss1_validator_idle.png', spriteFrames:8,baseHp:300, baseAtk:28, baseDef:18, baseXp:200},
+  {name:'The Validator',  type:'Elite Guardian',   icon:'🛡️', sprite:'boss1_validator_idle.png', spriteFrames:8, baseHp:300, baseAtk:28, baseDef:18, baseXp:200},
   {name:'Chaos Dragon',   type:'Ancient Terror',   icon:'🐉', baseHp:400, baseAtk:35, baseDef:20, baseXp:280},
   {name:'Void Sentinel',  type:'Dungeon Keeper',   icon:'👁️',baseHp:500, baseAtk:42, baseDef:25, baseXp:350},
   {name:'Rug Master',     type:'DeFi Overlord',    icon:'💸', baseHp:600, baseAtk:50, baseDef:30, baseXp:450},
@@ -1343,12 +1323,7 @@ function renderEnemies() {
 }
 
 
-let bossSpriteTimer = null;
-let _bossImg = null;
-let _bossLoaded = false;
-const BOSS_SPRITES = {
-  'The Validator': {sprite:'boss1_validator_idle.png', frames:8},
-};
+;
 function startBossSpriteAnim(boss) {
   const bsp = BOSS_SPRITES[boss.name] || {};
   const src = 'assets/' + (boss.sprite || bsp.sprite || 'boss1_validator_idle.png');
@@ -1386,6 +1361,55 @@ function renderEnemyBars() {
   // HP bars are now rendered inline inside each enemy-unit
   // Just re-render enemies to sync HP
   renderEnemies();
+}
+
+let bossSpriteTimer = null;
+let _bossImg = null;
+let _bossLoaded = false;
+let _bossError = false;
+const BOSS_SPRITES = {
+  'The Validator': {sprite:'boss1_validator_idle.png', frames:8},
+};
+function startBossSpriteAnim(boss) {
+  const bsp = BOSS_SPRITES[boss.name] || {};
+  const filename = boss.sprite || bsp.sprite || 'boss1_validator_idle.png';
+  const src = '/dungeon/assets/' + filename;
+  const frames = boss.spriteFrames || bsp.frames || 8;
+  let frame = 0;
+  if (!_bossImg || _bossError) {
+    _bossImg = new Image();
+    _bossLoaded = false;
+    _bossError = false;
+    _bossImg.onload = function(){ _bossLoaded = true; };
+    _bossImg.onerror = function(){ _bossError = true; console.error('boss sprite load fail', src); };
+    _bossImg.src = src;
+  }
+  if (bossSpriteTimer) clearInterval(bossSpriteTimer);
+  bossSpriteTimer = setInterval(function(){
+    const cv = document.getElementById('boss-sprite-canvas');
+    if (!cv) { return; }
+    const ctx = cv.getContext('2d');
+    ctx.clearRect(0,0,120,120);
+    if (_bossError) {
+      ctx.fillStyle = 'rgba(200,0,0,0.7)';
+      ctx.fillRect(0,0,120,120);
+      ctx.fillStyle = '#fff'; ctx.font = '10px monospace';
+      ctx.fillText('ERR: file', 4, 14);
+      ctx.fillText(filename.slice(0,14), 4, 28);
+      ctx.fillText('not found', 4, 42);
+      return;
+    }
+    if (!_bossLoaded || !_bossImg.width) {
+      ctx.fillStyle = 'rgba(0,80,200,0.6)';
+      ctx.fillRect(0,0,120,120);
+      ctx.fillStyle = '#fff'; ctx.font = '10px monospace';
+      ctx.fillText('Loading...', 4, 14);
+      return;
+    }
+    const fw = _bossImg.width / frames;
+    ctx.drawImage(_bossImg, frame*fw, 0, fw, _bossImg.height, 0,0,120,120);
+    frame = (frame+1) % frames;
+  }, 110);
 }
 
 function renderMonsterDots() {
