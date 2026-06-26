@@ -9,322 +9,201 @@
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { width:100%; height:100%; overflow:hidden; font-family:'Press Start 2P',monospace; }
-
-/* ── Animated world background ── */
-#bg {
-  position:fixed; inset:0; z-index:0;
-  background:
-    url('assets/ground.png') center/cover no-repeat,
-    #2a4a1a;
-  filter:blur(4px) brightness(0.45);
-  transform:scale(1.08);
-}
-#bg-road  { position:fixed; inset:0; z-index:1; background:url('assets/jalan.png')  center/cover no-repeat; filter:blur(4px) brightness(0.45); transform:scale(1.08); }
-#bg-tree  { position:fixed; inset:0; z-index:2; background:url('assets/pohon.png')  center/cover no-repeat; filter:blur(4px) brightness(0.45); transform:scale(1.08); }
-#bg-build { position:fixed; inset:0; z-index:3; background:url('assets/dungeon.png') center/cover no-repeat; filter:blur(4px) brightness(0.3); transform:scale(1.08); }
-
-/* Floating particles */
-.particle {
-  position:fixed; border-radius:50%;
-  background:radial-gradient(circle, rgba(240,192,64,0.6), transparent);
-  animation:float linear infinite;
-  pointer-events:none; z-index:4;
-}
-@keyframes float {
-  0%   { transform:translateY(110vh) scale(0); opacity:0; }
-  10%  { opacity:1; }
-  90%  { opacity:0.6; }
-  100% { transform:translateY(-10vh) scale(1); opacity:0; }
-}
-
-/* Dark overlay */
-#overlay { position:fixed; inset:0; z-index:5; background:rgba(0,0,15,0.5); }
-
-/* Scanline */
-#scanline {
-  position:fixed; inset:0; z-index:6; pointer-events:none;
-  background:repeating-linear-gradient(0deg,
-    rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px,
-    transparent 1px, transparent 4px);
-}
-
-/* ── Connect panel ── */
-#panel {
-  position:fixed; inset:0; z-index:10;
-  display:flex; flex-direction:column;
-  align-items:center; justify-content:center;
-  padding:20px;
-}
-
-.title {
-  font-size:clamp(14px,4vw,30px);
-  color:#f0c040;
-  text-shadow:0 0 30px rgba(240,192,64,0.9), 3px 3px 0 #000;
-  letter-spacing:3px; text-align:center; margin-bottom:6px;
-  animation:titlePulse 3s ease-in-out infinite alternate;
-}
-@keyframes titlePulse {
-  from { text-shadow:0 0 20px rgba(240,192,64,0.6), 3px 3px 0 #000; }
-  to   { text-shadow:0 0 50px #f0c040, 0 0 80px rgba(240,160,0,0.6), 3px 3px 0 #000; }
-}
-.subtitle {
-  font-family:'VT323',monospace; font-size:18px;
-  color:#80b0d0; text-align:center;
-  letter-spacing:3px; margin-bottom:28px;
-}
-
-.box {
-  width:100%; max-width:350px;
-  background:rgba(4,4,20,0.93);
-  border:2px solid #f0c040;
-  box-shadow:0 0 0 1px #000, 0 0 40px rgba(240,192,64,0.2),
-             inset 0 0 30px rgba(30,30,80,0.6);
-  padding:22px;
-}
-.box-title {
-  font-size:8px; color:#f0c040; text-align:center;
-  border-bottom:1px solid rgba(240,192,64,0.3);
-  padding-bottom:12px; margin-bottom:16px;
-  letter-spacing:1px;
-}
-
-.w-btn {
-  display:flex; align-items:center; gap:12px;
-  width:100%; padding:11px 14px; margin-bottom:9px;
-  background:rgba(15,15,50,0.8);
-  border:2px solid rgba(70,70,160,0.5);
-  color:#e0d8ff; cursor:pointer;
-  font-family:'Press Start 2P',monospace;
-  font-size:7px; transition:all 0.12s;
-}
-.w-btn:hover:not(:disabled) {
-  border-color:#f0c040; background:rgba(35,35,90,0.9);
-  transform:translateX(3px);
-  box-shadow:0 0 12px rgba(240,192,64,0.2);
-}
-.w-btn:active:not(:disabled) { transform:scale(0.98); }
-.w-btn:disabled { opacity:0.35; cursor:not-allowed; }
-.wico {
-  width:34px; height:34px; border-radius:4px;
-  display:flex; align-items:center; justify-content:center;
-  font-size:20px; flex-shrink:0;
-}
-.wname { font-size:8px; color:#f0c040; }
-.wsub  { font-family:'VT323',monospace; font-size:13px; color:#505080; margin-top:2px; }
-
-.divider {
-  display:flex; align-items:center; gap:8px;
-  color:#333; font-family:'VT323',monospace;
-  font-size:14px; margin:4px 0;
-}
-.divider::before, .divider::after {
-  content:''; flex:1; height:1px; background:rgba(255,255,255,0.08);
-}
-
-#status {
-  font-family:'VT323',monospace; font-size:15px;
-  color:#80c0ff; text-align:center;
-  min-height:22px; margin-top:12px; line-height:1.5;
-}
-
-/* ── Smoke transition ── */
-#smoke {
-  position:fixed; inset:0; z-index:200;
-  pointer-events:none; display:none;
-}
-.sp {
-  position:absolute; border-radius:50%;
-  background:radial-gradient(circle,
-    rgba(255,255,255,0.96) 0%,
-    rgba(230,230,230,0.7) 40%,
-    transparent 70%);
-  animation:smokeUp linear forwards;
-}
-@keyframes smokeUp {
-  0%   { transform:translateY(0) scale(0.2); opacity:0; }
-  15%  { opacity:1; }
-  80%  { opacity:0.85; }
-  100% { transform:translateY(-130vh) scale(4); opacity:0; }
-}
-#smoke-white {
-  position:fixed; inset:0; z-index:201;
-  background:#fff; opacity:0; pointer-events:none;
-  transition:opacity 0.35s;
-}
-
-/* Spinner */
-.sp2 {
-  display:inline-block; width:10px; height:10px;
-  border:2px solid rgba(255,255,255,0.2);
-  border-top-color:#f0c040; border-radius:50%;
-  animation:spin 0.7s linear infinite;
-  vertical-align:middle; margin-right:6px;
-}
+#bg       { position:fixed; inset:0; z-index:0; background:url('assets/ground.png') center/cover no-repeat, #0a0e1a; filter:blur(5px) brightness(0.35); transform:scale(1.1); }
+#bg-road  { position:fixed; inset:0; z-index:1; background:url('assets/jalan.png')  center/cover no-repeat; filter:blur(5px) brightness(0.3); transform:scale(1.1); }
+#bg-tree  { position:fixed; inset:0; z-index:2; background:url('assets/pohon.png')  center/cover no-repeat; filter:blur(5px) brightness(0.3); transform:scale(1.1); }
+#bg-build { position:fixed; inset:0; z-index:3; background:url('assets/dungeon.png') center/cover no-repeat; filter:blur(5px) brightness(0.2); transform:scale(1.1); }
+#overlay  { position:fixed; inset:0; z-index:4; background:linear-gradient(180deg, rgba(0,0,20,0.6) 0%, rgba(0,0,10,0.75) 100%); }
+#scanline { position:fixed; inset:0; z-index:5; pointer-events:none; background:repeating-linear-gradient(0deg, rgba(0,0,0,0.04) 0px, rgba(0,0,0,0.04) 1px, transparent 1px, transparent 4px); animation:scanMove 8s linear infinite; }
+@keyframes scanMove { from { background-position:0 0; } to { background-position:0 16px; } }
+.particle { position:fixed; border-radius:50%; pointer-events:none; z-index:6; animation:floatUp linear infinite; }
+@keyframes floatUp { 0%{transform:translateY(110vh) scale(0) rotate(0deg);opacity:0} 8%{opacity:1} 92%{opacity:0.5} 100%{transform:translateY(-10vh) scale(1) rotate(360deg);opacity:0} }
+#page { position:fixed; inset:0; z-index:10; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:16px; gap:12px; }
+.title-wrap { text-align:center; position:relative; }
+.title-sub  { font-family:'VT323',monospace; font-size:16px; color:#6090c0; letter-spacing:4px; margin-bottom:6px; }
+.title { font-size:clamp(18px,5vw,40px); color:#f0c040; text-shadow:0 0 8px #f0c040, 0 0 30px rgba(240,192,64,0.8), 4px 4px 0 #000; letter-spacing:4px; animation:titlePulse 3s ease-in-out infinite alternate; position:relative; display:inline-block; }
+.title::before { content:'⚔ RITUAL ARENA ⚔'; position:absolute; inset:0; color:transparent; background:linear-gradient(90deg,#f0c040,#ffd700,#ff9900,#ffd700,#f0c040); background-size:200% auto; -webkit-background-clip:text; background-clip:text; animation:shimmer 3s linear infinite; opacity:0.4; }
+@keyframes shimmer { from { background-position:200% center; } to { background-position:-200% center; } }
+@keyframes titlePulse { from { text-shadow:0 0 10px rgba(240,192,64,0.5), 4px 4px 0 #000; } to { text-shadow:0 0 40px #f0c040, 0 0 80px rgba(255,180,0,0.5), 4px 4px 0 #000; } }
+.title-tagline { font-family:'VT323',monospace; font-size:14px; color:#507090; letter-spacing:3px; margin-top:4px; }
+.char-showcase { display:flex; gap:10px; align-items:flex-end; justify-content:center; width:100%; max-width:480px; }
+.char-preview { flex:1; max-width:140px; background:rgba(4,4,20,0.7); border:1px solid rgba(60,60,120,0.5); padding:8px 6px 6px; text-align:center; cursor:default; transition:all 0.25s; position:relative; overflow:hidden; }
+.char-preview::before { content:''; position:absolute; inset:0; background:linear-gradient(180deg, transparent 40%, rgba(0,0,20,0.7)); pointer-events:none; }
+.char-preview.active { border-color:#f0c040; box-shadow:0 0 16px rgba(240,192,64,0.3), inset 0 0 20px rgba(30,30,80,0.5); transform:translateY(-4px) scale(1.03); }
+.char-preview img { width:56px; height:56px; image-rendering:pixelated; filter:drop-shadow(0 0 8px rgba(80,160,255,0.5)); display:block; margin:0 auto 4px; }
+.char-preview.active img { filter:drop-shadow(0 0 14px rgba(240,192,64,0.7)); }
+.cp-name  { font-size:5px; color:#f0c040; letter-spacing:1px; }
+.cp-class { font-family:'VT323',monospace; font-size:11px; color:#607090; margin-top:1px; }
+.cp-stats { font-family:'VT323',monospace; font-size:10px; color:#4060a0; margin-top:2px; }
+.cp-badge { position:absolute; top:4px; right:4px; font-size:4px; color:#000; background:#f0c040; padding:2px 4px; display:none; }
+.char-preview.active .cp-badge { display:block; }
+.box { width:100%; max-width:340px; background:rgba(4,4,20,0.94); border:2px solid #f0c040; box-shadow:0 0 0 1px #000, 0 0 40px rgba(240,192,64,0.15), inset 0 0 30px rgba(20,20,70,0.5); padding:18px 20px; }
+.box-title { font-size:7px; color:#f0c040; text-align:center; border-bottom:1px solid rgba(240,192,64,0.25); padding-bottom:10px; margin-bottom:14px; letter-spacing:1px; }
+.w-btn { display:flex; align-items:center; gap:10px; width:100%; padding:10px 12px; margin-bottom:8px; background:rgba(12,12,44,0.85); border:2px solid rgba(60,60,150,0.45); color:#e0d8ff; cursor:pointer; font-family:'Press Start 2P',monospace; font-size:7px; transition:all 0.12s; position:relative; overflow:hidden; }
+.w-btn::after { content:''; position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent); transition:left 0.35s; }
+.w-btn:hover:not(:disabled)::after { left:140%; }
+.w-btn:hover:not(:disabled) { border-color:#f0c040; background:rgba(30,28,80,0.95); transform:translateX(3px); box-shadow:0 0 12px rgba(240,192,64,0.15), -3px 0 0 rgba(240,192,64,0.5); }
+.w-btn:active:not(:disabled) { transform:translateX(1px) scale(0.99); }
+.w-btn:disabled { opacity:0.3; cursor:not-allowed; }
+.wico  { width:32px; height:32px; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.wname { font-size:7px; color:#f0c040; }
+.wsub  { font-family:'VT323',monospace; font-size:13px; color:#404070; margin-top:2px; }
+.divider { display:flex; align-items:center; gap:8px; color:#282840; font-family:'VT323',monospace; font-size:13px; margin:2px 0; }
+.divider::before, .divider::after { content:''; flex:1; height:1px; background:rgba(255,255,255,0.06); }
+#status { font-family:'VT323',monospace; font-size:15px; color:#6090c0; text-align:center; min-height:20px; margin-top:10px; line-height:1.5; }
+.mode-strip { display:flex; gap:8px; justify-content:center; width:100%; max-width:340px; }
+.mode-chip { flex:1; background:rgba(4,4,20,0.7); border:1px solid rgba(40,40,100,0.5); padding:5px 4px; text-align:center; font-size:4px; color:#405080; letter-spacing:0.5px; line-height:1.8; }
+.mode-chip .mc-icon { font-size:12px; display:block; margin-bottom:1px; }
+.mode-chip .mc-name { color:#5060a0; }
+.net-badge { display:inline-flex; align-items:center; gap:5px; background:rgba(4,4,20,0.8); border:1px solid rgba(29,158,117,0.35); padding:4px 10px; font-size:6px; color:#3d9a78; letter-spacing:1px; }
+.net-dot { width:5px; height:5px; border-radius:50%; background:#1D9E75; animation:blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+#smoke { position:fixed; inset:0; z-index:200; pointer-events:none; display:none; }
+.sp { position:absolute; border-radius:50%; background:radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(220,220,230,0.65) 40%, transparent 70%); animation:smokeUp linear forwards; }
+@keyframes smokeUp { 0%{transform:translateY(0) scale(0.3);opacity:0} 12%{opacity:1} 82%{opacity:0.8} 100%{transform:translateY(-130vh) scale(4.5);opacity:0} }
+#smoke-white { position:fixed; inset:0; z-index:201; background:#fff; opacity:0; pointer-events:none; transition:opacity 0.3s; }
+.sp2 { display:inline-block; width:9px; height:9px; border:2px solid rgba(255,255,255,0.15); border-top-color:#f0c040; border-radius:50%; animation:spin 0.7s linear infinite; vertical-align:middle; margin-right:5px; }
 @keyframes spin { to { transform:rotate(360deg); } }
+.glitch-line { width:100%; max-width:340px; height:1px; background:linear-gradient(90deg, transparent, rgba(240,192,64,0.3), rgba(64,160,255,0.3), transparent); animation:glitchLine 4s ease-in-out infinite; }
+@keyframes glitchLine { 0%,100%{opacity:0.3;transform:scaleX(0.6)} 50%{opacity:1;transform:scaleX(1)} }
+.press-start { font-family:'VT323',monospace; font-size:13px; color:#2a3a60; letter-spacing:2px; text-align:center; animation:blink2 1.4s step-end infinite; }
+@keyframes blink2 { 0%,100%{opacity:1} 50%{opacity:0} }
 </style>
 </head>
 <body>
-
-<!-- Layered blurred world background -->
 <div id="bg"></div>
 <div id="bg-road"></div>
 <div id="bg-tree"></div>
 <div id="bg-build"></div>
 <div id="overlay"></div>
 <div id="scanline"></div>
-
-<!-- Floating gold particles -->
 <div id="particles"></div>
-
-<!-- Connect panel -->
-<div id="panel">
-  <div class="title">⚔ RITUAL ARENA</div>
-  <div class="subtitle">Turn-Based Battle · Ritual Testnet</div>
-
+<div id="page">
+  <div class="title-wrap">
+    <div class="title-sub">✦ RITUAL TESTNET ✦</div>
+    <div class="title">⚔ RITUAL ARENA ⚔</div>
+    <div class="title-tagline">TURN-BASED BATTLE · ON-CHAIN RPG</div>
+  </div>
+  <div class="char-showcase">
+    <div class="char-preview active" id="cp0">
+      <span class="cp-badge">★</span>
+      <img src="/assets/jezzCharArena.gif" alt="Jez Runner">
+      <div class="cp-name">JEZ RUNNER</div>
+      <div class="cp-class">Fighter</div>
+      <div class="cp-stats">ATK 18 · HP 130</div>
+    </div>
+    <div class="char-preview" id="cp1">
+      <span class="cp-badge">★</span>
+      <img src="/assets/madCharArena.gif" alt="Mad Steel">
+      <div class="cp-name">MAD STEEL</div>
+      <div class="cp-class">Guardian</div>
+      <div class="cp-stats">DEF 16 · HP 170</div>
+    </div>
+    <div class="char-preview" id="cp2">
+      <span class="cp-badge">★</span>
+      <img src="/assets/flashCharArena.gif" alt="Flash Shadow">
+      <div class="cp-name">FLASH SHADOW</div>
+      <div class="cp-class">Mage</div>
+      <div class="cp-stats">ATK 29 · MP 130</div>
+    </div>
+  </div>
+  <div class="glitch-line"></div>
   <div class="box">
-    <div class="box-title">— CONNECT WALLET —</div>
-
+    <div class="box-title">— CONNECT TO PLAY —</div>
     <button class="w-btn" id="btn-mm" onclick="connectMM()">
-      <div class="wico" style="background:rgba(246,133,27,0.15);border:1px solid rgba(246,133,27,0.4)">🦊</div>
+      <div class="wico" style="background:rgba(246,133,27,0.12);border:1px solid rgba(246,133,27,0.35)">🦊</div>
       <div><div class="wname">MetaMask</div><div class="wsub">Browser extension</div></div>
     </button>
-
     <button class="w-btn" id="btn-rabby" onclick="connectRabby()">
-      <div class="wico" style="background:rgba(134,151,255,0.15);border:1px solid rgba(134,151,255,0.4)">🐰</div>
+      <div class="wico" style="background:rgba(134,151,255,0.12);border:1px solid rgba(134,151,255,0.35)">🐰</div>
       <div><div class="wname">Rabby Wallet</div><div class="wsub">Multi-chain friendly</div></div>
     </button>
-
     <div class="divider">or</div>
-
-    <button class="w-btn" onclick="connectDemo()" style="border-color:rgba(240,192,64,0.3)">
-      <div class="wico" style="background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.3)">🎮</div>
-      <div><div class="wname" style="color:#b09020">Demo Mode</div><div class="wsub">No wallet needed</div></div>
+    <button class="w-btn" onclick="connectDemo()" style="border-color:rgba(240,192,64,0.25)">
+      <div class="wico" style="background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.25)">🎮</div>
+      <div><div class="wname" style="color:#a08020">Demo Mode</div><div class="wsub">No wallet needed</div></div>
     </button>
-
     <div id="status"></div>
   </div>
+  <div class="mode-strip">
+    <div class="mode-chip"><span class="mc-icon">⚔️</span><span class="mc-name">CLASSIC</span></div>
+    <div class="mode-chip"><span class="mc-icon">🌐</span><span class="mc-name">PVP</span></div>
+    <div class="mode-chip"><span class="mc-icon">🔥</span><span class="mc-name">EVENT</span></div>
+    <div class="mode-chip"><span class="mc-icon">🏰</span><span class="mc-name">DUNGEON</span></div>
+    <div class="mode-chip"><span class="mc-icon">🖼️</span><span class="mc-name">NFT</span></div>
+  </div>
+  <div class="net-badge">
+    <span class="net-dot"></span>
+    RITUAL TESTNET · CHAIN 1979
+  </div>
+  <div class="press-start">▼ INSERT COIN ▼</div>
 </div>
-
-<!-- Smoke transition -->
 <div id="smoke"></div>
 <div id="smoke-white"></div>
-
 <script>
-// ── Particles ─────────────────────────────────────────────
 (function spawnParticles() {
+  const colors = ['rgba(240,192,64,0.55)','rgba(80,160,255,0.4)','rgba(255,80,120,0.35)','rgba(80,255,160,0.35)','rgba(200,120,255,0.35)'];
   const container = document.getElementById('particles');
-  for (let i = 0; i < 18; i++) {
-    const p  = document.createElement('div');
+  for (let i = 0; i < 22; i++) {
+    const p = document.createElement('div');
     p.className = 'particle';
-    const sz = 4 + Math.random() * 12;
-    p.style.cssText = `
-      width:${sz}px; height:${sz}px;
-      left:${Math.random()*100}vw;
-      animation-duration:${6+Math.random()*10}s;
-      animation-delay:${Math.random()*8}s;
-      filter:blur(${Math.random()*2}px);
-    `;
+    const sz = 3 + Math.random() * 10;
+    const col = colors[Math.floor(Math.random() * colors.length)];
+    p.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}vw;background:radial-gradient(circle, ${col}, transparent);animation-duration:${7+Math.random()*11}s;animation-delay:${Math.random()*9}s;filter:blur(${Math.random()*1.5}px);`;
     container.appendChild(p);
   }
 })();
-
-// ── Chain ─────────────────────────────────────────────────
+let activeCp = 0;
+setInterval(() => {
+  document.getElementById('cp'+activeCp).classList.remove('active');
+  activeCp = (activeCp + 1) % 3;
+  document.getElementById('cp'+activeCp).classList.add('active');
+}, 2200);
 const CHAIN_ID = '0x7BB';
-const CHAIN_PARAMS = {
-  chainId: CHAIN_ID,
-  chainName: 'Ritual Testnet',
-  nativeCurrency: { name:'RITUAL', symbol:'RITUAL', decimals:18 },
-  rpcUrls: ['https://rpc.ritualfoundation.org'],
-  blockExplorerUrls: ['https://explorer.ritualfoundation.org'],
-};
-
-// ── Auto reconnect on load ────────────────────────────────
+const CHAIN_PARAMS = { chainId:CHAIN_ID, chainName:'Ritual Testnet', nativeCurrency:{name:'RITUAL',symbol:'RITUAL',decimals:18}, rpcUrls:['https://rpc.ritualfoundation.org'], blockExplorerUrls:['https://explorer.ritualfoundation.org'] };
 window.addEventListener('load', async () => {
   if (sessionStorage.getItem('wallet_connected') === '1') {
     if (window.ethereum) {
       try {
         const accounts = await window.ethereum.request({ method:'eth_accounts' });
-        if (accounts && accounts.length > 0) {
-          setStatus('✅ Reconnecting...');
-          setTimeout(() => smokeAndGo(), 600);
-          return;
-        }
+        if (accounts && accounts.length > 0) { setStatus('✅ Reconnecting...'); setTimeout(() => smokeAndGo(), 600); return; }
       } catch(e) {}
     }
-    // Demo mode
-    if (sessionStorage.getItem('wallet_demo') === '1') {
-      setStatus('🎮 Resuming demo...');
-      setTimeout(() => smokeAndGo(), 600);
-      return;
-    }
-    // Clear stale session
+    if (sessionStorage.getItem('wallet_demo') === '1') { setStatus('🎮 Resuming demo...'); setTimeout(() => smokeAndGo(), 600); return; }
     sessionStorage.removeItem('wallet_connected');
   }
 });
-
-// ── Helpers ───────────────────────────────────────────────
-function setStatus(msg) {
-  document.getElementById('status').textContent = msg;
-}
-
+function setStatus(msg) { document.getElementById('status').textContent = msg; }
 function setLoading(id, on, label) {
   const btn = document.getElementById(id);
   if (!btn) return;
   btn.disabled = on;
-  btn.querySelector('.wname').innerHTML = on
-    ? '<span class="sp2"></span>Connecting...'
-    : label;
+  btn.querySelector('.wname').innerHTML = on ? '<span class="sp2"></span>Connecting...' : label;
 }
-
 function getProvider(rabby = false) {
   const providers = window.ethereum?.providers || [];
   if (providers.length) {
-    if (rabby) {
-      const r = providers.find(p => p.isRabby);
-      if (r) return r;
-    } else {
-      const m = providers.find(p => p.isMetaMask && !p.isRabby);
-      if (m) return m;
-    }
+    if (rabby) { const r = providers.find(p => p.isRabby); if (r) return r; }
+    else { const m = providers.find(p => p.isMetaMask && !p.isRabby); if (m) return m; }
     return providers[0];
   }
   if (rabby && window.rabby) return window.rabby;
   return window.ethereum || null;
 }
-
 async function doConnect(provider, btnId, label) {
   setLoading(btnId, true, label);
   try {
-    await provider.request({
-      method: 'wallet_requestPermissions',
-      params: [{ eth_accounts: {} }],
-    });
-    const accounts = await provider.request({ method: 'eth_accounts' });
-    if (!accounts?.length) {
-      setStatus('❌ No account selected');
-      setLoading(btnId, false, label);
-      return;
-    }
-    // Check/switch chain
-    const chainId = await provider.request({ method: 'eth_chainId' });
+    await provider.request({ method:'wallet_requestPermissions', params:[{eth_accounts:{}}] });
+    const accounts = await provider.request({ method:'eth_accounts' });
+    if (!accounts?.length) { setStatus('❌ No account selected'); setLoading(btnId, false, label); return; }
+    const chainId = await provider.request({ method:'eth_chainId' });
     if (chainId.toLowerCase() !== CHAIN_ID.toLowerCase()) {
       setStatus('⏳ Switching to Ritual Testnet...');
-      try {
-        await provider.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: CHAIN_ID }],
-        });
-      } catch (sw) {
-        if (sw.code === 4902) {
-          await provider.request({
-            method: 'wallet_addEthereumChain',
-            params: [CHAIN_PARAMS],
-          });
-        } else throw sw;
-      }
+      try { await provider.request({ method:'wallet_switchEthereumChain', params:[{chainId:CHAIN_ID}] }); }
+      catch (sw) { if (sw.code === 4902) await provider.request({ method:'wallet_addEthereumChain', params:[CHAIN_PARAMS] }); else throw sw; }
     }
     sessionStorage.setItem('wallet_connected', '1');
-    sessionStorage.setItem('wallet_address',   accounts[0]);
+    sessionStorage.setItem('wallet_address', accounts[0]);
     sessionStorage.removeItem('wallet_demo');
     setStatus('✅ Connected! Entering world...');
     setLoading(btnId, false, label);
@@ -335,67 +214,41 @@ async function doConnect(provider, btnId, label) {
     else setStatus('❌ ' + (e.message || 'Unknown error'));
   }
 }
-
 async function connectMM() {
   const p = getProvider(false);
-  if (!p) {
-    setStatus('❌ MetaMask not found!');
-    setTimeout(() => window.open('https://metamask.io/download/', '_blank'), 1000);
-    return;
-  }
+  if (!p) { setStatus('❌ MetaMask not found!'); setTimeout(() => window.open('https://metamask.io/download/', '_blank'), 1000); return; }
   await doConnect(p, 'btn-mm', 'MetaMask');
 }
-
 async function connectRabby() {
   const p = getProvider(true);
-  if (!p) {
-    setStatus('❌ Rabby not found!');
-    setTimeout(() => window.open('https://rabby.io/', '_blank'), 1000);
-    return;
-  }
+  if (!p) { setStatus('❌ Rabby not found!'); setTimeout(() => window.open('https://rabby.io/', '_blank'), 1000); return; }
   await doConnect(p, 'btn-rabby', 'Rabby Wallet');
 }
-
 function connectDemo() {
   sessionStorage.setItem('wallet_connected', '1');
   sessionStorage.setItem('wallet_demo', '1');
-  sessionStorage.setItem('wallet_address',
-    '0xDEMO' + Math.random().toString(16).slice(2,10).toUpperCase());
+  sessionStorage.setItem('wallet_address', '0xDEMO' + Math.random().toString(16).slice(2,10).toUpperCase());
   setStatus('🎮 Demo mode — Entering world...');
   setTimeout(() => smokeAndGo(), 400);
 }
-
-// ── Smoke transition ──────────────────────────────────────
 function smokeAndGo() {
   const smoke = document.getElementById('smoke');
   const white = document.getElementById('smoke-white');
   smoke.style.display = 'block';
   smoke.innerHTML = '';
-
-  // Spawn smoke particles from bottom
-  for (let i = 0; i < 35; i++) {
-    const p   = document.createElement('div');
+  for (let i = 0; i < 40; i++) {
+    const p = document.createElement('div');
     p.className = 'sp';
-    const sz  = 100 + Math.random() * 220;
-    const x   = Math.random() * 110 - 5;
-    const y   = 50 + Math.random() * 60;
-    const dur = 1.0 + Math.random() * 0.7;
-    const del = Math.random() * 0.5;
-    p.style.cssText = `
-      width:${sz}px; height:${sz}px;
-      left:${x}vw; top:${y}vh;
-      animation-duration:${dur}s;
-      animation-delay:${del}s;
-      filter:blur(${6+Math.random()*10}px);
-    `;
+    const sz = 80 + Math.random() * 240;
+    const x  = Math.random() * 115 - 7;
+    const y  = 45 + Math.random() * 65;
+    const dur = 0.9 + Math.random() * 0.8;
+    const del = Math.random() * 0.55;
+    p.style.cssText = `width:${sz}px;height:${sz}px;left:${x}vw;top:${y}vh;animation-duration:${dur}s;animation-delay:${del}s;filter:blur(${5+Math.random()*12}px);`;
     smoke.appendChild(p);
   }
-
-  // White flash
-  setTimeout(() => { white.style.opacity = '1'; }, 950);
-
-  // Navigate
-  setTimeout(() => { window.location.href = '/world'; }, 1350);
+  setTimeout(() => { white.style.opacity = '1'; }, 900);
+  setTimeout(() => { window.location.href = '/world'; }, 1300);
 }
 </script>
 </body>
