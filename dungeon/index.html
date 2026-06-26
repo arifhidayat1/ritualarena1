@@ -1298,7 +1298,7 @@ function renderEnemies() {
     side.innerHTML = `
       <div class="enemy-unit active-enemy fighter-card" id="enemy-unit-0">
         <div class="fighter-name">${e.name}</div>
-        <span class="enemy-sprite">${e.sprite?`<span class="boss-sprite-anim" style="background-image:url('assets/${e.sprite}');background-size:${e.spriteFrames*120}px 120px"></span>`:e.icon}</span>
+        <span class="enemy-sprite">${e.sprite?`<canvas id="boss-sprite-canvas" width="120" height="120" style="display:block;image-rendering:pixelated"></canvas>`:e.icon}</span>
         <div class="fighter-bars" style="max-width:130px">
           <div class="fighter-bar-row">
             <div class="fighter-bar-track">
@@ -1313,6 +1313,7 @@ function renderEnemies() {
     const ebnB = document.getElementById('enemy-bar-name');
     if (etvB) etvB.textContent = e.type;
     if (ebnB) ebnB.textContent = e.name;
+    if (e.sprite) startBossSpriteAnim(e);
   } else {
     side.innerHTML = monsters.map((m, i) => {
       const isDead = m.hp <= 0;
@@ -1341,6 +1342,29 @@ function renderEnemies() {
   }
 }
 
+
+let bossSpriteTimer = null;
+function startBossSpriteAnim(boss) {
+  if (bossSpriteTimer) clearInterval(bossSpriteTimer);
+  const img = new Image();
+  img.src = 'assets/' + boss.sprite;
+  img.onload = function() {
+    const frames = boss.spriteFrames || 8;
+    const fw = img.width / frames;
+    const fh = img.height;
+    let frame = 0;
+    function draw() {
+      const cv = document.getElementById('boss-sprite-canvas');
+      if (!cv) { clearInterval(bossSpriteTimer); bossSpriteTimer=null; return; }
+      const ctx = cv.getContext('2d');
+      ctx.clearRect(0, 0, 120, 120);
+      ctx.drawImage(img, frame * fw, 0, fw, fh, 0, 0, 120, 120);
+      frame = (frame + 1) % frames;
+    }
+    draw();
+    bossSpriteTimer = setInterval(draw, 100);
+  };
+}
 function renderEnemyBars() {
   // HP bars are now rendered inline inside each enemy-unit
   // Just re-render enemies to sync HP
