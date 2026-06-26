@@ -1344,26 +1344,36 @@ function renderEnemies() {
 
 
 let bossSpriteTimer = null;
+let _bossImg = null;
+let _bossImgSrc = '';
+let _bossFrame = 0;
 function startBossSpriteAnim(boss) {
-  if (bossSpriteTimer) clearInterval(bossSpriteTimer);
-  const img = new Image();
-  img.src = 'assets/' + boss.sprite;
-  img.onload = function() {
-    const frames = boss.spriteFrames || 8;
-    const fw = img.width / frames;
-    const fh = img.height;
-    let frame = 0;
-    function draw() {
-      const cv = document.getElementById('boss-sprite-canvas');
-      if (!cv) { clearInterval(bossSpriteTimer); bossSpriteTimer=null; return; }
-      const ctx = cv.getContext('2d');
-      ctx.clearRect(0, 0, 120, 120);
-      ctx.drawImage(img, frame * fw, 0, fw, fh, 0, 0, 120, 120);
-      frame = (frame + 1) % frames;
-    }
+  const src = 'assets/' + boss.sprite;
+  const frames = boss.spriteFrames || 8;
+  function draw() {
+    const cv = document.getElementById('boss-sprite-canvas');
+    if (!cv || !_bossImg) return;
+    const fw = _bossImg.width / frames;
+    const ctx = cv.getContext('2d');
+    ctx.clearRect(0, 0, 120, 120);
+    ctx.drawImage(_bossImg, _bossFrame * fw, 0, fw, _bossImg.height, 0, 0, 120, 120);
+    _bossFrame = (_bossFrame + 1) % frames;
+  }
+  if (_bossImg && _bossImgSrc === src) {
+    if (bossSpriteTimer) clearInterval(bossSpriteTimer);
     draw();
     bossSpriteTimer = setInterval(draw, 100);
-  };
+  } else {
+    if (bossSpriteTimer) clearInterval(bossSpriteTimer);
+    _bossImg = new Image();
+    _bossImgSrc = src;
+    _bossFrame = 0;
+    _bossImg.onload = function() {
+      draw();
+      bossSpriteTimer = setInterval(draw, 100);
+    };
+    _bossImg.src = src;
+  }
 }
 function renderEnemyBars() {
   // HP bars are now rendered inline inside each enemy-unit
