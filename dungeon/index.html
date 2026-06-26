@@ -277,6 +277,18 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
   from{background-position:0 0}
   to{background-position:-960px 0}
 }
+/* Boss sprite animation */
+.boss-sprite-anim{
+  width:120px;height:120px;
+  background:url('assets/boss1_validator_idle.png') 0 0 / 960px 120px no-repeat;
+  animation:bossIdle 0.8s steps(8) infinite;
+  image-rendering:pixelated;
+  filter:drop-shadow(0 0 12px rgba(255,80,80,0.7));
+}
+@keyframes bossIdle{
+  from{background-position:0 0}
+  to{background-position:-960px 0}
+}
 .enemy-name-tag{
   font-size:6px;color:var(--red);
   background:rgba(0,0,0,0.8);border:1px solid var(--red);
@@ -858,7 +870,7 @@ const MONSTER_POOL = [
 
 // Boss pool
 const BOSS_POOL = [
-  {name:'The Validator',  type:'Elite Guardian',   icon:'🛡️', sprite:'boss1_validator_idle.png', spriteFrames:8,baseHp:300, baseAtk:28, baseDef:18, baseXp:200},
+  {name:'The Validator',  type:'Elite Guardian',   icon:'🛡️', sprite:'boss1_validator_idle.png', spriteFrames:8, sprite:'boss1_validator_idle.png', spriteFrames:8,baseHp:300, baseAtk:28, baseDef:18, baseXp:200},
   {name:'Chaos Dragon',   type:'Ancient Terror',   icon:'🐉', baseHp:400, baseAtk:35, baseDef:20, baseXp:280},
   {name:'Void Sentinel',  type:'Dungeon Keeper',   icon:'👁️',baseHp:500, baseAtk:42, baseDef:25, baseXp:350},
   {name:'Rug Master',     type:'DeFi Overlord',    icon:'💸', baseHp:600, baseAtk:50, baseDef:30, baseXp:450},
