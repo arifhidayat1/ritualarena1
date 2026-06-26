@@ -1313,7 +1313,7 @@ function renderEnemies() {
     const ebnB = document.getElementById('enemy-bar-name');
     if (etvB) etvB.textContent = e.type;
     if (ebnB) ebnB.textContent = e.name;
-    if (e.sprite) startBossSpriteAnim(e);
+    startBossSpriteAnim(e);
   } else {
     side.innerHTML = monsters.map((m, i) => {
       const isDead = m.hp <= 0;
@@ -1348,7 +1348,10 @@ let _bossImg = null;
 let _bossImgSrc = '';
 let _bossFrame = 0;
 function startBossSpriteAnim(boss) {
-  const src = 'assets/' + boss.sprite;
+  // Debug: gambar ungu dulu
+  const cvDbg = document.getElementById('boss-sprite-canvas');
+  if (cvDbg) { const ctx=cvDbg.getContext('2d'); ctx.fillStyle='purple'; ctx.fillRect(0,0,120,120); ctx.fillStyle='white'; ctx.font='10px sans-serif'; ctx.fillText(boss.sprite||'no sprite',5,60); }
+  const src = 'assets/' + (boss.sprite||'boss1_validator_idle.png');
   const frames = boss.spriteFrames || 8;
   function draw() {
     const cv = document.getElementById('boss-sprite-canvas');
