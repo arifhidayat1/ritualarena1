@@ -1365,9 +1365,17 @@ function startBossSpriteAnim(boss) {
   bossSpriteTimer = setInterval(function(){
     const cv = document.getElementById('boss-sprite-canvas');
     if (!cv) { return; }
+    const ctx = cv.getContext('2d');
+    ctx.clearRect(0,0,120,120);
+    // DEBUG background to confirm timer+canvas
+    ctx.fillStyle = 'rgba(0,80,200,0.6)';
+    ctx.fillRect(0,0,120,120);
+    ctx.fillStyle = '#fff'; ctx.font = '11px monospace';
+    ctx.fillText('L:'+_bossLoaded, 4, 14);
+    ctx.fillText('W:'+(_bossImg?_bossImg.width:'null'), 4, 30);
+    ctx.fillText(_bossImg?_bossImg.src.split('/').pop().slice(0,12):'', 4, 46);
     if (!_bossLoaded || !_bossImg.width) return;
     const fw = _bossImg.width / frames;
-    const ctx = cv.getContext('2d');
     ctx.clearRect(0,0,120,120);
     ctx.drawImage(_bossImg, frame*fw, 0, fw, _bossImg.height, 0,0,120,120);
     frame = (frame+1) % frames;
