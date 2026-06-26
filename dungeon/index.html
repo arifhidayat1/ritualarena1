@@ -161,7 +161,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
   flex:1;display:flex;flex-direction:row;
   align-items:flex-end;justify-content:center;
   gap:20px;padding-bottom:8px;
-  transform:translateY(-60px);
+  transform:translateY(-20px);
 }
 .enemy-unit{display:flex;flex-direction:column;align-items:center;gap:2px;transition:all 0.2s}
 .enemy-sprite{font-size:44px;display:block;line-height:1;transition:all 0.2s}
@@ -1278,7 +1278,7 @@ function renderEnemies() {
     side.innerHTML = `
       <div class="enemy-unit active-enemy fighter-card" id="enemy-unit-0">
         <div class="fighter-name">${e.name}</div>
-        <span class="enemy-sprite"><canvas id="boss-sprite-canvas" width="200" height="200" style="display:block;width:200px;height:200px;image-rendering:pixelated;filter:drop-shadow(0 0 14px rgba(255,80,80,0.7))"></canvas></span>
+        <span class="enemy-sprite"><canvas id="boss-sprite-canvas" width="280" height="280" style="display:block;width:280px;height:280px;image-rendering:pixelated;filter:drop-shadow(0 0 18px rgba(255,80,80,0.8))"></canvas></span>
         <div class="fighter-bars" style="max-width:130px">
           <div class="fighter-bar-row">
             <div class="fighter-bar-track">
