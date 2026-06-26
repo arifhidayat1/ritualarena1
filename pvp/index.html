@@ -56,7 +56,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── GACHA ── */
-#screen-gacha{padding-top:48px;background:transparent;min-height:100vh}
+#screen-gacha{padding-top:48px;background:transparent;min-height:100vh;display:flex;flex-direction:column;align-items:center}
 .gacha-header{text-align:center;padding:10px 16px 4px}
 .gacha-title{font-size:10px;color:var(--purple);text-shadow:0 0 20px var(--purple);margin-bottom:5px}
 .gacha-sub{font-family:'VT323',monospace;font-size:14px;color:#8060a0}
@@ -70,7 +70,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 @keyframes winnerPulse{from{box-shadow:0 0 16px rgba(240,192,64,0.5)}to{box-shadow:0 0 36px rgba(240,192,64,0.95)}}
 .gacha-slot .gacha-name.winner-name{color:var(--gold)}
 
-.gacha-result{text-align:center;padding:0 16px;display:none}
+.gacha-result{text-align:center;padding:20px 16px;display:none;width:100%;max-width:380px}
 .gacha-result.show{display:block;animation:fadeUp 0.4s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .gr-label{font-size:7px;color:var(--gold);margin-bottom:8px;letter-spacing:1px}
@@ -240,10 +240,10 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 <!-- SCREEN: WALLET/NFT GATE -->
 <div id="screen-gate" class="screen active">
   <div class="gate-box">
-    <div class="gate-icon">🔒</div>
+    <div class="gate-icon" id="gate-icon">🔒</div>
     <div class="gate-title">NFT REQUIRED</div>
     <div class="gate-sub" id="gate-msg"><span class="spinner"></span>Checking wallet...</div>
-    <button class="px-btn px-red px-sm" onclick="goWorld()">← Back to World</button>
+    <button class="px-btn px-red px-sm" onclick="goWorld()" style="margin-top:8px">← Back to World</button>
   </div>
 </div>
 
@@ -272,7 +272,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
   </div>
   <div class="opp-list" id="opp-list"></div>
   <div style="text-align:center;padding:0 16px 16px">
-    <button class="px-btn px-red px-sm" onclick="goWorld()">← Back to World</button>
+    <button class="px-btn px-red px-sm" onclick="goWorld()" style="margin-top:8px">← Back to World</button>
   </div>
 </div>
 
@@ -535,20 +535,25 @@ async function initGate(){
   const sessConnected = sessionStorage.getItem('wallet_connected') === '1';
   const isDemo = sessionStorage.getItem('wallet_demo') === '1';
   const gateMsg = document.getElementById('gate-msg');
+  const gateIcon = document.getElementById('gate-icon');
 
   if (isDemo) {
-    gateMsg.innerHTML = '❌ Demo mode cannot access PvP.<br>Connect a real wallet and mint an NFT from the World map first!';
+    gateIcon.textContent = '❌';
+    gateMsg.innerHTML = 'Demo mode cannot access PvP.<br>Connect a real wallet and mint an NFT from the World map first!';
     return;
   }
   if (!sessConnected || !sessAddr) {
-    gateMsg.innerHTML = '❌ Please connect your wallet from the World map first!';
+    gateIcon.textContent = '❌';
+    gateMsg.innerHTML = 'Please connect your wallet from the World map first!';
     return;
   }
   if (!window.ethereum) {
-    gateMsg.innerHTML = '❌ No wallet provider found in this browser.';
+    gateIcon.textContent = '❌';
+    gateMsg.innerHTML = 'No wallet provider found in this browser.';
     return;
   }
 
+  gateIcon.textContent = '⏳';
   gateMsg.innerHTML = '<span class="spinner"></span>Checking NFT ownership...';
 
   try {
@@ -562,7 +567,8 @@ async function initGate(){
     ]);
 
     if (!has) {
-      gateMsg.innerHTML = '❌ You need an NFT to enter PvP Arena!<br><br>Go back to World and mint one via the 🎖️ icon.';
+      gateIcon.textContent = '❌';
+      gateMsg.innerHTML = 'You need an NFT to enter PvP Arena!<br><br>Go back to World and mint one via the 🎖️ icon.';
       return;
     }
 
@@ -578,7 +584,8 @@ async function initGate(){
     startGacha();
   } catch(e){
     console.warn('NFT check failed:', e);
-    gateMsg.innerHTML = '❌ Could not verify NFT (network issue).<br><br>' +
+    gateIcon.textContent = '⚠️';
+    gateMsg.innerHTML = 'Could not verify NFT (network issue).<br><br>' +
       '<button class="px-btn px-purple px-sm" onclick="initGate()" style="margin-top:8px">🔄 Retry</button>';
   }
 }
@@ -747,7 +754,8 @@ function finishGacha(idx){
     : '';
   const resultEl = document.getElementById('gacha-result');
   resultEl.classList.add('show');
-  resultEl.scrollIntoView({ behavior:'smooth', block:'center' });
+  document.getElementById('gacha-stage').style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 // ════════════════════════════════════════════════
