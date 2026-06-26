@@ -1278,7 +1278,7 @@ function renderEnemies() {
     side.innerHTML = `
       <div class="enemy-unit active-enemy fighter-card" id="enemy-unit-0">
         <div class="fighter-name">${e.name}</div>
-        <span class="enemy-sprite"><canvas id="boss-sprite-canvas" width="120" height="120" style="display:block;image-rendering:pixelated"></canvas></span>
+        <span class="enemy-sprite"><canvas id="boss-sprite-canvas" width="200" height="200" style="display:block;width:200px;height:200px;image-rendering:pixelated;filter:drop-shadow(0 0 14px rgba(255,80,80,0.7))"></canvas></span>
         <div class="fighter-bars" style="max-width:130px">
           <div class="fighter-bar-row">
             <div class="fighter-bar-track">
@@ -1341,7 +1341,7 @@ function startBossSpriteAnim(boss) {
     const cv = document.getElementById('boss-sprite-canvas');
     if (!cv) { return; }
     const ctx = cv.getContext('2d');
-    ctx.clearRect(0,0,120,120);
+    ctx.clearRect(0,0,cv.width,cv.height);
     // DEBUG background to confirm timer+canvas
     ctx.fillStyle = 'rgba(0,80,200,0.6)';
     ctx.fillRect(0,0,120,120);
@@ -1351,8 +1351,8 @@ function startBossSpriteAnim(boss) {
     ctx.fillText(_bossImg?_bossImg.src.split('/').pop().slice(0,12):'', 4, 46);
     if (!_bossLoaded || !_bossImg.width) return;
     const fw = _bossImg.width / frames;
-    ctx.clearRect(0,0,120,120);
-    ctx.drawImage(_bossImg, frame*fw, 0, fw, _bossImg.height, 0,0,120,120);
+    ctx.clearRect(0,0,cv.width,cv.height);
+    const fh=_bossImg.height,padX=fw*0.18,padY=fh*0.10; ctx.drawImage(_bossImg, frame*fw+padX, padY, fw-padX*2, fh-padY*2, 0,0,cv.width,cv.height);
     frame = (frame+1) % frames;
   }, 110);
 }
@@ -1389,7 +1389,7 @@ function startBossSpriteAnim(boss) {
     const cv = document.getElementById('boss-sprite-canvas');
     if (!cv) { return; }
     const ctx = cv.getContext('2d');
-    ctx.clearRect(0,0,120,120);
+    ctx.clearRect(0,0,cv.width,cv.height);
     if (_bossError) {
       ctx.fillStyle = 'rgba(200,0,0,0.7)';
       ctx.fillRect(0,0,120,120);
@@ -1407,7 +1407,7 @@ function startBossSpriteAnim(boss) {
       return;
     }
     const fw = _bossImg.width / frames;
-    ctx.drawImage(_bossImg, frame*fw, 0, fw, _bossImg.height, 0,0,120,120);
+    const fh=_bossImg.height,padX=fw*0.18,padY=fh*0.10; ctx.drawImage(_bossImg, frame*fw+padX, padY, fw-padX*2, fh-padY*2, 0,0,cv.width,cv.height);
     frame = (frame+1) % frames;
   }, 110);
 }
