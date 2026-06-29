@@ -1363,6 +1363,97 @@ function renderEnemyBars() {
   renderEnemies();
 }
 
+/* BOSS SPRITE STATE MACHINE - square frames, auto frame count */
+const BOSS_ANIMS = {
+  'The Validator': {
+    idle:   'boss1_validator_idle.png',
+    walk:   'boss1_validator_walk.png',
+    attack: 'boss1_validator_attack.png',
+    hurt:   'boss1_validator_hurt.png',
+  },
+};
+const BOSS_FPS = { idle:9, walk:10, attack:13, hurt:11 };
+const bossSprite = {
+  imgs:{}, frames:{}, loaded:{},
+  cfg:null, state:'idle', frame:0, fps:9,
+  oneShot:false, oneShotDone:null, rafId:null, lastTime:0, flip:true,
+};
+function startBossSpriteAnim(boss) {
+  const s = bossSprite;
+  const cfg = BOSS_ANIMS[boss.name] || { idle: boss.sprite || 'boss1_validator_idle.png' };
+  s.cfg = cfg;
+  s.state = 'idle'; s.frame = 0; s.oneShot = false; s.fps = BOSS_FPS.idle;
+  for (const st in cfg) {
+    if (s.imgs[st]) continue;
+    const img = new Image();
+    img.onload = (function(state, image){ return function(){
+      s.loaded[state] = true;
+      s.frames[state] = Math.max(1, Math.round(image.width / image.height));
+    }; })(st, img);
+    img.onerror = (function(state, file){ return function(){
+      console.error('boss anim load fail:', state, file);
+    }; })(st, cfg[st]);
+    img.src = '/dungeon/assets/' + cfg[st];
+    s.imgs[st] = img;
+  }
+  if (s.rafId) cancelAnimationFrame(s.rafId);
+  s.lastTime = performance.now();
+  function loop(now){
+    if (now - s.lastTime >= 1000 / s.fps) {
+      s.lastTime = now;
+      const fc = s.frames[s.state] || 1;
+      s.frame++;
+      if (s.frame >= fc) {
+        if (s.oneShot) {
+          s.oneShot = false; s.state = 'idle'; s.fps = BOSS_FPS.idle; s.frame = 0;
+          if (s.oneShotDone) { const cb = s.oneShotDone; s.oneShotDone = null; cb(); }
+        } else { s.frame = 0; }
+      }
+      drawBossFrame();
+    }
+    s.rafId = requestAnimationFrame(loop);
+  }
+  s.rafId = requestAnimationFrame(loop);
+}
+function drawBossFrame() {
+  const cv = document.getElementById('boss-sprite-canvas');
+  if (!cv) return;
+  const s = bossSprite;
+  let st = s.state;
+  if (!s.loaded[st]) st = 'idle';
+  const img = s.imgs[st];
+  if (!img || !s.loaded[st]) return;
+  const ctx = cv.getContext('2d');
+  const CW = cv.width, CH = cv.height;
+  ctx.clearRect(0,0,CW,CH);
+  ctx.imageSmoothingEnabled = false;
+  const fc = s.frames[st] || 1;
+  const fi = Math.min(s.frame, fc-1);
+  const fw = img.width / fc, fh = img.height;
+  const padX = fw*0.18, padY = fh*0.10;
+  ctx.save();
+  if (s.flip) { ctx.translate(CW,0); ctx.scale(-1,1); }
+  ctx.drawImage(img, fi*fw+padX, padY, fw-padX*2, fh-padY*2, 0,0, CW, CH);
+  ctx.restore();
+}
+function bossPlayLoop(state){
+  const s = bossSprite;
+  if (!s.cfg || !s.cfg[state]) return;
+  s.oneShot = false; s.state = state; s.fps = BOSS_FPS[state] || 9; s.frame = 0;
+}
+function bossPlayOnce(state, onDone){
+  const s = bossSprite;
+  if (!s.cfg || !s.cfg[state] || !s.loaded[state]) { if (onDone) onDone(); return; }
+  s.oneShot = true; s.state = state; s.fps = BOSS_FPS[state] || 12; s.frame = 0;
+  s.oneShotDone = onDone || null;
+}
+
+function renderEnemyBars() {
+  // HP bars are now rendered inline inside each enemy-unit
+  // Just re-render enemies to sync HP
+  renderEnemies();
+}
+
 let bossSpriteTimer = null;
 let _bossImg = null;
 let _bossLoaded = false;
@@ -2007,6 +2098,7 @@ function heroAttackAnim(onHit) {
       heroSpritePlayOnce('attack', 12);
     }
     onHit();
+    if (isBossFloor(floor)) bossPlayOnce('hurt');
     setTimeout(() => {
       const ret = heroEl.animate([
         {transform:`translate(${tx}px,${ty}px)`},
@@ -2029,13 +2121,15 @@ function enemyAttackAnim(enemyUnitId, onHit) {
   const dy = (hr.top  + hr.height/2) - (er.top  + er.height/2);
   const tx = dx * 0.85, ty = dy * 0.85;
 
+  if (isBossFloor(floor)) bossPlayLoop('walk');
+
   const charge = enemyEl.animate([
     {transform:'translate(0,0)'},
     {transform:`translate(${tx}px,${ty}px)`}
   ], {duration:420, easing:'cubic-bezier(0.2,0,0.1,1)', fill:'forwards'});
 
   charge.onfinish = () => {
-    // Hero kena → hurt animation (canvas-based, auto-returns to idle)
+    if (isBossFloor(floor)) bossPlayOnce('attack');
     if (heroSpriteState.loaded) {
       heroSpritePlayOnce('hurt', 10);
     }
@@ -2046,6 +2140,7 @@ function enemyAttackAnim(enemyUnitId, onHit) {
         {transform:'translate(0,0)'}
       ], {duration:220, easing:'cubic-bezier(0.4,0,1,1)', fill:'forwards'});
       ret.onfinish = () => { enemyEl.style.transform = ''; };
+      if (isBossFloor(floor)) bossPlayLoop('idle');
     }, 80);
   };
 }
