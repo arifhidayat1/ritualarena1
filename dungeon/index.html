@@ -1281,7 +1281,7 @@ function renderEnemies() {
       <div class="enemy-unit active-enemy fighter-card" id="enemy-unit-0">
         <div class="fighter-name">${e.name}</div>
         <span class="enemy-sprite"><canvas id="boss-sprite-canvas" width="280" height="280" style="display:block;width:280px;height:280px;image-rendering:pixelated;filter:drop-shadow(0 0 18px rgba(255,80,80,0.8))"></canvas></span>
-        <div class="fighter-bars" style="max-width:130px">
+        <div class="fighter-bars" style="max-width:130px;margin-top:-60px">
           <div class="fighter-bar-row">
             <div class="fighter-bar-track">
               <div class="fighter-bar-fill hp${pct<25?' low':''}" id="boss-hp-fill" style="width:${pct}%"></div>
