@@ -1323,46 +1323,6 @@ function renderEnemies() {
 }
 
 
-;
-function startBossSpriteAnim(boss) {
-  const bsp = BOSS_SPRITES[boss.name] || {};
-  const src = 'assets/' + (boss.sprite || bsp.sprite || 'boss1_validator_idle.png');
-  const frames = boss.spriteFrames || bsp.frames || 8;
-  let frame = 0;
-  // Load image only once
-  if (!_bossImg) {
-    _bossImg = new Image();
-    _bossImg.onload = function(){ _bossLoaded = true; };
-    _bossImg.onerror = function(){ console.error('boss sprite load fail', src); };
-    _bossImg.src = src;
-  }
-  if (bossSpriteTimer) clearInterval(bossSpriteTimer);
-  bossSpriteTimer = setInterval(function(){
-    const cv = document.getElementById('boss-sprite-canvas');
-    if (!cv) { return; }
-    const ctx = cv.getContext('2d');
-    ctx.clearRect(0,0,cv.width,cv.height);
-    // DEBUG background to confirm timer+canvas
-    ctx.fillStyle = 'rgba(0,80,200,0.6)';
-    ctx.fillRect(0,0,120,120);
-    ctx.fillStyle = '#fff'; ctx.font = '11px monospace';
-    ctx.fillText('L:'+_bossLoaded, 4, 14);
-    ctx.fillText('W:'+(_bossImg?_bossImg.width:'null'), 4, 30);
-    ctx.fillText(_bossImg?_bossImg.src.split('/').pop().slice(0,12):'', 4, 46);
-    if (!_bossLoaded || !_bossImg.width) return;
-    const fw = _bossImg.width / frames;
-    ctx.clearRect(0,0,cv.width,cv.height);
-    const fh=_bossImg.height,padX=fw*0.18,padY=fh*0.10; ctx.drawImage(_bossImg, frame*fw+padX, padY, fw-padX*2, fh-padY*2, 0,0,cv.width,cv.height);
-    frame = (frame+1) % frames;
-  }, 110);
-}
-
-function renderEnemyBars() {
-  // HP bars are now rendered inline inside each enemy-unit
-  // Just re-render enemies to sync HP
-  renderEnemies();
-}
-
 /* BOSS SPRITE STATE MACHINE - square frames, auto frame count */
 const BOSS_ANIMS = {
   'The Validator': {
@@ -1454,54 +1414,6 @@ function renderEnemyBars() {
   renderEnemies();
 }
 
-let bossSpriteTimer = null;
-let _bossImg = null;
-let _bossLoaded = false;
-let _bossError = false;
-const BOSS_SPRITES = {
-  'The Validator': {sprite:'boss1_validator_idle.png', frames:8},
-};
-function startBossSpriteAnim(boss) {
-  const bsp = BOSS_SPRITES[boss.name] || {};
-  const filename = boss.sprite || bsp.sprite || 'boss1_validator_idle.png';
-  const src = '/dungeon/assets/' + filename;
-  const frames = boss.spriteFrames || bsp.frames || 8;
-  let frame = 0;
-  if (!_bossImg || _bossError) {
-    _bossImg = new Image();
-    _bossLoaded = false;
-    _bossError = false;
-    _bossImg.onload = function(){ _bossLoaded = true; };
-    _bossImg.onerror = function(){ _bossError = true; console.error('boss sprite load fail', src); };
-    _bossImg.src = src;
-  }
-  if (bossSpriteTimer) clearInterval(bossSpriteTimer);
-  bossSpriteTimer = setInterval(function(){
-    const cv = document.getElementById('boss-sprite-canvas');
-    if (!cv) { return; }
-    const ctx = cv.getContext('2d');
-    ctx.clearRect(0,0,cv.width,cv.height);
-    if (_bossError) {
-      ctx.fillStyle = 'rgba(200,0,0,0.7)';
-      ctx.fillRect(0,0,120,120);
-      ctx.fillStyle = '#fff'; ctx.font = '10px monospace';
-      ctx.fillText('ERR: file', 4, 14);
-      ctx.fillText(filename.slice(0,14), 4, 28);
-      ctx.fillText('not found', 4, 42);
-      return;
-    }
-    if (!_bossLoaded || !_bossImg.width) {
-      ctx.fillStyle = 'rgba(0,80,200,0.6)';
-      ctx.fillRect(0,0,120,120);
-      ctx.fillStyle = '#fff'; ctx.font = '10px monospace';
-      ctx.fillText('Loading...', 4, 14);
-      return;
-    }
-    const fw = _bossImg.width / frames;
-    const fh=_bossImg.height,padX=fw*0.18,padY=fh*0.10; ctx.drawImage(_bossImg, frame*fw+padX, padY, fw-padX*2, fh-padY*2, 0,0,cv.width,cv.height);
-    frame = (frame+1) % frames;
-  }, 110);
-}
 
 function renderMonsterDots() {
   const cnt = document.getElementById('monster-count');
