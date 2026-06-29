@@ -163,6 +163,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
   gap:20px;padding-bottom:8px;
   transform:translateY(-20px);
 }
+.enemy-side.boss-floor{transform:translateY(40px)}
 .enemy-unit{display:flex;flex-direction:column;align-items:center;gap:2px;transition:all 0.2s}
 .enemy-sprite{font-size:44px;display:block;line-height:1;transition:all 0.2s}
 .enemy-unit.active-enemy .enemy-sprite{
@@ -1275,6 +1276,7 @@ function renderEnemies() {
   if (isBossFloor(floor)) {
     const e = monsters[0];
     const pct = Math.max(0, e.hp/e.maxhp*100);
+    side.className = 'enemy-side boss-floor';
     side.innerHTML = `
       <div class="enemy-unit active-enemy fighter-card" id="enemy-unit-0">
         <div class="fighter-name">${e.name}</div>
@@ -1295,6 +1297,7 @@ function renderEnemies() {
     if (ebnB) ebnB.textContent = e.name;
     try { startBossSpriteAnim(e); } catch(err) { console.error("boss sprite err", err); }
   } else {
+    side.className = 'enemy-side';
     side.innerHTML = monsters.map((m, i) => {
       const isDead = m.hp <= 0;
       const isActive = i === activeEnemyIdx && !isDead;
@@ -1390,10 +1393,10 @@ function drawBossFrame() {
   const fc = s.frames[st] || 1;
   const fi = Math.min(s.frame, fc-1);
   const fw = img.width / fc, fh = img.height;
-  const padX = fw*0.18, padY = fh*0.10;
+  const padX = fw*0.18, padT = fh*0.16, padB = fh*0.04;
   ctx.save();
   if (s.flip) { ctx.translate(CW,0); ctx.scale(-1,1); }
-  ctx.drawImage(img, fi*fw+padX, padY, fw-padX*2, fh-padY*2, 0,0, CW, CH);
+  ctx.drawImage(img, fi*fw+padX, padT, fw-padX*2, fh-padT-padB, 0,0, CW, CH);
   ctx.restore();
 }
 function bossPlayLoop(state){
