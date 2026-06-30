@@ -2145,7 +2145,7 @@ function enemyAttackAnim(enemyUnitId, onHit) {
       heroSpritePlayOnce('hurt', 10);
     }
     onHit();
-    const atkHold = (isBossFloor(floor) || (monsters[activeEnemyIdx] && isSpriteEnemy(monsters[activeEnemyIdx].name))) ? 480 : 80;
+    const atkHold = (isBossFloor(floor) || (monsters[activeEnemyIdx] && isSpriteEnemy(monsters[activeEnemyIdx].name))) ? 850 : 80;
     setTimeout(() => {
       const ret = enemyEl.animate([
         {transform:`translate(${tx}px,${ty}px)`},
