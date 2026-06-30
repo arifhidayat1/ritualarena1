@@ -1305,7 +1305,7 @@ function renderEnemies() {
       return `
         <div class="enemy-unit fighter-card ${isActive?'active-enemy active-target':''} ${isDead?'dead-enemy':''}" id="enemy-unit-${i}" style="position:relative">
           <div class="fighter-name" style="font-size:${isActive?'7px':'6px'};color:${isActive?'#ffd080':'#ffffff'}">${m.name}</div>
-          <span class="enemy-sprite">${isDead?'💀':(isSpriteEnemy(m.name)?`<canvas data-enemy-sprite="${i}" width="160" height="160" style="display:block;width:${isActive?'170px':'135px'};height:${isActive?'170px':'135px'};image-rendering:pixelated;${isActive?'filter:drop-shadow(0 0 8px rgba(255,200,0,0.7))':''}"></canvas>`:(m.sprite?`<span class="boss-sprite-anim" style="background-image:url('assets/${m.sprite}');background-size:${m.spriteFrames*120}px 120px"></span>`:m.icon))}</span>
+          <span class="enemy-sprite">${isDead?'💀':(isSpriteEnemy(m.name)?enemySpriteTag(i,m.name,isActive):(m.sprite?`<span class="boss-sprite-anim" style="background-image:url('assets/${m.sprite}');background-size:${m.spriteFrames*120}px 120px"></span>`:m.icon))}</span>
           ${!isDead?`
           <div class="fighter-bars" style="max-width:${isActive?'110px':'90px'}">
             <div class="fighter-bar-row">
@@ -1322,7 +1322,8 @@ function renderEnemies() {
     const ebn = document.getElementById('enemy-bar-name');
     if (etv) etv.textContent = ae ? ae.type : '—';
     if (ebn) ebn.textContent = `Enemy ${activeEnemyIdx+1}/${monsters.length}`;
-    if (monsters.some(m => m.hp > 0 && isSpriteEnemy(m.name))) { ensureEnemySheet(); startEnemyAnimLoop(); }
+    monsters.forEach(m => { if (m.hp > 0 && isSpriteEnemy(m.name)) ensureEnemySheet(m.name); });
+    if (monsters.some(m => m.hp > 0 && isSpriteEnemy(m.name))) startEnemyAnimLoop();
   }
 }
 
@@ -1412,38 +1413,64 @@ function bossPlayOnce(state, onDone){
   s.oneShotDone = onDone || null;
 }
 
-/* REGULAR ENEMY SPRITE ENGINE - shared multi-row 80px sheet, per-index state */
-const ENEMY_SHEET = {
-  src: '/dungeon/assets/enemy_ninja_sheet.png',
-  frame: 80,
-  flip: true,
-  anims: { idle:{row:0,frames:9,fps:12}, attack:{row:2,frames:12,fps:15}, hurt:{row:3,frames:5,fps:12} },
+/* ── REGULAR ENEMY SPRITE ENGINE (multi-sheet) ──
+   Each sheet: row = animation. Frames may be non-square. Per-sheet crop
+   trims empty space; canvas keeps the cropped aspect ratio. */
+const ENEMY_SHEETS = {
+  ninja: {
+    src:'/dungeon/assets/enemy_ninja_sheet.png', fw:80, fh:80, flip:true,
+    padX:0.16, padTop:0.06, padBot:0.06, dispH:170,
+    anims:{ idle:{row:0,frames:9,fps:12}, attack:{row:2,frames:12,fps:15}, hurt:{row:3,frames:5,fps:12} },
+  },
+  demon: {
+    src:'/dungeon/assets/enemy_demon_sheet.png', fw:288, fh:160, flip:true,
+    padX:0.28, padTop:0.10, padBot:0.03, dispH:175,
+    anims:{ idle:{row:0,frames:6,fps:10}, attack:{row:2,frames:15,fps:16}, hurt:{row:3,frames:5,fps:12} },
+  },
 };
-const ENEMY_SPRITE_NAMES = { 'Dark Node': true };
-let _enemyImg = null, _enemyImgLoaded = false, _enemyAnimRaf = null;
-const enemyAnimState = {};
-function ensureEnemySheet(){
-  if (_enemyImg) return;
-  _enemyImg = new Image();
-  _enemyImg.onload = () => { _enemyImgLoaded = true; };
-  _enemyImg.onerror = () => console.error('enemy sheet load fail', ENEMY_SHEET.src);
-  _enemyImg.src = ENEMY_SHEET.src;
+// Monster name -> sheet key
+const ENEMY_SPRITE_NAMES = { 'Dark Node':'ninja', 'Chaos Token':'demon' };
+const _enemyImgs = {};        // sheet key -> {img, loaded}
+let _enemyAnimRaf = null;
+const enemyAnimState = {};    // unit index -> { state, frame, last, oneShot }
+
+function isSpriteEnemy(name){ return !!ENEMY_SPRITE_NAMES[name]; }
+function enemySheetFor(name){ return ENEMY_SHEETS[ENEMY_SPRITE_NAMES[name]]; }
+
+function ensureEnemySheet(name){
+  const key = ENEMY_SPRITE_NAMES[name];
+  if (!key || _enemyImgs[key]) return;
+  const rec = { img:new Image(), loaded:false };
+  rec.img.onload = () => { rec.loaded = true; };
+  rec.img.onerror = () => console.error('enemy sheet load fail', ENEMY_SHEETS[key].src);
+  rec.img.src = ENEMY_SHEETS[key].src;
+  _enemyImgs[key] = rec;
 }
-function drawEnemyFrame(cv, st){
-  const A = ENEMY_SHEET;
+// Build the <canvas> tag, sized to the sheet's cropped aspect ratio
+function enemySpriteTag(i, name, isActive){
+  const sh = enemySheetFor(name);
+  if (!sh) return '';
+  const cw = sh.fw*(1-2*sh.padX), ch = sh.fh*(1-sh.padTop-sh.padBot);
+  const dispH = (sh.dispH||160) * (isActive?1:0.8);
+  const dispW = dispH * (cw/ch);
+  const glow = isActive ? 'filter:drop-shadow(0 0 8px rgba(255,200,0,0.7));' : '';
+  return `<canvas data-enemy-sprite="${i}" data-enemy-name="${name}" width="${Math.round(cw)}" height="${Math.round(ch)}" style="display:block;width:${dispW.toFixed(0)}px;height:${dispH.toFixed(0)}px;image-rendering:pixelated;${glow}"></canvas>`;
+}
+function drawEnemyFrame(cv, st, sh){
   const ctx = cv.getContext('2d');
   const CW = cv.width, CH = cv.height;
   ctx.clearRect(0,0,CW,CH);
-  if (!_enemyImgLoaded) return;
+  const rec = _enemyImgs[ENEMY_SPRITE_NAMES[cv.getAttribute('data-enemy-name')]];
+  if (!rec || !rec.loaded) return;
   ctx.imageSmoothingEnabled = false;
-  const anim = A.anims[st.state] || A.anims.idle;
+  const anim = sh.anims[st.state] || sh.anims.idle;
   const fi = Math.min(st.frame, anim.frames-1);
-  const F = A.frame;
-  const padX = F*0.16, padY = F*0.06;
-  const sx = fi*F + padX, sy = anim.row*F + padY;
+  const padX = sh.fw*sh.padX, padT = sh.fh*sh.padTop, padB = sh.fh*sh.padBot;
+  const sx = fi*sh.fw + padX, sy = anim.row*sh.fh + padT;
+  const sw = sh.fw - padX*2, shh = sh.fh - padT - padB;
   ctx.save();
-  if (A.flip){ ctx.translate(CW,0); ctx.scale(-1,1); }
-  ctx.drawImage(_enemyImg, sx, sy, F-padX*2, F-padY*2, 0,0, CW, CH);
+  if (sh.flip){ ctx.translate(CW,0); ctx.scale(-1,1); }
+  ctx.drawImage(rec.img, sx, sy, sw, shh, 0,0, CW, CH);
   ctx.restore();
 }
 function startEnemyAnimLoop(){
@@ -1451,20 +1478,23 @@ function startEnemyAnimLoop(){
   function loop(now){
     const cvs = document.querySelectorAll('canvas[data-enemy-sprite]');
     if (cvs.length === 0){ _enemyAnimRaf = null; return; }
-    const A = ENEMY_SHEET;
     cvs.forEach(cv => {
       const i = cv.getAttribute('data-enemy-sprite');
+      const name = cv.getAttribute('data-enemy-name');
+      const sh = enemySheetFor(name);
+      if (!sh) return;
       let st = enemyAnimState[i] || (enemyAnimState[i] = {state:'idle', frame:0, last:0, oneShot:false});
-      const anim = A.anims[st.state] || A.anims.idle;
+      const anim = sh.anims[st.state] || sh.anims.idle;
       if (!st.last) st.last = now;
       if (now - st.last >= 1000/anim.fps){
-        st.last = now; st.frame++;
+        st.last = now;
+        st.frame++;
         if (st.frame >= anim.frames){
           if (st.oneShot){ st.oneShot = false; st.state = 'idle'; st.frame = 0; }
           else st.frame = 0;
         }
       }
-      drawEnemyFrame(cv, st);
+      drawEnemyFrame(cv, st, sh);
     });
     _enemyAnimRaf = requestAnimationFrame(loop);
   }
@@ -1474,7 +1504,6 @@ function enemyPlayOnce(i, state){
   const st = enemyAnimState[i] || (enemyAnimState[i] = {state:'idle', frame:0, last:0, oneShot:false});
   st.state = state; st.frame = 0; st.oneShot = true; st.last = 0;
 }
-function isSpriteEnemy(name){ return !!ENEMY_SPRITE_NAMES[name]; }
 
 function renderEnemyBars() {
   // HP bars are now rendered inline inside each enemy-unit
