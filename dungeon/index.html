@@ -1423,7 +1423,7 @@ const ENEMY_SHEETS = {
     anims:{ idle:{row:0,frames:9,fps:12}, attack:{row:2,frames:12,fps:15}, hurt:{row:3,frames:5,fps:12} },
   },
   demon: {
-    src:'/dungeon/assets/enemy_demon_sheet.png', fw:288, fh:160, flip:true,
+    src:'/dungeon/assets/enemy_demon_sheet.png', fw:288, fh:160, flip:false,
     padX:0.28, padTop:0.10, padBot:0.03, dispH:175,
     anims:{ idle:{row:0,frames:6,fps:10}, attack:{row:2,frames:15,fps:16}, hurt:{row:3,frames:5,fps:12} },
   },
@@ -2145,6 +2145,7 @@ function enemyAttackAnim(enemyUnitId, onHit) {
       heroSpritePlayOnce('hurt', 10);
     }
     onHit();
+    const atkHold = (isBossFloor(floor) || (monsters[activeEnemyIdx] && isSpriteEnemy(monsters[activeEnemyIdx].name))) ? 480 : 80;
     setTimeout(() => {
       const ret = enemyEl.animate([
         {transform:`translate(${tx}px,${ty}px)`},
@@ -2152,7 +2153,7 @@ function enemyAttackAnim(enemyUnitId, onHit) {
       ], {duration:220, easing:'cubic-bezier(0.4,0,1,1)', fill:'forwards'});
       ret.onfinish = () => { enemyEl.style.transform = ''; };
       if (isBossFloor(floor)) bossPlayLoop('idle');
-    }, 80);
+    }, atkHold);
   };
 }
 
