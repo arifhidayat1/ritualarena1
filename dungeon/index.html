@@ -2185,21 +2185,26 @@ function enemyAttackAnim(enemyUnitId, onHit) {
   ], {duration:420, easing:'cubic-bezier(0.2,0,0.1,1)', fill:'forwards'});
 
   charge.onfinish = () => {
-    if (isBossFloor(floor)) bossPlayOnce('attack');
-    else if (monsters[activeEnemyIdx] && isSpriteEnemy(monsters[activeEnemyIdx].name)) enemyPlayOnce(activeEnemyIdx, 'attack');
-    if (heroSpriteState.loaded) {
-      heroSpritePlayOnce('hurt', 10);
-    }
-    onHit();
-    const atkHold = (isBossFloor(floor) || (monsters[activeEnemyIdx] && isSpriteEnemy(monsters[activeEnemyIdx].name))) ? 850 : 80;
+    const isSpr = isBossFloor(floor) || (monsters[activeEnemyIdx] && isSpriteEnemy(monsters[activeEnemyIdx].name));
+    // Small settle pause on arrival so the run->attack transition reads smoothly
+    const settle = isSpr ? 200 : 0;
     setTimeout(() => {
-      const ret = enemyEl.animate([
-        {transform:`translate(${tx}px,${ty}px)`},
-        {transform:'translate(0,0)'}
-      ], {duration:220, easing:'cubic-bezier(0.4,0,1,1)', fill:'forwards'});
-      ret.onfinish = () => { enemyEl.style.transform = ''; };
-      if (isBossFloor(floor)) bossPlayLoop('idle');
-    }, atkHold);
+      if (isBossFloor(floor)) bossPlayOnce('attack');
+      else if (monsters[activeEnemyIdx] && isSpriteEnemy(monsters[activeEnemyIdx].name)) enemyPlayOnce(activeEnemyIdx, 'attack');
+      if (heroSpriteState.loaded) {
+        heroSpritePlayOnce('hurt', 10);
+      }
+      onHit();
+      const atkHold = isSpr ? 850 : 80;
+      setTimeout(() => {
+        const ret = enemyEl.animate([
+          {transform:`translate(${tx}px,${ty}px)`},
+          {transform:'translate(0,0)'}
+        ], {duration:220, easing:'cubic-bezier(0.4,0,1,1)', fill:'forwards'});
+        ret.onfinish = () => { enemyEl.style.transform = ''; };
+        if (isBossFloor(floor)) bossPlayLoop('idle');
+      }, atkHold);
+    }, settle);
   };
 }
 
