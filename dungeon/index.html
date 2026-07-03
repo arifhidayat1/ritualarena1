@@ -548,6 +548,16 @@ to{background-position:-960px 0}
 @keyframes burst{0%{opacity:1;transform:translate(-50%,-50%) scale(0.5)}50%{opacity:1;transform:translate(-50%,-50%) scale(2)}100%{opacity:0;transform:translate(-50%,-50%) scale(2.5)}}
 
 /* scrollbar */
+/* ── FLOOR BANNER / LOW-HP VIGNETTE / VICTORY SPARKLES ── */
+.floor-banner{position:fixed;left:50%;top:38%;z-index:9000;font-family:'Press Start 2P',monospace;font-size:clamp(18px,5vw,32px);color:var(--gold);text-shadow:0 0 22px rgba(240,192,64,0.9),3px 3px 0 #000;pointer-events:none;letter-spacing:3px;animation:floorZoom 1.35s ease forwards;white-space:nowrap}
+.floor-banner.boss{color:#ff5050;text-shadow:0 0 26px rgba(255,40,40,0.95),3px 3px 0 #000}
+@keyframes floorZoom{0%{transform:translate(-50%,-50%) scale(2.6);opacity:0}22%{transform:translate(-50%,-50%) scale(1);opacity:1}78%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{transform:translate(-50%,-50%) scale(0.92);opacity:0}}
+#lowhp-vignette{position:fixed;inset:0;z-index:45;pointer-events:none;opacity:0;transition:opacity 0.4s ease;background:radial-gradient(ellipse at center, transparent 52%, rgba(255,0,0,0.38) 100%)}
+#lowhp-vignette.on{animation:lowhpPulse 1.15s ease-in-out infinite}
+@keyframes lowhpPulse{0%,100%{opacity:0.5}50%{opacity:1}}
+.spark{position:fixed;z-index:9999;pointer-events:none;line-height:1;animation:sparkFall linear forwards}
+@keyframes sparkFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}80%{opacity:1}100%{transform:translateY(72vh) rotate(360deg);opacity:0}}
+
 ::-webkit-scrollbar{width:3px}
 ::-webkit-scrollbar-track{background:rgba(0,0,0,0.3)}
 ::-webkit-scrollbar-thumb{background:var(--gold)}
@@ -1064,6 +1074,7 @@ function startFloor(f) {
   enemy = monsters[activeEnemyIdx];
   renderBattle();
   showScreen('battle');
+  showFloorBanner(f);
   document.getElementById('hud-floor').textContent = '🏚️ FLOOR ' + f + '/25';
   inBattle = true;
   setTurnUI(true);
@@ -1077,6 +1088,34 @@ function startFloor(f) {
 }
 
 function isBossFloor(f) { return f % 5 === 0; }
+
+function showFloorBanner(f){
+  const d = document.createElement('div');
+  d.className = 'floor-banner' + (isBossFloor(f) ? ' boss' : '');
+  d.textContent = isBossFloor(f) ? '☠ BOSS FLOOR '+f+' ☠' : 'FLOOR '+f;
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 1400);
+}
+function ensureVignette(){
+  let v = document.getElementById('lowhp-vignette');
+  if (!v){ v = document.createElement('div'); v.id = 'lowhp-vignette'; document.body.appendChild(v); }
+  return v;
+}
+function victorySparkles(){
+  const em = ['✨','⭐','🎉','💛'];
+  for (let i=0; i<26; i++){
+    const s = document.createElement('div');
+    s.className = 'spark';
+    s.textContent = em[i % em.length];
+    s.style.left = (Math.random()*100)+'vw';
+    s.style.top = (-10 - Math.random()*30)+'px';
+    s.style.fontSize = (12 + Math.random()*16)+'px';
+    s.style.animationDuration = (1.4 + Math.random()*1.6)+'s';
+    s.style.animationDelay = (Math.random()*0.8)+'s';
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 4300);
+  }
+}
 
 function generateFloorMonsters(f) {
   if (isBossFloor(f)) {
@@ -1280,7 +1319,7 @@ function renderEnemies() {
     side.innerHTML = `
       <div class="enemy-unit active-enemy fighter-card" id="enemy-unit-0">
         <div class="fighter-name">${e.name}</div>
-        <span class="enemy-sprite"><canvas id="boss-sprite-canvas" width="280" height="280" style="display:block;width:280px;height:280px;image-rendering:pixelated;filter:drop-shadow(0 0 18px rgba(255,80,80,0.8))"></canvas></span>
+        <span class="enemy-sprite"><canvas id="boss-sprite-canvas" width="280" height="280" style="display:block;width:280px;height:280px;image-rendering:pixelated;filter:${pct<30?'drop-shadow(0 0 28px rgba(255,20,20,1)) saturate(1.7) brightness(1.15)':'drop-shadow(0 0 18px rgba(255,80,80,0.8))'}"></canvas></span>
         <div class="fighter-bars" style="max-width:130px;margin-top:-60px">
           <div class="fighter-bar-row">
             <div class="fighter-bar-track">
@@ -1572,6 +1611,8 @@ function updateBars() {
   const xpPct = Math.min(100, h.xp/h.xpNext*100);
   const hpBar = document.getElementById('hero-hp-bar');
   if (hpBar) { hpBar.style.width=hpPct+'%'; hpBar.className='fighter-bar-fill hp'+(hpPct<25?' low':''); }
+  const vg = ensureVignette();
+  if (inBattle && h.hp > 0 && hpPct < 25) vg.classList.add('on'); else vg.classList.remove('on');
   const mpBar = document.getElementById('hero-mp-bar');
   if (mpBar) mpBar.style.width = mpPct+'%';
   const xpBar = document.getElementById('hero-xp-bar');
@@ -1948,6 +1989,8 @@ function onFloorCleared() {
   saveDungeon();
   showScreen('floor-victory');
   inBattle = false;
+  ensureVignette().classList.remove('on');
+  victorySparkles();
 }
 
 function nextFloor() {
@@ -1996,6 +2039,7 @@ function onHeroDead() {
   `).join('');
   showScreen('dead');
   inBattle = false;
+  ensureVignette().classList.remove('on');
 }
 
 function restartFromFloor(f) {
