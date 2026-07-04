@@ -849,13 +849,8 @@ const HEROES = [
 
 // Monster pool (emoji + name + type)
 const MONSTER_POOL = [
-  {name:'Sybil Bot',    type:'Spam Attacker',  icon:'🤖', baseHp:60,  baseAtk:10, baseDef:3,  baseXp:25},
   {name:'Dark Node',    type:'Rogue Node',      icon:'⚡', baseHp:80,  baseAtk:14, baseDef:5,  baseXp:35},
-  {name:'Rug Phantom',  type:'Malicious DEX',   icon:'👻', baseHp:100, baseAtk:18, baseDef:7,  baseXp:50},
   {name:'MEV Bot',      type:'Chain Predator',  icon:'🕷️',baseHp:90,  baseAtk:16, baseDef:6,  baseXp:42},
-  {name:'Flash Loan',   type:'DeFi Predator',   icon:'🌊', baseHp:110, baseAtk:20, baseDef:8,  baseXp:55},
-  {name:'51% Ghost',    type:'Chain Threat',    icon:'💀', baseHp:130, baseAtk:24, baseDef:10, baseXp:70},
-  {name:'Fork Demon',   type:'Chain Splitter',  icon:'😈', baseHp:120, baseAtk:22, baseDef:9,  baseXp:65},
   {name:'Chaos Token',  type:'Scam Contract',   icon:'🔥', baseHp:95,  baseAtk:19, baseDef:7,  baseXp:48},
 ];
 
@@ -2233,21 +2228,26 @@ function enemyAttackAnim(enemyUnitId, onHit) {
     // Small settle pause on arrival so the run->attack transition reads smoothly
     const settle = isSpr ? 200 : 0;
     setTimeout(() => {
+      // Start the swing first…
       if (isBossFloor(floor)) bossPlayOnce('attack');
       else if (monsters[activeEnemyIdx] && isSpriteEnemy(monsters[activeEnemyIdx].name)) enemyPlayOnce(activeEnemyIdx, 'attack');
-      if (heroSpriteState.loaded) {
-        heroSpritePlayOnce('hurt', 10);
-      }
-      onHit();
-      const atkHold = isSpr ? 850 : 80;
+      // …then land the hit mid-swing so damage syncs with the visual impact
+      const impactDelay = isSpr ? 380 : 0;
       setTimeout(() => {
-        const ret = enemyEl.animate([
-          {transform:`translate(${tx}px,${ty}px)`},
-          {transform:'translate(0,0)'}
-        ], {duration:220, easing:'cubic-bezier(0.4,0,1,1)', fill:'forwards'});
-        ret.onfinish = () => { enemyEl.style.transform = ''; };
-        if (isBossFloor(floor)) bossPlayLoop('idle');
-      }, atkHold);
+        if (heroSpriteState.loaded) {
+          heroSpritePlayOnce('hurt', 10);
+        }
+        onHit();
+        const atkHold = isSpr ? 320 : 80;
+        setTimeout(() => {
+          const ret = enemyEl.animate([
+            {transform:`translate(${tx}px,${ty}px)`},
+            {transform:'translate(0,0)'}
+          ], {duration:220, easing:'cubic-bezier(0.4,0,1,1)', fill:'forwards'});
+          ret.onfinish = () => { enemyEl.style.transform = ''; };
+          if (isBossFloor(floor)) bossPlayLoop('idle');
+        }, atkHold);
+      }, impactDelay);
     }, settle);
   };
 }
