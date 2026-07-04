@@ -363,6 +363,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
       <div class="reward-box">
         <div class="reward-row"><span>Rank Points</span><span class="reward-val" id="win-rank">+0</span></div>
         <div class="reward-row"><span>Total Rank</span><span class="reward-val" id="win-total" style="color:var(--cyan)">0</span></div>
+        <div class="reward-row"><span>⛓️ On-chain</span><span class="reward-val" id="win-chain" style="color:#8060a0">—</span></div>
       </div>
       <div class="btn-row">
         <button class="px-btn px-purple" onclick="goOpponentSelect()">⚔ Next Match</button>
@@ -628,27 +629,41 @@ function syncRankUI(){
   if (a) a.textContent = rankPoints;
 }
 
+function setChainStatus(txt, color){
+  const el = document.getElementById('win-chain');
+  if (el){ el.textContent = txt; el.style.color = color || '#8060a0'; }
+}
 async function submitScoreOnChain(){
   const addr = sessionStorage.getItem('wallet_address');
-  if (!addr || !nftData) return;
+  if (!addr || !nftData){ setChainStatus('— (no NFT wallet)'); return; }
   try {
+    setChainStatus('⏳ Submitting...', '#f0c040');
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer   = provider.getSigner();
     const contract = new ethers.Contract(EVENT_CONTRACT, EVENT_ABI, signer);
 
-    let info;
-    try { info = await contract.getEventInfo(); } catch(e) { return; }
-    if (!info || !info.active) return;
+    // If the event is verifiably inactive, skip the tx (it would revert).
+    // If the info call itself fails, still try to submit.
+    try {
+      const info = await contract.getEventInfo();
+      if (info && !info.active){
+        setChainStatus('⚠️ Event OFF — local only', '#ff9060');
+        return;
+      }
+    } catch(e){ console.warn('getEventInfo failed, trying submit anyway:', e.message); }
 
     const tx = await contract.submitScore(
       rankPoints, rankPoints,
       nftData.username || '', nftData.avatarUrl || '', nftData.charName || hero.name
     );
-    addLog('⛓️ Submitting score on-chain...', 'sys');
+    setChainStatus('⏳ Confirming tx...', '#f0c040');
     await tx.wait();
-    addLog('✅ Score saved on-chain!', 'heal');
+    setChainStatus('✅ Saved on-chain!', '#40ff80');
   } catch(e) {
-    console.warn('On-chain submit skipped:', e.reason || e.message);
+    console.warn('On-chain submit failed:', e.reason || e.message);
+    const why = (e.code === 4001 || /denied|rejected/i.test(e.message||'')) ? 'rejected in wallet'
+              : (e.reason || 'network error');
+    setChainStatus('❌ ' + why, '#ff6060');
   }
 }
 
