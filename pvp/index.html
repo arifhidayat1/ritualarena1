@@ -543,7 +543,10 @@ function getProvider(){
   return window.ethereum || null;
 }
 
+let _gateDone = false;     // once verified, never re-show / re-check the gate
+let _gateChecking = false; // prevent overlapping checks (load + retry clicks)
 async function initGate(){
+  if (_gateDone || _gateChecking) return;
   const sessAddr = sessionStorage.getItem('wallet_address');
   const sessConnected = sessionStorage.getItem('wallet_connected') === '1';
   const isDemo = sessionStorage.getItem('wallet_demo') === '1';
@@ -568,6 +571,7 @@ async function initGate(){
 
   gateIcon.textContent = '⏳';
   gateMsg.innerHTML = '<span class="spinner"></span>Checking NFT ownership...';
+  _gateChecking = true;
 
   try {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -580,6 +584,7 @@ async function initGate(){
     ]);
 
     if (!has) {
+      _gateChecking = false;
       gateIcon.textContent = '❌';
       gateMsg.innerHTML = 'You need an NFT to enter PvP Arena!<br><br>Go back to World and mint one via the 🎖️ icon.';
       return;
@@ -594,8 +599,12 @@ async function initGate(){
       healPow: Number(data.healPow),
     };
     loadRank();
+    _gateDone = true;
+    _gateChecking = false;
     startGacha();
   } catch(e){
+    _gateChecking = false;
+    if (_gateDone) return; // gacha already running — don't resurrect the gate box
     console.warn('NFT check failed:', e);
     gateIcon.textContent = '⚠️';
     gateMsg.innerHTML = 'Could not verify NFT (network issue).<br><br>' +
@@ -695,6 +704,9 @@ async function loadLeaderboard(){
 // ════════════════════════════════════════════════
 function startGacha(){
   showScreen('gacha');
+  // Hard-hide the NFT gate box so it can never linger over the gacha screen
+  const gate = document.getElementById('screen-gate');
+  if (gate){ gate.classList.remove('active'); gate.style.display = 'none'; }
   const stage = document.getElementById('gacha-stage');
   document.getElementById('gacha-result').classList.remove('show');
 
