@@ -132,14 +132,20 @@ const ANIM_SPEED = 6;
 // Camera offset: how many world pixels are off-screen to the left/top
 let camX = 0;
 let camY = 0;
+let camInit = false;
+let viewOX = 0, viewOY = 0; // centering offsets when the window is larger than the world
 
 function updateCamera() {
-  // Center camera on character
-  camX = wx - canvas.width  / 2;
-  camY = wy - canvas.height / 2;
-  // Clamp so we don't show outside world
-  camX = Math.max(0, Math.min(WW - canvas.width,  camX));
-  camY = Math.max(0, Math.min(WH - canvas.height, camY));
+  let tx = wx - canvas.width  / 2;
+  let ty = wy - canvas.height / 2;
+  tx = Math.max(0, Math.min(Math.max(0, WW - canvas.width),  tx));
+  ty = Math.max(0, Math.min(Math.max(0, WH - canvas.height), ty));
+  if (!camInit) { camX = tx; camY = ty; camInit = true; }
+  // Smooth follow
+  camX += (tx - camX) * 0.12;
+  camY += (ty - camY) * 0.12;
+  viewOX = Math.max(0, (canvas.width  - WW) / 2);
+  viewOY = Math.max(0, (canvas.height - WH) / 2);
 }
 
 // ── Input ─────────────────────────────────────────────────
@@ -386,6 +392,115 @@ function drawDebug() {
   ctx.strokeRect(wx - camX - 14, wy - camY - 14, 28, 28);
 }
 
+// ── World FX: fireflies, lake ripples, dust, shadow, beacons, ambience ──
+const fireflies = Array.from({length:38}, () => ({
+  x: Math.random()*WW, y: Math.random()*WH,
+  p: Math.random()*Math.PI*2, s: 0.3+Math.random()*0.9, r: 1+Math.random()*2,
+}));
+function drawFireflies(t){
+  for (const f of fireflies){
+    f.x += Math.sin(t*0.0004 + f.p)*0.3*f.s;
+    f.y += Math.cos(t*0.0003 + f.p*1.7)*0.22*f.s - 0.05*f.s;
+    if (f.y < -10) f.y = WH+10;
+    if (f.x < -10) f.x = WW+10; else if (f.x > WW+10) f.x = -10;
+    const a = 0.2 + 0.35*Math.abs(Math.sin(t*0.001 + f.p));
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(190,255,150,${a})`;
+    ctx.shadowColor = 'rgba(190,255,150,0.9)'; ctx.shadowBlur = 8;
+    ctx.fill(); ctx.shadowBlur = 0;
+  }
+}
+
+const LAKE = { x:1497, y:698, w:355, h:365 };
+const ripples = Array.from({length:12}, () => ({ x:0, y:0, t:Math.random() }));
+function drawLakeShimmer(){
+  for (const r of ripples){
+    r.t += 0.007;
+    if (r.t >= 1){
+      r.t = 0;
+      r.x = LAKE.x + 40 + Math.random()*(LAKE.w-80);
+      r.y = LAKE.y + 60 + Math.random()*(LAKE.h-110);
+    }
+    if (!r.x) continue;
+    const a = Math.sin(r.t*Math.PI)*0.35;
+    ctx.strokeStyle = `rgba(200,240,255,${a})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(r.x, r.y, 6+r.t*22, (6+r.t*22)*0.35, 0, 0, Math.PI*2);
+    ctx.stroke();
+  }
+}
+
+const dust = [];
+function spawnDust(){
+  dust.push({ x: wx + (Math.random()*12-6), y: wy + 24, a: 0.45, r: 2.5 });
+  if (dust.length > 30) dust.shift();
+}
+function drawDust(){
+  for (let i = dust.length-1; i >= 0; i--){
+    const d = dust[i];
+    d.a -= 0.02; d.r += 0.25; d.y -= 0.15;
+    if (d.a <= 0){ dust.splice(i,1); continue; }
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, d.r, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(190,170,130,${d.a})`;
+    ctx.fill();
+  }
+}
+
+function drawCharShadow(){
+  ctx.beginPath();
+  ctx.ellipse(wx, wy + 26, 20, 7, 0, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fill();
+}
+
+function drawBeacons(t){
+  const pulse = 0.5 + 0.5*Math.sin(t*0.004);
+  for (const tr of TRIGGERS){
+    const active = activeTrigger && activeTrigger.id === tr.id;
+    // Pulsing ground ring at the entrance
+    ctx.beginPath();
+    ctx.ellipse(tr.wx, tr.wy + 8, tr.r*0.45 + pulse*6, (tr.r*0.45 + pulse*6)*0.4, 0, 0, Math.PI*2);
+    ctx.strokeStyle = active ? 'rgba(120,255,160,0.85)' : `rgba(240,192,64,${0.3 + pulse*0.3})`;
+    ctx.lineWidth = active ? 3 : 2;
+    ctx.stroke();
+    // Bobbing arrow
+    const by = tr.wy - 46 - pulse*6;
+    ctx.fillStyle = active ? '#80ffa0' : '#f0c040';
+    ctx.beginPath();
+    ctx.moveTo(tr.wx-8, by); ctx.lineTo(tr.wx+8, by); ctx.lineTo(tr.wx, by+12); ctx.closePath();
+    ctx.fill();
+    // Name label
+    ctx.font = '10px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    const w = ctx.measureText(tr.name).width;
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.fillRect(tr.wx - w/2 - 6, by - 26, w + 12, 17);
+    ctx.fillStyle = active ? '#80ffa0' : '#ffd860';
+    ctx.fillText(tr.name, tr.wx, by - 13);
+    ctx.textAlign = 'left';
+  }
+}
+
+function drawAmbience(){
+  // Soft light halo around the character (screen space)
+  const sx = wx - camX + viewOX, sy = wy - camY + viewOY;
+  const g = ctx.createRadialGradient(sx, sy, 70, sx, sy, 340);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(8,10,24,0.4)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Edge vignette
+  const cw = canvas.width, ch = canvas.height;
+  const v = ctx.createRadialGradient(cw/2, ch/2, Math.min(cw,ch)*0.45, cw/2, ch/2, Math.max(cw,ch)*0.75);
+  v.addColorStop(0, 'rgba(0,0,0,0)');
+  v.addColorStop(1, 'rgba(0,0,0,0.35)');
+  ctx.fillStyle = v;
+  ctx.fillRect(0, 0, cw, ch);
+}
+
 // ── Draw image helper ─────────────────────────────────────
 function drawImg(key, alpha) {
   const img = imgs[key];
@@ -396,7 +511,8 @@ function drawImg(key, alpha) {
 }
 
 // ── Main game loop ────────────────────────────────────────
-function loop() {
+function loop(t) {
+  t = t || 0;
   // Input
   let dx = 0, dy = 0;
   if (keys['a'] || keys['arrowleft'])  dx -= 1;
@@ -428,6 +544,7 @@ function loop() {
     if (animTick >= ANIM_SPEED) {
       animTick = 0;
       animFrame = (animFrame + 1) % 4;
+      if (animFrame % 2 === 0) spawnDust();
     }
   } else {
     animTick++;
@@ -452,11 +569,12 @@ function loop() {
 
   // World space
   ctx.save();
-  ctx.translate(-camX, -camY);
+  ctx.translate(-camX + viewOX, -camY + viewOY);
 
   drawImg('ground');
   drawImg('jalan');
   drawImg('danau');
+  drawLakeShimmer();
   drawImg('shadow_dungeon',  0.5);
   drawImg('shadow_training', 0.5);
   drawImg('shadow_pvp',      0.5);
@@ -465,16 +583,23 @@ function loop() {
   drawImg('dungeon');
   drawImg('pvp');
 
+  drawBeacons(t);
+  drawDust();
+
   const nearTraining = (wx > 684 && wx < 1158 && wy > 810 && wy < 1065);
-  if (!nearTraining) drawSpriteChar(wx - 40, wy - 48);
+  if (!nearTraining) { drawCharShadow(); drawSpriteChar(wx - 40, wy - 48); }
 
   drawImg('training');
 
-  if (nearTraining) drawSpriteChar(wx - 40, wy - 48);
+  if (nearTraining) { drawCharShadow(); drawSpriteChar(wx - 40, wy - 48); }
+
+  drawFireflies(t);
 
   if (debugMode) drawDebug();
 
   ctx.restore();
+
+  drawAmbience();
 
   // HUD
   document.getElementById('debug-info').textContent =
