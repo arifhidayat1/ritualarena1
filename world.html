@@ -211,7 +211,7 @@ const COLLIDERS = [
   // PvP Arena
   { x:1510, y:17,  w:393,  h:337 },
   // Danau
-  { x:1497, y:698, w:355,  h:365 },
+  { x:1600, y:752, w:320,  h:328 },
   // World boundaries
   { x:-50,  y:0,   w:50,   h:WH  },
   { x:WW,   y:0,   w:50,   h:WH  },
@@ -412,7 +412,7 @@ function drawFireflies(t){
   }
 }
 
-const LAKE = { x:1497, y:698, w:355, h:365 };
+const LAKE = { x:1600, y:752, w:320, h:328 };
 const ripples = Array.from({length:12}, () => ({ x:0, y:0, t:Math.random() }));
 function drawLakeShimmer(){
   for (const r of ripples){
