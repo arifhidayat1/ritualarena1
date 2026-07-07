@@ -872,7 +872,27 @@ const ITEMS = {
   armor:      {id:'armor',      name:'Iron Armor',  icon:'🛡️', desc:'+6 DEF permanently', type:'equip_def', value:6},
   mana_gem:   {id:'mana_gem',   name:'Mana Gem',    icon:'💎', desc:'+30 Max MP',         type:'equip_mp',  value:30},
   elixir:     {id:'elixir',     name:'Elixir',      icon:'✨', desc:'Full HP+MP restore', type:'full_restore', value:0},
+  // Crafted food (from world Craft Camp — shared via localStorage)
+  berry_juice:  {id:'berry_juice',  name:'Berry Juice',     icon:'🧃', desc:'Restore 40 MP (crafted)',   type:'heal_mp', value:40},
+  grilled_fish: {id:'grilled_fish', name:'Grilled Fish',    icon:'🍖', desc:'Restore 60 HP (crafted)',   type:'heal_hp', value:60},
+  feast:        {id:'feast',        name:'Fisherman Feast', icon:'🍱', desc:'+25% ATK for 3 turns',      type:'buff_atk', value:0.25},
 };
+
+// ── World inventory bridge (crafted food lives in localStorage) ──
+const WINV_KEY = 'world_inv_v1';
+const FOOD_IDS = ['berry_juice','grilled_fish','feast'];
+function winvAll(){ try{ return JSON.parse(localStorage.getItem(WINV_KEY)||'{}'); }catch(e){ return {}; } }
+function winvAdd(k,n){
+  const v = winvAll(); v[k] = Math.max(0,(v[k]||0)+n);
+  localStorage.setItem(WINV_KEY, JSON.stringify(v));
+}
+function syncFoodFromWorld(){
+  const w = winvAll();
+  FOOD_IDS.forEach(id => {
+    inventory = inventory.filter(i => i.id !== id);
+    if ((w[id]||0) > 0) inventory.push({ id, qty: w[id] });
+  });
+}
 
 // Item drop table per floor range
 const DROP_TABLE = {
@@ -1736,6 +1756,15 @@ function screenShake() {
 function endPlayerTurn() {
   busy = false;
   tickCooldowns();
+  // Food ATK buff countdown
+  if (hero._foodBuffTurns){
+    hero._foodBuffTurns--;
+    if (hero._foodBuffTurns <= 0 && hero._foodBuffAmt){
+      hero.atk -= hero._foodBuffAmt;
+      hero._foodBuffAmt = 0;
+      addLog('🍱 Efek makanan habis — ATK kembali normal', 'sys');
+    }
+  }
   setTurnUI(false);
   setTimeout(enemyTurn, 800);
 }
@@ -2075,6 +2104,7 @@ function addItem(itemId) {
 }
 
 function openInventory() {
+  syncFoodFromWorld();
   renderInventory();
   document.getElementById('inventory-panel').classList.add('show');
 }
@@ -2146,9 +2176,17 @@ function useSelectedItem() {
   } else if (item.type === 'equip_mp') {
     hero.maxmp += item.value; hero.mp += item.value;
     addLog(`💎 Equipped ${item.name}: +${item.value} Max MP!`, 'heal');
+  } else if (item.type === 'buff_atk') {
+    // Refresh: remove previous food buff before applying a new one
+    if (hero._foodBuffAmt){ hero.atk -= hero._foodBuffAmt; }
+    hero._foodBuffAmt = Math.max(1, Math.floor(hero.atk * item.value));
+    hero._foodBuffTurns = 3;
+    hero.atk += hero._foodBuffAmt;
+    addLog(`🍱 ${item.name}: +${hero._foodBuffAmt} ATK selama 3 turn!`, 'heal');
   }
 
   entry.qty--;
+  if (FOOD_IDS.includes(selectedItem)) winvAdd(selectedItem, -1);
   if (entry.qty <= 0) inventory = inventory.filter(i => i.id !== selectedItem);
   updateBars();
   closeInventory();
