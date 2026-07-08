@@ -2185,6 +2185,14 @@ function useSelectedItem() {
     addLog(`🍱 ${item.name}: +${hero._foodBuffAmt} ATK selama 3 turn!`, 'heal');
   }
 
+  // Floating feedback on the hero
+  const heroElF = document.getElementById('hero-battle-img');
+  if (item.type === 'heal_hp') floatText(heroElF, '+'+item.value, 'heal');
+  else if (item.type === 'heal_mp') floatText(heroElF, '+'+item.value+' MP', 'mp');
+  else if (item.type === 'full_restore') floatText(heroElF, 'FULL!', 'heal');
+  else if (item.type === 'buff_atk') floatText(heroElF, '+ATK⬆', 'dmg', true);
+  else floatText(heroElF, item.icon, 'heal');
+
   entry.qty--;
   if (FOOD_IDS.includes(selectedItem)) winvAdd(selectedItem, -1);
   if (entry.qty <= 0) inventory = inventory.filter(i => i.id !== selectedItem);
