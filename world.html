@@ -116,6 +116,8 @@ const imgs = {};
   ['dungeon',         'assets/dungeon.png'],
   ['training',        'assets/training.png'],
   ['pvp',             'assets/pvp.png'],
+  ['girl_walk',       'assets/walk_girl.png'],
+  ['girl_idle',       'assets/idle_girl.png'],
 ].forEach(([k, src]) => {
   const img = new Image();
   img.src = src;
@@ -450,6 +452,80 @@ function doCraft(i){
   invAdd(r.out, 1);
   worldToast('✅ ' + ITEM_DEFS[r.out].name + ' dibuat!');
   renderCraft();
+}
+
+// ── WANDERING NPC (villager girl near the berry farm) ──
+// Sheet: 8 cols x 6 rows, frame 48x64. Rows: 0=down, 2=side(right), 3=up.
+const NPC_FW = 48, NPC_FH = 64, NPC_COLS = 8;
+const NPC_DIR_ROW = { down:0, right:2, up:3, left:2 };  // left uses right row, flipped
+const npc = {
+  x: 300, y: 930, dir:'down', moving:false,
+  frame:0, tick:0, state:'idle', stateTimer:120,
+  tx:300, ty:930, name:'Rin',
+};
+const NPC_HOME = { x:300, y:930, r:180 };  // wander radius around the farm
+
+function updateNpc() {
+  const n = npc;
+  n.stateTimer--;
+  if (n.stateTimer <= 0) {
+    if (n.state === 'idle') {
+      // pick a wander target inside home radius, not inside a collider
+      for (let t=0;t<12;t++){
+        const a = Math.random()*Math.PI*2, d = 40 + Math.random()*NPC_HOME.r;
+        const tx = NPC_HOME.x + Math.cos(a)*d, ty = NPC_HOME.y + Math.sin(a)*d;
+        if (tx>40 && tx<WW-40 && ty>40 && ty<WH-40 && npcCanStand(tx,ty)){ n.tx=tx; n.ty=ty; break; }
+      }
+      n.state='walk'; n.stateTimer = 200 + Math.random()*160;
+    } else {
+      n.state='idle'; n.stateTimer = 80 + Math.random()*160;
+    }
+  }
+  n.moving = false;
+  if (n.state==='walk') {
+    const dx = n.tx-n.x, dy = n.ty-n.y, dist = Math.hypot(dx,dy);
+    if (dist > 3) {
+      const sp = 1.4, mvx = dx/dist*sp, mvy = dy/dist*sp;
+      if (npcCanStand(n.x+mvx, n.y)) n.x += mvx;
+      if (npcCanStand(n.x, n.y+mvy)) n.y += mvy;
+      n.moving = true;
+      n.dir = Math.abs(dx)>Math.abs(dy) ? (dx>0?'right':'left') : (dy>0?'down':'up');
+    } else { n.state='idle'; n.stateTimer = 80+Math.random()*140; }
+  }
+  // animate
+  n.tick++;
+  if (n.moving) { if (n.tick>=7){ n.tick=0; n.frame=(n.frame+1)%NPC_COLS; } }
+  else { if (n.tick>=16){ n.tick=0; n.frame=(n.frame+1)%NPC_COLS; } }
+}
+function npcCanStand(x,y){
+  const hs=12;
+  for (const c of COLLIDERS){ if (overlaps(x-hs,y-hs,hs*2,hs*2,c.x,c.y,c.w,c.h)) return false; }
+  // keep out of the fenced soil so she doesn't stand on crops
+  if (x>56 && x<270 && y>824 && y<1044) return false;
+  return true;
+}
+function drawNpc(){
+  const n = npc;
+  const img = imgs[n.moving ? 'girl_walk' : 'girl_idle'];
+  if (!img || !img.complete || !img.naturalWidth) return;
+  const row = NPC_DIR_ROW[n.dir] ?? 0;
+  const flip = (n.dir==='left');
+  const DW=54, DH=72;
+  const dx = n.x - DW/2, dy = n.y - DH + 10;
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,0.32)';
+  ctx.beginPath(); ctx.ellipse(n.x, n.y+8, 16, 5, 0, 0, Math.PI*2); ctx.fill();
+  ctx.save();
+  if (flip){ ctx.translate(dx*2+DW,0); ctx.scale(-1,1); }
+  ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(img, n.frame*NPC_FW, row*NPC_FH, NPC_FW, NPC_FH, dx, dy, DW, DH);
+  ctx.restore();
+  // name tag
+  ctx.font='8px "Press Start 2P", monospace'; ctx.textAlign='center';
+  const w=ctx.measureText(n.name).width;
+  ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(n.x-w/2-4, dy-14, w+8, 12);
+  ctx.fillStyle='#ffb0e0'; ctx.fillText(n.name, n.x, dy-5);
+  ctx.textAlign='left';
 }
 
 let activeTrigger = null;
@@ -800,6 +876,7 @@ function loop(t) {
     clearTimeout(fishTimer); clearTimeout(strikeTimer); fishState = 'idle'; bobber = null;
   }
   BUSHES.forEach(b => { if (!b.ready && Date.now() > b.timer) b.ready = true; });
+  updateNpc();
 
   // Facing direction
   if (Math.abs(dx) > Math.abs(dy)) {
@@ -862,6 +939,7 @@ function loop(t) {
 
   drawBeacons(t);
   drawDust();
+  drawNpc();
 
   const nearTraining = (wx > 684 && wx < 1158 && wy > 810 && wy < 1065);
   if (!nearTraining) { drawCharShadow(); drawSpriteChar(wx - 40, wy - 48); }
