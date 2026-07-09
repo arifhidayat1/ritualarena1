@@ -71,7 +71,11 @@ body { background:#000; overflow:hidden; font-family:'Press Start 2P',monospace;
   <span id="building-name" style="color:#80ff80;font-size:7px;margin-left:10px"></span>
   <span id="hud-res" style="margin-left:14px;color:#ffd860;font-size:8px;letter-spacing:1px"></span>
   <span id="debug-info" style="margin-left:auto;color:#40d0ff;font-family:monospace;font-size:10px"></span>
+  <button id="bgm-btn" onclick="toggleBgm(event)" title="Music" style="background:none;border:0;color:#f0c040;font-size:12px;cursor:pointer;padding:0 4px">🔊</button>
 </div>
+<audio id="bgm" loop preload="auto">
+  <source src="assets/world_music.mp3" type="audio/mpeg">
+</audio>
 <div id="enter-prompt">Press E to Enter</div>
 <canvas id="canvas"></canvas>
 <div id="joystick-zone">
@@ -981,6 +985,31 @@ if (sx && sy) { wx = parseFloat(sx); wy = parseFloat(sy); }
 setupJoystick();
 renderHudRes();
 requestAnimationFrame(loop);
+
+// ── Background music (starts on first interaction; browsers block autoplay) ──
+const bgm = document.getElementById('bgm');
+let bgmMuted = localStorage.getItem('bgm_muted') === '1';
+if (bgm) bgm.volume = 0.4;
+function updateBgmBtn(){
+  const b = document.getElementById('bgm-btn');
+  if (b) b.textContent = bgmMuted ? '🔇' : '🔊';
+}
+function startBgm(){
+  if (!bgm || bgmMuted) return;
+  bgm.play().catch(()=>{});
+}
+function toggleBgm(e){
+  if (e) e.stopPropagation();
+  bgmMuted = !bgmMuted;
+  localStorage.setItem('bgm_muted', bgmMuted ? '1' : '0');
+  if (bgmMuted) { bgm.pause(); } else { bgm.play().catch(()=>{}); }
+  updateBgmBtn();
+}
+updateBgmBtn();
+// Kick off audio on the first user gesture
+['keydown','pointerdown','touchstart'].forEach(ev =>
+  window.addEventListener(ev, startBgm, { once:true })
+);
 </script>
 
 <!-- CRAFT PANEL -->
