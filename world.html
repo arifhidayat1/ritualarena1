@@ -510,15 +510,20 @@ function drawNpc(){
   if (!img || !img.complete || !img.naturalWidth) return;
   const row = NPC_DIR_ROW[n.dir] ?? 0;
   const flip = (n.dir==='left');
-  const DW=54, DH=72;
-  const dx = n.x - DW/2, dy = n.y - DH + 10;
+  // Crop the character region inside the 48x64 cell (it only fills the middle),
+  // then upscale so Rin reads at a proper size.
+  const CROP_X=8, CROP_Y=14, CROP_W=32, CROP_H=46;   // source sub-rect
+  const SCALE=2.4;
+  const DW=CROP_W*SCALE, DH=CROP_H*SCALE;
+  const sx0 = n.frame*NPC_FW + CROP_X, sy0 = row*NPC_FH + CROP_Y;
+  const dx = n.x - DW/2, dy = n.y - DH + 8;
   // shadow
   ctx.fillStyle='rgba(0,0,0,0.32)';
-  ctx.beginPath(); ctx.ellipse(n.x, n.y+8, 16, 5, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(n.x, n.y+6, 20, 6, 0, 0, Math.PI*2); ctx.fill();
   ctx.save();
   if (flip){ ctx.translate(dx*2+DW,0); ctx.scale(-1,1); }
   ctx.imageSmoothingEnabled=false;
-  ctx.drawImage(img, n.frame*NPC_FW, row*NPC_FH, NPC_FW, NPC_FH, dx, dy, DW, DH);
+  ctx.drawImage(img, sx0, sy0, CROP_W, CROP_H, dx, dy, DW, DH);
   ctx.restore();
   // name tag
   ctx.font='8px "Press Start 2P", monospace'; ctx.textAlign='center';
