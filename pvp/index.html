@@ -50,9 +50,11 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
   background:linear-gradient(180deg,rgba(60,45,10,0.96),rgba(24,18,4,0.96));
   border:2px solid rgba(240,192,64,0.7);border-radius:8px;
   padding:11px 22px;box-shadow:0 0 22px rgba(240,192,64,0.4),0 6px 16px rgba(0,0,0,0.5);
-  letter-spacing:2px;pointer-events:none;
+  letter-spacing:2px;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;
 }
+.hud-rankbadge:hover{transform:translateX(-50%) scale(1.05);box-shadow:0 0 30px rgba(240,192,64,0.6),0 6px 16px rgba(0,0,0,0.5)}
 .hud-rankbadge b{color:#40d0ff;font-size:18px;text-shadow:0 0 10px rgba(64,208,255,0.7)}
+.hud-rankbadge em{font-style:normal;font-size:6px;color:#a0d0ff;letter-spacing:1px;margin-left:4px;opacity:0.85}
 .hud-rankbadge.bump{animation:rankBump 0.55s ease}
 @keyframes rankBump{40%{transform:translateX(-50%) scale(1.22);color:#fff}}
 .hud-btn{background:rgba(60,20,20,0.8);border:1px solid rgba(180,50,50,0.5);color:#ff8080;padding:3px 8px;font-size:6px;cursor:pointer;font-family:'Press Start 2P',monospace}
@@ -256,9 +258,8 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 
 <div class="hud" id="hud" style="display:none">
   <span class="hud-title">⚔ PvP ARENA</span>
-  <span class="hud-rankbadge" id="hud-rankbadge">🏆 RANK <b id="hud-rank-val">0</b></span>
+  <span class="hud-rankbadge" id="hud-rankbadge" onclick="openLeaderboard()">🏆 RANK <b id="hud-rank-val">0</b><em>▸ TAP FOR RANKINGS</em></span>
   <div class="hud-right">
-    <button class="hud-btn lb" onclick="openLeaderboard()">📋 RANKS</button>
     <button class="hud-btn" onclick="goWorld()">🚪 EXIT</button>
   </div>
 </div>
