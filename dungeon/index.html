@@ -1762,7 +1762,7 @@ function endPlayerTurn() {
     if (hero._foodBuffTurns <= 0 && hero._foodBuffAmt){
       hero.atk -= hero._foodBuffAmt;
       hero._foodBuffAmt = 0;
-      addLog('🍱 Efek makanan habis — ATK kembali normal', 'sys');
+      addLog('🍱 Food buff expired — ATK back to normal', 'sys');
     }
   }
   setTurnUI(false);
@@ -2182,7 +2182,7 @@ function useSelectedItem() {
     hero._foodBuffAmt = Math.max(1, Math.floor(hero.atk * item.value));
     hero._foodBuffTurns = 3;
     hero.atk += hero._foodBuffAmt;
-    addLog(`🍱 ${item.name}: +${hero._foodBuffAmt} ATK selama 3 turn!`, 'heal');
+    addLog(`🍱 ${item.name}: +${hero._foodBuffAmt} ATK for 3 turns!`, 'heal');
   }
 
   // Floating feedback on the hero
