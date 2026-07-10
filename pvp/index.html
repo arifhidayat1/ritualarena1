@@ -43,10 +43,18 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 .hud-title{color:var(--purple);font-size:8px}
 .hud-right{margin-left:auto;display:flex;gap:10px;align-items:center}
 .hud-rank{font-family:'VT323',monospace;font-size:13px;color:var(--gold)}
-.hud-rankbadge{margin-left:14px;display:inline-flex;align-items:center;gap:5px;font-size:7px;color:#ffd860;background:linear-gradient(180deg,rgba(60,45,10,0.9),rgba(30,22,4,0.9));border:1px solid rgba(240,192,64,0.55);border-radius:4px;padding:4px 9px;box-shadow:0 0 10px rgba(240,192,64,0.25);letter-spacing:1px}
-.hud-rankbadge b{color:#40d0ff;font-size:9px}
-.hud-rankbadge.bump{animation:rankBump 0.5s ease}
-@keyframes rankBump{40%{transform:scale(1.25);color:#fff}}
+.hud-rankbadge{
+  position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+  z-index:600;display:inline-flex;align-items:center;gap:10px;
+  font-size:11px;color:#ffd860;
+  background:linear-gradient(180deg,rgba(60,45,10,0.96),rgba(24,18,4,0.96));
+  border:2px solid rgba(240,192,64,0.7);border-radius:8px;
+  padding:11px 22px;box-shadow:0 0 22px rgba(240,192,64,0.4),0 6px 16px rgba(0,0,0,0.5);
+  letter-spacing:2px;pointer-events:none;
+}
+.hud-rankbadge b{color:#40d0ff;font-size:18px;text-shadow:0 0 10px rgba(64,208,255,0.7)}
+.hud-rankbadge.bump{animation:rankBump 0.55s ease}
+@keyframes rankBump{40%{transform:translateX(-50%) scale(1.22);color:#fff}}
 .hud-btn{background:rgba(60,20,20,0.8);border:1px solid rgba(180,50,50,0.5);color:#ff8080;padding:3px 8px;font-size:6px;cursor:pointer;font-family:'Press Start 2P',monospace}
 .hud-btn.lb{background:rgba(20,60,40,0.8);border-color:rgba(50,180,100,0.5);color:#80ffb0}
 
@@ -512,6 +520,9 @@ function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
   document.getElementById('hud').style.display = (id==='gate') ? 'none' : 'flex';
+  // Big rank banner shows on menu-style screens, hidden during battle (bottom is busy)
+  const rb = document.getElementById('hud-rankbadge');
+  if (rb) rb.style.display = (id==='gate' || id==='battle') ? 'none' : 'inline-flex';
   if (id==='battle') clearBgForBattle(); else blurBgForMenu();
 }
 function rnd(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
