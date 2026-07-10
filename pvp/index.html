@@ -43,6 +43,10 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 .hud-title{color:var(--purple);font-size:8px}
 .hud-right{margin-left:auto;display:flex;gap:10px;align-items:center}
 .hud-rank{font-family:'VT323',monospace;font-size:13px;color:var(--gold)}
+.hud-rankbadge{margin-left:14px;display:inline-flex;align-items:center;gap:5px;font-size:7px;color:#ffd860;background:linear-gradient(180deg,rgba(60,45,10,0.9),rgba(30,22,4,0.9));border:1px solid rgba(240,192,64,0.55);border-radius:4px;padding:4px 9px;box-shadow:0 0 10px rgba(240,192,64,0.25);letter-spacing:1px}
+.hud-rankbadge b{color:#40d0ff;font-size:9px}
+.hud-rankbadge.bump{animation:rankBump 0.5s ease}
+@keyframes rankBump{40%{transform:scale(1.25);color:#fff}}
 .hud-btn{background:rgba(60,20,20,0.8);border:1px solid rgba(180,50,50,0.5);color:#ff8080;padding:3px 8px;font-size:6px;cursor:pointer;font-family:'Press Start 2P',monospace}
 .hud-btn.lb{background:rgba(20,60,40,0.8);border-color:rgba(50,180,100,0.5);color:#80ffb0}
 
@@ -244,6 +248,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 
 <div class="hud" id="hud" style="display:none">
   <span class="hud-title">⚔ PvP ARENA</span>
+  <span class="hud-rankbadge" id="hud-rankbadge">🏆 RANK <b id="hud-rank-val">0</b></span>
   <div class="hud-right">
     <button class="hud-btn lb" onclick="openLeaderboard()">📋 RANKS</button>
     <button class="hud-btn" onclick="goWorld()">🚪 EXIT</button>
@@ -273,7 +278,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
     <div class="gr-stats" id="gr-stats"></div>
     <div class="gr-boost" id="gr-boost"></div>
     <button class="px-btn px-purple" onclick="goOpponentSelect()" style="width:100%;max-width:280px">▶ Find Opponent</button>
-    <div class="gacha-rank-display" id="gacha-rank-display">🏆 Your Rank: <span id="gacha-rank-val">0</span></div>
+    <div class="gacha-rank-display" id="gacha-rank-display" style="display:none">🏆 Your Rank: <span id="gacha-rank-val">0</span></div>
   </div>
 </div>
 
@@ -627,6 +632,10 @@ function saveRank(){
 function syncRankUI(){
   const a = document.getElementById('gacha-rank-val');
   if (a) a.textContent = rankPoints;
+  const hv = document.getElementById('hud-rank-val');
+  if (hv) hv.textContent = rankPoints;
+  const badge = document.getElementById('hud-rankbadge');
+  if (badge){ badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump'); }
 }
 
 function setChainStatus(txt, color){
