@@ -494,6 +494,8 @@ to{background-position:-960px 0}
 .px-gold{background:var(--gold);color:#000;box-shadow:3px 3px 0 #7a6000,0 0 0 2px #000}
 .px-gold:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 #7a6000,0 0 0 2px #000}
 .px-red{background:#600;color:#ff8080;border:2px solid var(--red);box-shadow:2px 2px 0 #000}
+.px-share{background:#000;color:#fff;border:2px solid #fff;box-shadow:3px 3px 0 #333;letter-spacing:0.5px}
+.px-share:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 #333;background:#111}
 .px-blue{background:#1a3080;color:var(--cyan);border:2px solid var(--cyan);box-shadow:2px 2px 0 #000}
 .px-sm{padding:7px 12px;font-size:6px}
 
@@ -750,6 +752,7 @@ to{background-position:-960px 0}
         <div class="reward-row"><span>Item Found</span><span class="reward-val" id="fv-item">None</span></div>
         <div class="reward-row"><span>Floor</span><span class="reward-val" id="fv-floor" style="color:var(--cyan)">1/25</span></div>
       </div>
+      <button class="px-btn px-share" id="fv-share" onclick="shareDungeon()" style="width:100%;margin-bottom:8px;display:none">𝕏 Share</button>
       <div class="btn-row">
         <button class="px-btn px-gold" onclick="nextFloor()" id="btn-next-floor">▶ Next Floor</button>
         <button class="px-btn px-blue px-sm" onclick="openInventory()">🎒 Bag</button>
@@ -2032,11 +2035,36 @@ function onFloorCleared() {
     btnNext.style.display = '';
   }
 
+  // Share button: show on boss kills and milestone floors (5/10/15/20/25)
+  const shareBtn = document.getElementById('fv-share');
+  if (shareBtn) shareBtn.style.display = (isBoss || floor % 5 === 0) ? '' : 'none';
+
   saveDungeon();
   showScreen('floor-victory');
   inBattle = false;
   ensureVignette().classList.remove('on');
   victorySparkles();
+}
+
+function shareDungeon(){
+  const isBoss = isBossFloor(floor);
+  const heroName = (hero && hero.name) || 'my hero';
+  const lines = isBoss ? [
+    `☠️ Boss down! ${heroName} conquered Floor ${floor}/25 in the Ritual Arena dungeon!`,
+    ``,
+    `Turn-based on-chain RPG on @ritualnet testnet.`,
+    ``,
+    `Think you can go deeper? 👇`,
+  ] : [
+    `⚔️ ${heroName} cleared Floor ${floor}/25 in the Ritual Arena dungeon!`,
+    ``,
+    `Turn-based on-chain RPG on @ritualnet testnet 👇`,
+  ];
+  const text = encodeURIComponent(lines.join('\n'));
+  const url  = encodeURIComponent('https://ritualarena1.vercel.app');
+  const hashtags = encodeURIComponent('Ritual,RitualArena,onchaingaming');
+  window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}&hashtags=${hashtags}`,
+              '_blank', 'noopener,noreferrer');
 }
 
 function nextFloor() {

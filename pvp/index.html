@@ -207,6 +207,8 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
 .px-purple{background:var(--purple);color:#fff;box-shadow:3px 3px 0 #5b21b6,0 0 0 2px #000}
 .px-purple:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 #5b21b6,0 0 0 2px #000}
 .px-red{background:#600;color:#ff8080;border:2px solid var(--red);box-shadow:2px 2px 0 #000}
+.px-share{background:#000;color:#fff;border:2px solid #fff;box-shadow:3px 3px 0 #333;letter-spacing:0.5px}
+.px-share:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 #333;background:#111}
 .px-sm{padding:7px 12px;font-size:6px}
 
 /* ── LEADERBOARD ── */
@@ -401,6 +403,7 @@ html,body{min-height:100vh;overflow-x:hidden;background:#000;
         <div class="reward-row"><span>Total Rank</span><span class="reward-val" id="win-total" style="color:var(--cyan)">0</span></div>
         <div class="reward-row"><span>⛓️ On-chain</span><span class="reward-val" id="win-chain" style="color:#8060a0">—</span></div>
       </div>
+      <button class="px-btn px-share" onclick="shareWin()" style="width:100%;margin-bottom:8px">𝕏 Share Victory</button>
       <div class="btn-row">
         <button class="px-btn px-purple" onclick="goOpponentSelect()">⚔ Next Match</button>
         <button class="px-btn px-red px-sm" onclick="goWorld()">🚪 Exit</button>
@@ -1216,6 +1219,23 @@ function onEnemyDead(){
   document.getElementById('win-total').textContent = rankPoints;
   showScreen('win');
   submitScoreOnChain();
+}
+function shareWin(){
+  const heroName = (hero && hero.name) || 'my fighter';
+  const opp = opponent ? '@'+opponent.handle : 'a challenger';
+  const lines = [
+    `⚔️ Just defeated ${opp} in the Ritual Arena!`,
+    ``,
+    `🦸 ${heroName}  ·  🏆 Rank ${rankPoints}`,
+    `Turn-based on-chain RPG on @ritualnet testnet.`,
+    ``,
+    `Come get rekt 👇`,
+  ];
+  const text = encodeURIComponent(lines.join('\n'));
+  const url  = encodeURIComponent('https://ritualarena1.vercel.app');
+  const hashtags = encodeURIComponent('Ritual,RitualArena,onchaingaming');
+  window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}&hashtags=${hashtags}`,
+              '_blank', 'noopener,noreferrer');
 }
 function onHeroDead(){
   const lost = Math.min(rankPoints, 5 + opponent.power*2);
