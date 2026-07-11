@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" id="vp-meta" content="width=device-width, initial-scale=1.0">
 <title>Ritual Arena — Dungeon</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
@@ -564,6 +564,28 @@ to{background-position:-960px 0}
 </style>
 </head>
 <body>
+<style>
+#rotate-hint{display:none;position:fixed;inset:0;z-index:99999;background:rgba(4,4,20,0.98);flex-direction:column;align-items:center;justify-content:center;gap:18px;color:#f0c040;font-family:'Press Start 2P',monospace;font-size:10px;text-align:center;line-height:1.9;padding:24px}
+#rotate-hint span{font-size:56px;display:block;animation:rotSpin 2.2s ease-in-out infinite}
+@keyframes rotSpin{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(78deg)}}
+#rotate-hint small{font-family:'VT323',monospace;font-size:15px;color:#8080b0;letter-spacing:1px}
+</style>
+<div id="rotate-hint"><span>↻</span><div>ROTATE TO LANDSCAPE</div><small>for the full arena view</small></div>
+<script>
+(function(){
+  var vp=document.getElementById("vp-meta"), rh=document.getElementById("rotate-hint");
+  function fit(){
+    var touch=window.matchMedia("(pointer:coarse)").matches;
+    var narrow=Math.min(window.innerWidth,window.innerHeight)<760;
+    vp.setAttribute("content",(touch||narrow)?"width=900":"width=device-width, initial-scale=1.0");
+    var portrait=window.innerHeight>window.innerWidth;
+    if(rh) rh.style.display=(touch&&portrait)?"flex":"none";
+  }
+  fit();
+  window.addEventListener("resize",fit);
+  window.addEventListener("orientationchange",function(){setTimeout(fit,200);});
+})();
+</script>
 
 <!-- HUD -->
 <!-- Dungeon Background -->
