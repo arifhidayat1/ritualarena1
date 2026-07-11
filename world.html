@@ -124,8 +124,28 @@ const imgs = {};
   ['girl_idle',       'assets/idle_girl.png'],
 ].forEach(([k, src]) => {
   const img = new Image();
+  // Retry on load failure (navigating back from dungeon/pvp can race many
+  // concurrent requests and drop some → world would render blank forever).
+  img._tries = 0;
+  img.onerror = () => {
+    if (img._tries++ < 5) {
+      setTimeout(() => { img.src = src + (src.includes('?') ? '&' : '?') + 'r=' + img._tries; }, 300 * img._tries);
+    }
+  };
   img.src = src;
   imgs[k] = img;
+});
+// Safety net: after load, re-issue any image that never completed
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    for (const k in imgs) {
+      const im = imgs[k];
+      if (!im.complete || !im.naturalWidth) {
+        const base = im.src.split('?')[0];
+        im.src = base + '?rl=' + Date.now();
+      }
+    }
+  }, 1200);
 });
 
 // ── Character (world coordinates) ────────────────────────
