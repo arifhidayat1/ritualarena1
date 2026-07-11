@@ -2046,25 +2046,83 @@ function onFloorCleared() {
   victorySparkles();
 }
 
+function _dungeonShareCard(cfg, done){
+  const W=1200,H=675;
+  const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d');
+  const GOLD='#f0c040', CY='#40d0ff';
+  function finalize(img){
+    const g=ctx.createRadialGradient(W*0.5,H*0.35,80,W*0.5,H*0.5,W*0.75);
+    g.addColorStop(0,'#1a1636'); g.addColorStop(1,'#05040e');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(120,110,200,0.06)'; ctx.lineWidth=1;
+    for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    const sg=ctx.createRadialGradient(900,360,20,900,360,280);
+    sg.addColorStop(0,'rgba(255,80,80,0.35)'); sg.addColorStop(1,'transparent');
+    ctx.fillStyle=sg; ctx.fillRect(560,60,640,560);
+    if(img){
+      ctx.imageSmoothingEnabled=false;
+      const fw=cfg.frameW||64, fh=cfg.frameH||64, row=cfg.idleRow||0;
+      const dispH=440, dispW=dispH*(fw/fh);
+      ctx.drawImage(img,0,row*fh,fw,fh, 900-dispW/2,150,dispW,dispH);
+    }
+    ctx.strokeStyle=GOLD; ctx.lineWidth=6; ctx.strokeRect(18,18,W-36,H-36);
+    ctx.strokeStyle='rgba(255,80,80,0.45)'; ctx.lineWidth=2; ctx.strokeRect(30,30,W-60,H-60);
+    ctx.textAlign='left'; ctx.fillStyle='rgba(200,200,255,0.55)';
+    ctx.font='20px "Press Start 2P", monospace'; ctx.fillText('⚔  RITUAL ARENA', 60, 78);
+    ctx.fillStyle=cfg.color||GOLD; ctx.shadowColor=cfg.color||GOLD; ctx.shadowBlur=24;
+    ctx.font='60px "Press Start 2P", monospace'; ctx.fillText(cfg.heading||'VICTORY', 60, 210);
+    ctx.shadowBlur=0;
+    ctx.font='22px "Press Start 2P", monospace'; ctx.fillStyle='#fff'; ctx.fillText(cfg.name||'', 62, 274);
+    ctx.font='26px "VT323", monospace'; ctx.fillStyle='#9090c0'; ctx.fillText(cfg.sub||'', 64, 314);
+    let cx=60, cy=372;
+    (cfg.chips||[]).forEach(ch=>{
+      ctx.font='16px "Press Start 2P", monospace';
+      const label=ch.label+'  ', lw=ctx.measureText(label).width, valW=ctx.measureText(ch.val).width, bw=lw+valW+40;
+      ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.strokeStyle=GOLD; ctx.lineWidth=2;
+      ctx.fillRect(cx,cy,bw,50); ctx.strokeRect(cx,cy,bw,50);
+      ctx.fillStyle='#c8c0ff'; ctx.fillText(label, cx+16, cy+33);
+      ctx.fillStyle=CY; ctx.fillText(ch.val, cx+16+lw, cy+33);
+      cx+=bw+16;
+    });
+    ctx.font='18px "VT323", monospace'; ctx.fillStyle='#6a6a9a';
+    ctx.fillText('ritualarena1.vercel.app  ·  Ritual Testnet  ·  #RitualArena', 60, H-46);
+    const a=document.createElement('a');
+    a.href=cv.toDataURL('image/png'); a.download=cfg.filename||'ritual-arena.png'; a.click();
+    if(done) done();
+  }
+  if(cfg.sheet){ const img=new Image(); img.onload=()=>finalize(img); img.onerror=()=>finalize(null); img.src=cfg.sheet; }
+  else finalize(null);
+}
+
 function shareDungeon(){
   const isBoss = isBossFloor(floor);
   const heroName = (hero && hero.name) || 'my hero';
+  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => {
+    _dungeonShareCard({
+      heading: isBoss ? 'BOSS SLAIN' : 'FLOOR '+floor,
+      color: isBoss ? '#ff5050' : '#f0c040',
+      name: heroName,
+      sub: isBoss ? ('conquered Floor '+floor+'/25') : ('cleared · Floor '+floor+'/25'),
+      sheet: hero&&hero.spriteSheet, frameW:hero&&hero.frameW, frameH:hero&&hero.frameH, idleRow:(hero&&hero.idleRow)||0,
+      chips:[{label:'FLOOR',val:floor+'/25'},{label:'LV',val:String(hero?hero.level||1:1)},{label:'ATK',val:String(hero?hero.atk:'-')}],
+      filename:'ritual-arena-floor'+floor+'.png',
+    });
+    if (typeof showToast === 'function') showToast('🖼️ Battle card downloaded — attach it to your X post!');
+  });
   const lines = isBoss ? [
     `☠️ Boss down! ${heroName} conquered Floor ${floor}/25 in the Ritual Arena dungeon!`,
-    ``,
-    `Turn-based on-chain RPG on @ritualnet testnet.`,
-    ``,
-    `Think you can go deeper? 👇`,
+    ``, `Turn-based on-chain RPG on @ritualnet testnet.`, ``, `Think you can go deeper? 👇`,
   ] : [
     `⚔️ ${heroName} cleared Floor ${floor}/25 in the Ritual Arena dungeon!`,
-    ``,
-    `Turn-based on-chain RPG on @ritualnet testnet 👇`,
+    ``, `Turn-based on-chain RPG on @ritualnet testnet 👇`,
   ];
   const text = encodeURIComponent(lines.join('\n'));
   const url  = encodeURIComponent('https://ritualarena1.vercel.app');
   const hashtags = encodeURIComponent('Ritual,RitualArena,onchaingaming');
-  window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}&hashtags=${hashtags}`,
-              '_blank', 'noopener,noreferrer');
+  setTimeout(() => window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}&hashtags=${hashtags}`,
+              '_blank', 'noopener,noreferrer'), 600);
 }
 
 function nextFloor() {

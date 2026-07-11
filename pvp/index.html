@@ -1220,22 +1220,158 @@ function onEnemyDead(){
   showScreen('win');
   submitScoreOnChain();
 }
-function shareWin(){
-  const heroName = (hero && hero.name) || 'my fighter';
-  const opp = opponent ? '@'+opponent.handle : 'a challenger';
-  const lines = [
-    `⚔️ Just defeated ${opp} in the Ritual Arena!`,
-    ``,
-    `🦸 ${heroName}  ·  🏆 Rank ${rankPoints}`,
-    `Turn-based on-chain RPG on @ritualnet testnet.`,
-    ``,
-    `Come get rekt 👇`,
-  ];
+// ── Victory share card (canvas → PNG download) ──
+function makeShareCard(cfg, done){
+  const W=1200,H=675;
+  const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d');
+  const GOLD='#f0c040', CY='#40d0ff', PUR='#a855f7';
+  function paint(){
+    // background
+    const g=ctx.createRadialGradient(W*0.5,H*0.35,80,W*0.5,H*0.5,W*0.75);
+    g.addColorStop(0,'#1a1636'); g.addColorStop(1,'#05040e');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    // subtle grid
+    ctx.strokeStyle='rgba(120,110,200,0.06)'; ctx.lineWidth=1;
+    for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    // glow behind sprite
+    const sg=ctx.createRadialGradient(880,340,20,880,340,260);
+    sg.addColorStop(0,'rgba(168,85,247,0.35)'); sg.addColorStop(1,'transparent');
+    ctx.fillStyle=sg; ctx.fillRect(600,80,600,520);
+    // border
+    ctx.strokeStyle=GOLD; ctx.lineWidth=6; ctx.strokeRect(18,18,W-36,H-36);
+    ctx.strokeStyle='rgba(168,85,247,0.5)'; ctx.lineWidth=2; ctx.strokeRect(30,30,W-60,H-60);
+    // top brand
+    ctx.textAlign='left'; ctx.fillStyle='rgba(200,200,255,0.55)';
+    ctx.font='20px "Press Start 2P", monospace';
+    ctx.fillText('⚔  RITUAL ARENA', 60, 78);
+    // big heading
+    ctx.fillStyle=cfg.color||GOLD;
+    ctx.shadowColor=cfg.color||GOLD; ctx.shadowBlur=24;
+    ctx.font='72px "Press Start 2P", monospace';
+    ctx.fillText(cfg.heading||'VICTORY', 60, 200);
+    ctx.shadowBlur=0;
+    // sub lines
+    ctx.font='22px "Press Start 2P", monospace';
+    ctx.fillStyle='#fff'; ctx.fillText(cfg.name||'', 62, 260);
+    ctx.font='24px "VT323", monospace'; ctx.fillStyle='#9090c0';
+    ctx.fillText(cfg.sub||'', 64, 300);
+    // chips
+    let cx=60, cy=360;
+    (cfg.chips||[]).forEach(ch=>{
+      const label=ch.label+'  ', valW=ctx.measureText(ch.val).width;
+      ctx.font='16px "Press Start 2P", monospace';
+      const lw=ctx.measureText(label).width;
+      const bw=lw+valW+40;
+      ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.strokeStyle=GOLD; ctx.lineWidth=2;
+      ctx.fillRect(cx,cy,bw,50); ctx.strokeRect(cx,cy,bw,50);
+      ctx.fillStyle='#c8c0ff'; ctx.fillText(label, cx+16, cy+33);
+      ctx.fillStyle=CY; ctx.fillText(ch.val, cx+16+lw, cy+33);
+      cx+=bw+16;
+    });
+    // footer
+    ctx.font='18px "VT323", monospace'; ctx.fillStyle='#6a6a9a'; ctx.textAlign='left';
+    ctx.fillText('ritualarena1.vercel.app  ·  Ritual Testnet  ·  #RitualArena', 60, H-46);
+    // finish
+    const a=document.createElement('a');
+    a.href=cv.toDataURL('image/png'); a.download=cfg.filename||'ritual-arena-victory.png'; a.click();
+    if(done) done();
+  }
+  // draw hero sprite first (if any), then paint text over
+  if(cfg.sheet){
+    const img=new Image();
+    img.onload=()=>{ drawSpriteThenPaint(img); };
+    img.onerror=()=>{ paint(); };
+    img.src=cfg.sheet;
+    function drawSpriteThenPaint(img){
+      // paint bg/text after sprite? We need sprite above bg but below border text.
+      // Simpler: paint everything, then overlay sprite on the right.
+      paintWithSprite(img);
+    }
+  } else { paint(); }
+
+  function paintWithSprite(img){
+    // Run the normal paint but insert sprite before footer/border overlay.
+    // Re-implement order: bg → sprite → frame/text.
+    const g=ctx.createRadialGradient(W*0.5,H*0.35,80,W*0.5,H*0.5,W*0.75);
+    g.addColorStop(0,'#1a1636'); g.addColorStop(1,'#05040e');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(120,110,200,0.06)'; ctx.lineWidth=1;
+    for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    const sg=ctx.createRadialGradient(900,360,20,900,360,280);
+    sg.addColorStop(0,'rgba(168,85,247,0.4)'); sg.addColorStop(1,'transparent');
+    ctx.fillStyle=sg; ctx.fillRect(560,60,640,560);
+    // sprite (idle frame 0), pixelated, big on the right
+    ctx.imageSmoothingEnabled=false;
+    const fw=cfg.frameW||64, fh=cfg.frameH||64, row=cfg.idleRow||0;
+    const dispH=440, dispW=dispH*(fw/fh);
+    ctx.drawImage(img, 0, row*fh, fw, fh, 900-dispW/2, 150, dispW, dispH);
+    // overlay text
+    ctx.strokeStyle=GOLD; ctx.lineWidth=6; ctx.strokeRect(18,18,W-36,H-36);
+    ctx.strokeStyle='rgba(168,85,247,0.5)'; ctx.lineWidth=2; ctx.strokeRect(30,30,W-60,H-60);
+    ctx.textAlign='left'; ctx.fillStyle='rgba(200,200,255,0.55)';
+    ctx.font='20px "Press Start 2P", monospace'; ctx.fillText('⚔  RITUAL ARENA', 60, 78);
+    ctx.fillStyle=cfg.color||GOLD; ctx.shadowColor=cfg.color||GOLD; ctx.shadowBlur=24;
+    ctx.font='72px "Press Start 2P", monospace'; ctx.fillText(cfg.heading||'VICTORY', 60, 220);
+    ctx.shadowBlur=0;
+    ctx.font='22px "Press Start 2P", monospace'; ctx.fillStyle='#fff'; ctx.fillText(cfg.name||'', 62, 282);
+    ctx.font='26px "VT323", monospace'; ctx.fillStyle='#9090c0'; ctx.fillText(cfg.sub||'', 64, 322);
+    let cx=60, cy=380;
+    (cfg.chips||[]).forEach(ch=>{
+      ctx.font='16px "Press Start 2P", monospace';
+      const label=ch.label+'  ', lw=ctx.measureText(label).width, valW=ctx.measureText(ch.val).width, bw=lw+valW+40;
+      ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.strokeStyle=GOLD; ctx.lineWidth=2;
+      ctx.fillRect(cx,cy,bw,50); ctx.strokeRect(cx,cy,bw,50);
+      ctx.fillStyle='#c8c0ff'; ctx.fillText(label, cx+16, cy+33);
+      ctx.fillStyle=CY; ctx.fillText(ch.val, cx+16+lw, cy+33);
+      cx+=bw+16;
+    });
+    ctx.font='18px "VT323", monospace'; ctx.fillStyle='#6a6a9a';
+    ctx.fillText('ritualarena1.vercel.app  ·  Ritual Testnet  ·  #RitualArena', 60, H-46);
+    const a=document.createElement('a');
+    a.href=cv.toDataURL('image/png'); a.download=cfg.filename||'ritual-arena-victory.png'; a.click();
+    if(done) done();
+  }
+}
+
+function pvpToast(msg){
+  const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+  t.style.whiteSpace='normal'; t.style.maxWidth='90vw'; t.style.textAlign='center';
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 3200);
+}
+function openXIntent(lines){
   const text = encodeURIComponent(lines.join('\n'));
   const url  = encodeURIComponent('https://ritualarena1.vercel.app');
   const hashtags = encodeURIComponent('Ritual,RitualArena,onchaingaming');
   window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}&hashtags=${hashtags}`,
               '_blank', 'noopener,noreferrer');
+}
+
+function shareWin(){
+  const heroName = (hero && hero.name) || 'my fighter';
+  const opp = opponent ? '@'+opponent.handle : 'a challenger';
+  const genImg = () => {
+    (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => {
+      makeShareCard({
+        heading:'VICTORY', color:'#f0c040',
+        name:(hero&&hero.name)||'Fighter',
+        sub:'defeated '+opp,
+        sheet:hero&&hero.spriteSheet, frameW:hero&&hero.frameW, frameH:hero&&hero.frameH, idleRow:(hero&&hero.idleRow)||0,
+        chips:[{label:'RANK',val:String(rankPoints)},{label:'ATK',val:String(hero?hero.atk:'-')}],
+        filename:'ritual-arena-victory.png',
+      });
+      pvpToast('🖼️ Victory card downloaded — attach it to your X post!');
+    });
+  };
+  genImg();
+  setTimeout(() => openXIntent([
+    `⚔️ Just defeated ${opp} in the Ritual Arena!`, ``,
+    `🦸 ${heroName}  ·  🏆 Rank ${rankPoints}`,
+    `Turn-based on-chain RPG on @ritualnet testnet.`, ``, `Come get rekt 👇`,
+  ]), 600);
 }
 function onHeroDead(){
   const lost = Math.min(rankPoints, 5 + opponent.power*2);
